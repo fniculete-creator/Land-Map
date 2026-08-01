@@ -43,6 +43,8 @@ let map;
 // a city immediately shows what qualifies there. A shared URL hash wins.
 let state = location.hash.length > 1 ? stateFromHash(location.hash) : sb1123State(CONFIG);
 let selectedAin = null;
+let demoMode = false;
+let demoBounds = null;
 
 // "4108 WHITSETT AVE" -> "4108 Whitsett Ave"
 function fmtAddr(a) {
@@ -243,6 +245,13 @@ function renderList(candidates, detailed) {
 
   list.innerHTML = "";
   empty.style.display = shown.length ? "none" : "block";
+  if (!shown.length) {
+    empty.innerHTML = demoMode
+      ? `Demo mode: the synthetic dataset covers only a small Venice-area test
+         grid (all Tier A) — real LA parcels aren't loaded yet.
+         <button id="goto-demo">Go to demo area</button>`
+      : "No qualifying parcels in view. Zoom or pan the map, or relax filters.";
+  }
 
   for (const f of shown) {
     const p = f.properties;
@@ -551,6 +560,12 @@ function bindControls() {
 
   document.getElementById("export-btn").addEventListener("click", () => LandMap.downloadCsv());
 
+  document.getElementById("empty-sites").addEventListener("click", (e) => {
+    if (e.target.id === "goto-demo" && demoBounds) {
+      map.fitBounds(demoBounds, { padding: 40 });
+    }
+  });
+
   document.getElementById("copy-link-btn").addEventListener("click", async () => {
     const btn = document.getElementById("copy-link-btn");
     try {
@@ -770,9 +785,13 @@ async function boot() {
   initBrandLogo();
   await loadRemoteConfig();
   const synthetic = await isSynthetic();
+  demoMode = synthetic;
   if (synthetic) {
     document.getElementById("demo-banner").classList.remove("hidden");
     document.getElementById("sat-btn").style.display = "none";
+    archive.getHeader().then((h) => {
+      demoBounds = [[h.minLon, h.minLat], [h.maxLon, h.maxLat]];
+    }).catch(() => {});
   }
   // Restore map position from a shared link's m= hash param.
   let startCenter = CONFIG.START_CENTER;
