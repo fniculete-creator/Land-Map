@@ -795,7 +795,7 @@ async function boot() {
     attributionControl: { compact: true },
     transformRequest: mapboxTransform,
   });
-  map.addControl(new maplibregl.NavigationControl(), "top-right");
+  map.addControl(new maplibregl.NavigationControl(), "top-left");
 
   // Init on whichever fires first: 'load' normally, or 'styledata' when
   // unreachable basemap tile servers keep the map from ever reaching 'load'.

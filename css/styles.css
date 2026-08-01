@@ -413,12 +413,12 @@ html, body {
 #detail-panel {
   position: absolute;
   top: 0;
-  left: 0;
+  right: 0;
   bottom: 0;
   width: 362px;
   background: #fff;
-  border-right: 1px solid var(--border);
-  box-shadow: 8px 0 24px rgba(15, 30, 45, 0.10);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 24px rgba(15, 30, 45, 0.10);
   overflow-y: auto;
   z-index: 900;
   padding-bottom: 16px;
