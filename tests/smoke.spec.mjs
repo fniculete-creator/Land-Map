@@ -105,6 +105,20 @@ const sfrCheck = await page.evaluate((AIN) => {
 assert(sfrCheck.shoup, "SFR filter keeps 6540 Shoup Ave");
 assert(sfrCheck.condos === 0, `SFR filter excludes condo unit records (${sfrCheck.condos})`);
 
+// Hard exclusions: in fire-hazard hills, no rendered universe match may be
+// in a fire/coastal zone or publicly owned (context ghosts are fine).
+await page.evaluate(() => window.LandMap.map.jumpTo({ center: [-118.588, 34.105], zoom: 14.6 }));
+await page.waitForTimeout(4000);
+const excl = await page.evaluate(() => {
+  const feats = window.LandMap.map.queryRenderedFeatures({ layers: window.LandMap.lids("parcels-fill") });
+  return {
+    total: feats.length,
+    bad: feats.filter((x) => [1, 2].includes(x.properties.f)
+      || x.properties.c === 1 || x.properties.pb === 1).length,
+  };
+});
+assert(excl.bad === 0, `no fire/coastal/public parcels among matches (${excl.bad}/${excl.total})`);
+
 // Expanded coverage: parcels must render in the non-region chunks too.
 await page.click("#reset-btn");
 for (const [name, center] of [

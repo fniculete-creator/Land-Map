@@ -69,6 +69,32 @@ def is_vacant(props_use_code, props_use_type, units, improvement_value, land_val
     return True
 
 
+# Publicly/institutionally owned parcels (city, county, state, schools,
+# churches, other non-profits) are not acquirable — excluded from the
+# working universe. Detection is per-county:
+#   LA: UseType Government/Institutional, or 2025 use code prefix 8 (gov)
+#       / 7 (institutional)
+#   VC: SITE_USE prefix 9 (government) / 8 (institutional)
+#   SB: LandUse description keywords (no ownership field in the source)
+SB_PUBLIC_KEYWORDS = (
+    "GOVERNMENT", "CHURCH", "SCHOOL", "COLLEGE", "HOSPITAL", "CEMETER",
+    "UTILITY", "MUNICIPAL", "FEDERAL", "STATE OF", "COUNTY", "CITY OF",
+)
+
+
+def is_public_owner(county, use_code, use_type):
+    uc = (use_code or "").strip()
+    ut = (use_type or "").strip().lower()
+    if county == "LA":
+        return ut in ("government", "institutional") or uc[:1] in ("7", "8")
+    if county == "VC":
+        return uc[:1] in ("8", "9")
+    if county == "SB":
+        upper = ut.upper()
+        return any(k in upper for k in SB_PUBLIC_KEYWORDS)
+    return False
+
+
 def sb1123_eligible(vacant, fire, coastal, hillside, zf, lot_sqft, sb_cfg):
     """Screening heuristic for SB 1123 (vacant SF lots) / SB 684 (MF lots).
 
@@ -312,9 +338,11 @@ def main():
             h_flag = 1 if hillside.contains(rep) else 0
             v_flag = 1 if is_vacant(use_code, use_type, units, iv, lv, vac_cfg) else 0
             e_flag = sb1123_eligible(v_flag, f_cls, c_flag, h_flag, zf, lot_sqft, sb_cfg)
+            pb_flag = 1 if is_public_owner(county, use_code, use_type) else 0
 
             stats["vacant"] += v_flag
             stats["eligible"] += e_flag
+            stats["public"] = stats.get("public", 0) + pb_flag
             stats["fire1"] += 1 if f_cls == 1 else 0
             stats["fire2"] += 1 if f_cls == 2 else 0
             stats["coastal"] += c_flag
@@ -326,18 +354,27 @@ def main():
                 "ain": ain, "a": addr, "z": zone_str, "zc": zc, "zf": zf,
                 "uc": use_code, "u": units, "lsf": lot_sqft, "w": width_ft,
                 "iv": iv, "v": v_flag, "f": f_cls, "c": c_flag, "h": h_flag,
-                "e": e_flag, "t": tier, "ls": last_sale, "co": county,
+                "e": e_flag, "pb": pb_flag, "t": tier, "ls": last_sale, "co": county,
             }
             if au:
                 out_props["au"] = au
             po.write(json.dumps({
                 "type": "Feature", "geometry": mapping(geom), "properties": out_props,
             }, separators=(",", ":")) + "\n")
+            # Centroids carry the hard-exclusion flags only when set (saves
+            # tile bytes across ~2.8M points; absent reads as 0 client-side).
+            cprops = {"ain": ain, "a": addr, "e": e_flag, "v": v_flag, "lsf": lot_sqft,
+                      "t": tier, "zc": zc, "zf": zf, "uc": use_code, "w": width_ft}
+            if f_cls:
+                cprops["f"] = f_cls
+            if c_flag:
+                cprops["c"] = c_flag
+            if pb_flag:
+                cprops["pb"] = pb_flag
             co.write(json.dumps({
                 "type": "Feature",
                 "geometry": {"type": "Point", "coordinates": [round(rep.x, 6), round(rep.y, 6)]},
-                "properties": {"ain": ain, "a": addr, "e": e_flag, "v": v_flag, "lsf": lot_sqft,
-                               "t": tier, "zc": zc, "zf": zf, "uc": use_code, "w": width_ft},
+                "properties": cprops,
             }, separators=(",", ":")) + "\n")
             stats["written"] += 1
 

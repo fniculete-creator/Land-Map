@@ -37,10 +37,24 @@ const SFR_CLAUSE = ["all",
     ["literal", ["C", "D", "E", "F", "G", "H", "I", "J"]]]],
 ];
 
-// The working universe: SFR homes + vacant lots. Everything the team hunts
-// starts from this set; filters narrow it. Other parcels (commercial,
-// condos, apartments…) render only as faint context.
-export const UNIVERSE_CLAUSE = ["any", SFR_CLAUSE, ["==", ["get", "v"], 1]];
+// Hard exclusions: parcels in a fire hazard zone (f 1/2), the coastal
+// commission zone (c 1), or publicly/institutionally owned (pb 1 — city,
+// county, schools, churches, non-profits) are not buildable/acquirable
+// opportunities and never load as matches, regardless of filters. Absent
+// attributes pass, so older tiles degrade gracefully.
+const EXCLUSIONS_CLAUSE = ["all",
+  ["!", ["in", ["get", "f"], ["literal", [1, 2]]]],
+  ["!=", ["get", "c"], 1],
+  ["!=", ["get", "pb"], 1],
+];
+
+// The working universe: SFR homes + vacant lots, minus the hard exclusions.
+// Everything the team hunts starts from this set; filters narrow it. Other
+// parcels (commercial, condos, apartments…) render only as faint context.
+export const UNIVERSE_CLAUSE = ["all",
+  ["any", SFR_CLAUSE, ["==", ["get", "v"], 1]],
+  EXCLUSIONS_CLAUSE,
+];
 
 export function buildFilter(state, cfg, statusAins) {
   // A status search is a pipeline view: it must surface those parcels even
