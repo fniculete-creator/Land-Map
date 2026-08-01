@@ -361,17 +361,46 @@ html, body {
 .site-info { flex: 1; min-width: 0; }
 
 .site-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.site-name-text {
   font-weight: 700;
-  font-size: 0.84rem;
+  font-size: 0.95rem;
+  color: var(--navy);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
 }
 
-.site-meta { font-size: 0.74rem; color: var(--muted); margin-top: 1px; font-variant-numeric: tabular-nums; }
+/* Project status bubble, like the comps "OM" pill. */
+.site-badge {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.badge-appr { background: #10b981; color: #fff; }
+.badge-sub { background: #facc15; color: #5b4a00; }
 
-.site-tier { font-size: 0.7rem; font-weight: 700; }
+.site-meta { font-size: 0.76rem; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+.site-right {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+.site-right b { font-size: 0.86rem; font-weight: 800; color: var(--navy); font-variant-numeric: tabular-nums; }
+.site-right span { font-size: 0.68rem; color: var(--muted); margin-top: 1px; }
 
 .empty-state {
   font-size: 0.82rem;

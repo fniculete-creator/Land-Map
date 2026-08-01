@@ -99,7 +99,10 @@ const UNIT_WORDS = new Set(["APT", "UNIT", "STE", "SPC", "NO", "TRLR", "BLDG", "
 function splitAddr(a) {
   const empty = { street: "", cityName: "", cityLine: "" };
   if (!a) return empty;
-  if (a.includes(", ")) { // Santa Barbara source pre-joins "street, city line"
+  // Santa Barbara pre-joins "street, city line" — but only treat a comma as
+  // that split when the tail really is a city line (mentions CA); legal
+  // descriptions ("Tr 8939, Lot 2…") also contain commas.
+  if (a.includes(", ") && /\bCA\b/i.test(a.slice(a.indexOf(", ") + 2))) {
     const [s, ...rest] = a.split(", ");
     const cityLine = fmtAddr(rest.join(", ")).replace(/\bCa\b/, "CA");
     return { street: fmtAddr(s), cityName: cityLine.replace(/,?\s*CA.*$/, ""), cityLine };
@@ -496,7 +499,16 @@ function renderList(candidates, detailed) {
     info.className = "site-info";
     const name = document.createElement("div");
     name.className = "site-name";
-    name.textContent = displayName(p);
+    const nameText = document.createElement("span");
+    nameText.className = "site-name-text";
+    nameText.textContent = displayName(p);
+    name.appendChild(nameText);
+    if (proj) {
+      const badge = document.createElement("span");
+      badge.className = "site-badge " + (proj.status === "approved" ? "badge-appr" : "badge-sub");
+      badge.textContent = proj.status === "approved" ? "Approved" : "Submitted";
+      name.appendChild(badge);
+    }
     const meta = document.createElement("div");
     meta.className = "site-meta";
     const bits = [];
@@ -505,7 +517,6 @@ function renderList(candidates, detailed) {
     if (p.a) bits.push("APN " + fmtApn(p));
     else bits.push("no address");
     if (detailed && p.zc) bits.push(p.zc);
-    bits.push(fmt(p.lsf) + " sf");
     if (detailed && p.w) bits.push("≈" + p.w + " ft");
     if (proj) {
       bits.push(`SB ${proj.status === "approved" ? "approved" : "submitted"} ${proj.filed || ""}`.trim());
@@ -516,9 +527,17 @@ function renderList(candidates, detailed) {
     info.appendChild(name);
     info.appendChild(meta);
 
+    // Right column, comps-style: lot size bold with the tier beneath.
     const tier = document.createElement("span");
-    tier.className = "site-tier";
-    tier.textContent = p.t || "";
+    tier.className = "site-right";
+    const lotB = document.createElement("b");
+    lotB.textContent = p.lsf != null ? fmt(p.lsf) + " sf" : "";
+    tier.appendChild(lotB);
+    if (p.t) {
+      const tierS = document.createElement("span");
+      tierS.textContent = "Tier " + p.t;
+      tier.appendChild(tierS);
+    }
 
     const center = f.geometry ? featureCenter(f) : null;
     li.addEventListener("click", () => {
