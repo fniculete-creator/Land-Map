@@ -179,6 +179,14 @@ def download_source(key, cfg, bboxes, use_situs_where):
         return
 
     out_fields = sorted(set(cfg.get("fields", {}).values())) or ["*"]
+    # Layers differ in their ID field name (OBJECTID, FID, OBJECTID_1…);
+    # ordering by the wrong one is a hard 400 on some services.
+    oid_field = "OBJECTID"
+    try:
+        meta = request_json(url, {"f": "json"})
+        oid_field = meta.get("objectIdField") or "OBJECTID"
+    except Exception:
+        pass
     fresh = state["bbox_i"] == 0 and state["offset"] == 0
     total_written = state.get("total_written", 0)
     with open(out, "w" if fresh else "a") as fh:
@@ -199,7 +207,7 @@ def download_source(key, cfg, bboxes, use_situs_where):
                     "outSR": "4326",
                     "resultOffset": state["offset"],
                     "resultRecordCount": PAGE_SIZE,
-                    "orderByFields": "OBJECTID",
+                    "orderByFields": oid_field,
                 }
                 if attrs_only:
                     params["returnGeometry"] = "false"
