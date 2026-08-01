@@ -41,11 +41,11 @@ tippecanoe -o "$OUT" --force --quiet \
   -L centroids:"$ENRICHED/centroids.ndjson" \
   "${STREETS_LAYER[@]}" \
   --minimum-zoom=8 --maximum-zoom=15 \
-  -j '{"parcels":["any",[">=","$zoom",13]],"centroids":["any",["<=","$zoom",12]]}' \
+  -j '{"parcels":["any",[">=","$zoom",14]],"centroids":["any",["<=","$zoom",13]]}' \
   --coalesce-densest-as-needed \
   --detect-shared-borders \
-  --simplify-only-low-zooms \
-  --maximum-tile-bytes=500000 \
+  --simplify-only-low-zooms -B13 \
+  --maximum-tile-bytes=2000000 \
   --attribution 'LA County Assessor / LA City GeoHub' \
   --name "Land-Map LA parcels" \
   --description "synthetic=$SYNTHETIC"

@@ -26,10 +26,15 @@ export function sb1123State(cfg) {
   return s;
 }
 
-// SFR home = residential use code (01xx) with a structure on it.
+// SFR home = single-family use code (010x) with a structure on it.
+// The 4th character distinguishes true SFRs (digits) from condo/PUD unit
+// records (letters), which each carry the whole lot's polygon and would
+// otherwise flood the results with duplicate "big lots".
 const SFR_CLAUSE = ["all",
   ["==", ["get", "v"], 0],
-  ["==", ["slice", ["get", "uc"], 0, 2], "01"],
+  ["==", ["slice", ["get", "uc"], 0, 3], "010"],
+  ["!", ["in", ["slice", ["get", "uc"], 3, 4],
+    ["literal", ["C", "D", "E", "F", "G", "H", "I", "J"]]]],
 ];
 
 export function buildFilter(state, cfg, statusAins) {
@@ -64,21 +69,10 @@ export function buildFilter(state, cfg, statusAins) {
   return clauses.length > 1 ? clauses : null;
 }
 
-// Centroids carry only ain/a/e/v/lsf/t, so approximate: the SFR improvements
-// filter degrades to "not vacant" at centroid zooms (no use code in tiles).
+// Centroids now carry the full filterable attribute set (zc/zf/uc/w/…), so
+// the dot view honors exactly the same filters as the polygon view.
 export function buildCentroidFilter(state, cfg, statusAins) {
-  const clauses = ["all"];
-  const [lmin, lmax] = state.ranges.lsf;
-  if (lmin !== null) clauses.push([">=", ["get", "lsf"], lmin]);
-  if (lmax !== null) clauses.push(["<=", ["get", "lsf"], lmax]);
-  if (state.tiers.size > 0) clauses.push(["in", ["get", "t"], ["literal", [...state.tiers]]]);
-  if (state.imp === "vacant") clauses.push(["==", ["get", "v"], 1]);
-  else if (state.imp === "sfr") clauses.push(["==", ["get", "v"], 0]);
-  if (state.dealStatus !== "any") {
-    clauses.push(["in", ["get", "ain"], ["literal", statusAins || []]]);
-  }
-  if (state.sbPreset) clauses.push(["==", ["get", "e"], 1]);
-  return clauses.length > 1 ? clauses : null;
+  return buildFilter(state, cfg, statusAins);
 }
 
 // ---- URL-hash (de)serialization for shareable filter links ----

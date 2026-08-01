@@ -12,7 +12,16 @@ const COLORS = {
   eligibleLine: "#047857",
   neutralLine: "#c3cbd3",
   highlight: "#2563eb",
+  match: "#3b82f6",
+  matchLine: "#1d4ed8",
 };
+
+// Any filter beyond the untouched default (the SB preset is tracked apart).
+function hasUserFilters(s) {
+  return Object.values(s.ranges).some(([a, b]) => a !== null || b !== null)
+    || s.zoneClasses.length > 0 || s.zoneFamilies.size > 0
+    || s.tiers.size > 0 || s.imp !== "any" || s.dealStatus !== "any";
+}
 
 const TIER_NAMES = { A: "Westside", B: "South Valley", C: "Central/North Valley" };
 const STATUS_LABELS = {
@@ -108,7 +117,7 @@ function baseStyle() {
       },
       {
         id: "centroids", type: "circle", source: "parcels", "source-layer": "centroids",
-        maxzoom: 13,
+        maxzoom: 14,
         paint: {
           "circle-radius": ["interpolate", ["linear"], ["zoom"],
             8, ["case", ["==", ["get", "e"], 1], 2, 1],
@@ -119,7 +128,7 @@ function baseStyle() {
       },
       {
         id: "parcels-fill", type: "fill", source: "parcels", "source-layer": "parcels",
-        minzoom: 13,
+        minzoom: 14,
         paint: {
           // Only qualifying parcels get color; everything else stays neutral.
           "fill-color": ["case", ["==", ["get", "e"], 1], COLORS.eligible, "#64748b"],
@@ -128,7 +137,7 @@ function baseStyle() {
       },
       {
         id: "parcels-line", type: "line", source: "parcels", "source-layer": "parcels",
-        minzoom: 13,
+        minzoom: 14,
         paint: {
           "line-color": ["case", ["==", ["get", "e"], 1], COLORS.eligibleLine, COLORS.neutralLine],
           "line-width": ["case", ["==", ["get", "e"], 1], 1.4, 0.5],
@@ -138,13 +147,13 @@ function baseStyle() {
         // Deal-status outlines: always visible regardless of filters, so the
         // team's tracked pipeline never disappears from the map.
         id: "parcels-status", type: "line", source: "parcels", "source-layer": "parcels",
-        minzoom: 13,
+        minzoom: 14,
         filter: ["==", ["get", "ain"], "___none___"],
         paint: { "line-color": "#2563eb", "line-width": 2.5 },
       },
       {
         id: "parcels-selected", type: "line", source: "parcels", "source-layer": "parcels",
-        minzoom: 13,
+        minzoom: 14,
         filter: ["==", ["get", "ain"], "___none___"],
         paint: { "line-color": COLORS.highlight, "line-width": 3 },
       },
@@ -187,6 +196,24 @@ function applyFilters() {
   const selBase = ["==", ["get", "ain"], selectedAin ?? "___none___"];
   map.setFilter("parcels-selected", f ? ["all", f, selBase] : selBase);
   map.setFilter("centroids", buildCentroidFilter(state, CONFIG, statusAins));
+
+  // When actively filtering, every parcel that passes the filter should be
+  // clearly visible: SB candidates green, other matches blue. With no
+  // filters, non-candidates stay as faint context so candidates pop.
+  const filtering = state.sbPreset || hasUserFilters(state);
+  map.setPaintProperty("parcels-fill", "fill-color",
+    ["case", ["==", ["get", "e"], 1], COLORS.eligible, filtering ? COLORS.match : "#64748b"]);
+  map.setPaintProperty("parcels-fill", "fill-opacity",
+    ["case", ["==", ["get", "e"], 1], 0.55, filtering ? 0.4 : 0.05]);
+  map.setPaintProperty("parcels-line", "line-color",
+    ["case", ["==", ["get", "e"], 1], COLORS.eligibleLine, filtering ? COLORS.matchLine : COLORS.neutralLine]);
+  map.setPaintProperty("parcels-line", "line-width",
+    ["case", ["==", ["get", "e"], 1], 1.4, filtering ? 1.1 : 0.5]);
+  map.setPaintProperty("centroids", "circle-color",
+    ["case", ["==", ["get", "e"], 1], COLORS.eligible, filtering ? COLORS.match : "#aeb7bf"]);
+  map.setPaintProperty("centroids", "circle-opacity",
+    ["case", ["==", ["get", "e"], 1], 0.95, filtering ? 0.85 : 0.45]);
+
   applyStatusOutlines();
   updateHash();
   scheduleCount();
@@ -210,7 +237,7 @@ function fmt(n) { return Number(n).toLocaleString(); }
 function updateCount() {
   if (!map || !map.isStyleLoaded()) return;
   const zoom = map.getZoom();
-  const layer = zoom >= 13 ? "parcels-fill" : "centroids";
+  const layer = zoom >= 14 ? "parcels-fill" : "centroids";
   const feats = map.queryRenderedFeatures({ layers: [layer] });
 
   const byAin = new Map();
@@ -219,20 +246,27 @@ function updateCount() {
   }
   document.getElementById("result-count").textContent = byAin.size.toLocaleString();
   document.getElementById("result-label").textContent =
-    zoom >= 13 ? "parcels in view" : "parcel dots in view";
+    zoom >= 14 ? "parcels in view" : "parcel dots in view";
 
   const candidates = [...byAin.values()].filter((f) => f.properties.e === 1);
-  lastCandidates = candidates;
   document.getElementById("stat-candidates").textContent = candidates.length.toLocaleString();
 
-  const lots = candidates.map((f) => f.properties.lsf).sort((a, b) => a - b);
-  const widths = candidates.map((f) => f.properties.w).filter((w) => w != null).sort((a, b) => a - b);
+  // Actively filtering -> the list is your matches (rendered features already
+  // pass the filters). Untouched default -> curated candidates-only list.
+  const filtering = state.sbPreset || hasUserFilters(state);
+  const listSource = filtering ? [...byAin.values()] : candidates;
+  lastCandidates = listSource;
+  document.getElementById("list-title").textContent =
+    filtering && !state.sbPreset ? "Matches in view" : "Candidates in view";
+
+  const lots = listSource.map((f) => f.properties.lsf).sort((a, b) => a - b);
+  const widths = listSource.map((f) => f.properties.w).filter((w) => w != null).sort((a, b) => a - b);
   const medLot = median(lots);
   const medW = median(widths);
   document.getElementById("stat-medlot").textContent = medLot === null ? "–" : fmt(medLot);
   document.getElementById("stat-medwidth").textContent = medW === null ? "–" : fmt(medW);
 
-  renderList(candidates, zoom >= 13);
+  renderList(listSource, zoom >= 14);
 }
 
 function featureCenter(f) {
@@ -271,6 +305,7 @@ function renderList(candidates, detailed) {
 
     const dot = document.createElement("span");
     dot.className = "site-dot";
+    if (p.e !== 1) dot.style.background = COLORS.match;
 
     const info = document.createElement("div");
     info.className = "site-info";
@@ -545,6 +580,9 @@ function bindControls() {
   document.querySelectorAll('input[name="imp"]').forEach((rb) => {
     rb.addEventListener("change", () => {
       if (rb.checked) state.imp = rb.value;
+      // "SFR Home" contradicts the SB preset (which requires vacant lots) —
+      // never let them silently AND into an always-empty result.
+      if (state.imp === "sfr" && state.sbPreset) state.sbPreset = false;
       syncControlsFromState();
       applyFilters();
     });

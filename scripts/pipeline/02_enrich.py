@@ -336,7 +336,8 @@ def main():
             co.write(json.dumps({
                 "type": "Feature",
                 "geometry": {"type": "Point", "coordinates": [round(rep.x, 6), round(rep.y, 6)]},
-                "properties": {"ain": ain, "a": addr, "e": e_flag, "v": v_flag, "lsf": lot_sqft, "t": tier},
+                "properties": {"ain": ain, "a": addr, "e": e_flag, "v": v_flag, "lsf": lot_sqft,
+                               "t": tier, "zc": zc, "zf": zf, "uc": use_code, "w": width_ft},
             }, separators=(",", ":")) + "\n")
             stats["written"] += 1
 
