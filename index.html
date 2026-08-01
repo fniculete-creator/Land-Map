@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Land-Map — Ideal Land Site Targeting</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>" />
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="vendor/leaflet-draw/leaflet.draw.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <header id="sidebar-header">
+        <h1>Land-Map</h1>
+        <p class="tagline">Target your ideal land site</p>
+      </header>
+
+      <div id="search-box">
+        <input type="text" id="search-input" placeholder="Search a place (e.g. Austin, TX)…" />
+        <button id="search-btn" title="Search">Go</button>
+      </div>
+
+      <nav id="tabs">
+        <button class="tab active" data-tab="sites">Sites</button>
+        <button class="tab" data-tab="criteria">Criteria</button>
+        <button class="tab" data-tab="data">Data</button>
+      </nav>
+
+      <!-- SITES TAB -->
+      <section id="tab-sites" class="tab-panel active">
+        <div class="panel-hint">
+          Use the map tools (top-left) to drop a pin or draw a parcel boundary.
+          Sites are ranked by weighted score.
+        </div>
+        <ul id="site-list"></ul>
+        <div id="empty-sites" class="empty-state">
+          No sites yet. Add one from the map to start comparing.
+        </div>
+      </section>
+
+      <!-- CRITERIA TAB -->
+      <section id="tab-criteria" class="tab-panel">
+        <div class="panel-hint">
+          Define what makes a site “ideal” for you. Weight each criterion
+          (0–10), then rate every site against them (1–5).
+        </div>
+        <ul id="criteria-list"></ul>
+        <form id="add-criterion-form">
+          <input type="text" id="new-criterion-name" placeholder="New criterion (e.g. School district)" maxlength="40" required />
+          <button type="submit">Add</button>
+        </form>
+      </section>
+
+      <!-- DATA TAB -->
+      <section id="tab-data" class="tab-panel">
+        <div class="panel-hint">
+          Everything is saved automatically in your browser. Export to back up
+          or share, import to restore.
+        </div>
+        <div class="data-actions">
+          <button id="export-btn">Export JSON</button>
+          <label class="file-btn">
+            Import JSON
+            <input type="file" id="import-input" accept=".json,application/json" hidden />
+          </label>
+          <button id="clear-btn" class="danger">Clear all data</button>
+        </div>
+      </section>
+    </aside>
+
+    <main id="map"></main>
+
+    <!-- SITE DETAIL DRAWER -->
+    <div id="site-detail" class="hidden">
+      <div id="detail-header">
+        <span id="detail-score" class="score-badge">–</span>
+        <input type="text" id="detail-name" maxlength="60" />
+        <button id="detail-close" title="Close">×</button>
+      </div>
+      <div id="detail-body">
+        <div class="field-row">
+          <label>Price ($)
+            <input type="number" id="detail-price" min="0" step="1000" placeholder="e.g. 85000" />
+          </label>
+          <label>Acreage
+            <input type="number" id="detail-acreage" min="0" step="0.01" placeholder="auto from polygon" />
+          </label>
+        </div>
+        <div class="field-row">
+          <div class="derived">
+            <span class="derived-label">$/acre</span>
+            <span id="detail-price-per-acre">–</span>
+          </div>
+        </div>
+        <label class="notes-label">Notes
+          <textarea id="detail-notes" rows="2" placeholder="Listing link, seller contact, impressions…"></textarea>
+        </label>
+        <h3>Ratings</h3>
+        <div id="detail-ratings"></div>
+        <div class="detail-footer">
+          <button id="detail-zoom">Zoom to site</button>
+          <button id="detail-delete" class="danger">Delete site</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="vendor/leaflet-draw/leaflet.draw.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
