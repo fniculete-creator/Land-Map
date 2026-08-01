@@ -92,7 +92,15 @@ class Overlay:
         self.props = []
         if os.path.exists(path):
             for feat in read_ndjson(path):
-                geom = make_valid(shape(feat["geometry"]))
+                gj = feat.get("geometry")
+                if not gj:
+                    continue  # services occasionally emit null geometries
+                try:
+                    geom = make_valid(shape(gj))
+                except Exception:
+                    continue
+                if geom.is_empty:
+                    continue
                 self.geoms.append(geom)
                 self.props.append(feat.get("properties") or {})
         self.tree = STRtree(self.geoms) if self.geoms else None
