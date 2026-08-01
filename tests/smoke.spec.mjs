@@ -76,6 +76,9 @@ const popup = await page.evaluate(() => ({
 }));
 assert(/^APN \d+/.test(popup.title), `popup shows APN (${popup.title})`);
 assert(popup.assessorHref.includes("portal.assessor.lacounty.gov/parceldetail/"), "popup links to assessor portal");
+const svHref = await page.evaluate(() =>
+  document.querySelector('.maplibregl-popup a[href*="google.com/maps"]')?.href || "");
+assert(svHref.includes("layer=c&cbll="), "popup links to Google Street View");
 
 // Candidates stat + list should reflect only qualifying (colored) parcels.
 const candStat = await page.evaluate(() => Number(document.getElementById("stat-candidates").textContent.replace(/,/g, "")));

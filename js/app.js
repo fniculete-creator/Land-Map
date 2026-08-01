@@ -215,8 +215,11 @@ function renderList(candidates, detailed) {
 
 /* ---------------- popup ---------------- */
 
-function popupHtml(p) {
+function popupHtml(p, lngLat) {
   const acres = (p.lsf / 43560).toFixed(2);
+  const svLink = lngLat
+    ? `<a href="${CONFIG.STREETVIEW_URL(lngLat.lat.toFixed(6), lngLat.lng.toFixed(6))}" target="_blank" rel="noopener">Street View ↗</a>`
+    : "";
   const badges = [];
   if (p.e === 1) badges.push('<span class="badge badge-ok">SB 1123 candidate</span>');
   if (p.v === 1) badges.push('<span class="badge badge-vacant">Vacant</span>');
@@ -240,6 +243,7 @@ function popupHtml(p) {
       <div class="popup-links">
         <a href="${CONFIG.ASSESSOR_URL(p.ain)}" target="_blank" rel="noopener">Assessor / owner info ↗</a>
         <a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>
+        ${svLink}
       </div>
     </div>`;
 }
@@ -369,9 +373,11 @@ function bindControls() {
 
   document.getElementById("sat-btn").addEventListener("click", () => {
     const btn = document.getElementById("sat-btn");
+    if (!map.getLayer("basemap-satellite")) return;
     const sat = map.getLayoutProperty("basemap-satellite", "visibility") === "visible";
+    // The satellite raster sits above every basemap layer, so toggling its
+    // visibility alone covers/uncovers whichever basemap is active.
     map.setLayoutProperty("basemap-satellite", "visibility", sat ? "none" : "visible");
-    map.setLayoutProperty("basemap-streets", "visibility", sat ? "visible" : "none");
     btn.classList.toggle("active", !sat);
   });
 
@@ -434,46 +440,77 @@ async function showDemoBannerIfSynthetic() {
   } catch (e) { /* metadata is optional */ }
 }
 
-map = new maplibregl.Map({
-  container: "map",
-  style: baseStyle(),
-  center: CONFIG.START_CENTER,
-  zoom: CONFIG.START_ZOOM,
-  maxZoom: 20,
-  attributionControl: { compact: true },
-});
-map.addControl(new maplibregl.NavigationControl(), "top-right");
-
-// Init on whichever fires first: 'load' normally, or 'styledata' when
-// unreachable basemap tile servers keep the map from ever reaching 'load'.
-let inited = false;
-function init() {
-  if (inited) return;
-  inited = true;
-  syncControlsFromState();
-  applyFilters();
-  showDemoBannerIfSynthetic();
+// Prefer the key-free vector basemap (clean gray cartography); fall back to
+// the raster style — and ultimately a plain background — when unreachable.
+async function buildStyle() {
+  const fallback = baseStyle();
+  if (!CONFIG.BASEMAP_STYLE_URL) return fallback;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const resp = await fetch(CONFIG.BASEMAP_STYLE_URL, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!resp.ok) throw new Error("style fetch " + resp.status);
+    const base = await resp.json();
+    base.sources = {
+      ...base.sources,
+      satellite: fallback.sources.satellite,
+      parcels: fallback.sources.parcels,
+    };
+    const overlayIds = new Set([
+      "basemap-satellite", "demo-streets", "centroids",
+      "parcels-fill", "parcels-line", "parcels-selected",
+    ]);
+    base.layers = [...base.layers, ...fallback.layers.filter((l) => overlayIds.has(l.id))];
+    return base;
+  } catch (e) {
+    return fallback;
+  }
 }
-map.on("load", init);
-map.on("styledata", init);
 
-map.on("idle", scheduleCount);
-map.on("moveend", scheduleCount);
-map.on("sourcedata", scheduleCount);
+async function boot() {
+  map = new maplibregl.Map({
+    container: "map",
+    style: await buildStyle(),
+    center: CONFIG.START_CENTER,
+    zoom: CONFIG.START_ZOOM,
+    maxZoom: 20,
+    attributionControl: { compact: true },
+  });
+  map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-map.on("click", "parcels-fill", (e) => {
-  const p = e.features[0].properties;
-  selectedAin = p.ain;
-  applyFilters();
-  new maplibregl.Popup({ maxWidth: "320px" })
-    .setLngLat(e.lngLat)
-    .setHTML(popupHtml(p))
-    .addTo(map);
-});
-map.on("click", "centroids", (e) => {
-  map.easeTo({ center: e.lngLat, zoom: 14 });
-});
-map.on("mouseenter", "parcels-fill", () => { map.getCanvas().style.cursor = "pointer"; });
-map.on("mouseleave", "parcels-fill", () => { map.getCanvas().style.cursor = ""; });
+  // Init on whichever fires first: 'load' normally, or 'styledata' when
+  // unreachable basemap tile servers keep the map from ever reaching 'load'.
+  let inited = false;
+  function init() {
+    if (inited) return;
+    inited = true;
+    syncControlsFromState();
+    applyFilters();
+    showDemoBannerIfSynthetic();
+  }
+  map.on("load", init);
+  map.on("styledata", init);
 
-bindControls();
+  map.on("idle", scheduleCount);
+  map.on("moveend", scheduleCount);
+  map.on("sourcedata", scheduleCount);
+
+  map.on("click", "parcels-fill", (e) => {
+    const p = e.features[0].properties;
+    selectedAin = p.ain;
+    applyFilters();
+    new maplibregl.Popup({ maxWidth: "320px" })
+      .setLngLat(e.lngLat)
+      .setHTML(popupHtml(p, e.lngLat))
+      .addTo(map);
+  });
+  map.on("click", "centroids", (e) => {
+    map.easeTo({ center: e.lngLat, zoom: 14 });
+  });
+  map.on("mouseenter", "parcels-fill", () => { map.getCanvas().style.cursor = "pointer"; });
+  map.on("mouseleave", "parcels-fill", () => { map.getCanvas().style.cursor = ""; });
+
+  bindControls();
+}
+boot();
