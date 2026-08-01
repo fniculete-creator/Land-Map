@@ -3,116 +3,149 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Land-Map — LA Development Site Targeting</title>
+  <title>Land — LAAA Team | LA Development Site Targeting</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>" />
   <link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
   <div id="app">
-    <aside id="sidebar">
-      <header id="sidebar-header">
-        <h1>Land-Map</h1>
-        <p class="tagline">LA City development site targeting</p>
-      </header>
-
-      <div id="demo-banner" class="hidden">
-        Demo dataset — <strong>synthetic parcels</strong>, not real LA data.
-        See README to build the full city tileset.
+    <header id="topbar">
+      <div id="brand">
+        <span id="brand-sub">LAAA Team</span>
+        <span id="brand-name">L A N D</span>
       </div>
-
-      <div id="preset-box">
-        <button id="sb1123-btn" title="Vacant SF lots ≤1.5 ac / MF lots ≤5 ac, outside High &amp; Very High fire zones">
-          ⚡ SB 1123 / SB 684 eligible
-        </button>
-        <button id="reset-btn" title="Clear all filters">Reset</button>
+      <div id="search-box">
+        <input type="text" id="search-input" placeholder="Search a city, ZIP, or neighborhood…" />
       </div>
-
-      <div id="sb1123-explainer" class="hidden">
-        <strong>SB 1123 / SB 684 screening preset</strong>
-        <ul>
-          <li>Vacant lot (no/negligible improvements)</li>
-          <li>Single-family zone &amp; lot ≤ 1.5 acres, or multifamily zone &amp; lot ≤ 5 acres</li>
-          <li>Outside High / Very High fire hazard zones</li>
-          <li><em>Coastal</em> parcels stay eligible but lose ministerial streamlining (Coastal Development Permit required) — shown with a warning.</li>
-          <li><em>Hillside</em> parcels flagged — extra development constraints.</li>
-        </ul>
-        <p>Screening heuristic only — verify every lot in ZIMAS and with counsel.</p>
+      <div id="topbar-right">
+        <button id="sat-btn" title="Toggle satellite">Satellite</button>
       </div>
+    </header>
 
-      <div id="filters">
-        <details open>
-          <summary>Lot dimensions</summary>
-          <div class="filter-group" id="fg-dimensions">
-            <label class="range-label">Lot width (ft)
-              <span class="range-row">
-                <input type="number" id="w-min" placeholder="min" min="0" />
-                <span>–</span>
-                <input type="number" id="w-max" placeholder="max" min="0" />
-              </span>
-            </label>
-            <label class="range-label">Lot size (sqft)
-              <span class="range-row">
-                <input type="number" id="lsf-min" placeholder="min" min="0" />
-                <span>–</span>
-                <input type="number" id="lsf-max" placeholder="max" min="0" />
-              </span>
-            </label>
-            <label class="range-label">Units on lot
-              <span class="range-row">
-                <input type="number" id="u-min" placeholder="min" min="0" />
-                <span>–</span>
-                <input type="number" id="u-max" placeholder="max" min="0" />
-              </span>
-            </label>
+    <nav id="filterbar">
+      <span id="filter-label">Filter</span>
+
+      <button id="sb1123-btn" class="pill pill-primary"
+              title="Vacant SF lots ≤1.5 ac / MF lots ≤5 ac; fire, coastal &amp; hillside excluded">
+        SB 1123 candidates
+      </button>
+
+      <div class="dropdown" data-dd="width">
+        <button class="pill" data-dd-btn>Width <span class="pill-val" id="pv-width"></span> <span class="caret">▾</span></button>
+        <div class="dd-panel">
+          <label>Lot width (ft)</label>
+          <div class="range-row">
+            <input type="number" id="w-min" placeholder="min" min="0" />
+            <span>–</span>
+            <input type="number" id="w-max" placeholder="max" min="0" />
           </div>
-        </details>
-
-        <details open>
-          <summary>Zoning</summary>
-          <div class="filter-group" id="fg-zoning">
-            <div class="zone-group" data-group="sf">
-              <label><input type="checkbox" class="zone-family" value="1" /> Single-family (R1, RS, RE, RA…)</label>
-            </div>
-            <div class="zone-group" data-group="mf">
-              <label><input type="checkbox" class="zone-family" value="2" /> Multifamily (R2, R3, R4, RD…)</label>
-            </div>
-            <div class="zone-group" data-group="other">
-              <label><input type="checkbox" class="zone-family" value="0" /> Commercial / industrial / other</label>
-            </div>
-            <input type="text" id="zone-text" placeholder="or exact zone classes, e.g. R1,RD1.5" />
-          </div>
-        </details>
-
-        <details open>
-          <summary>Market tier</summary>
-          <div class="filter-group" id="fg-tiers">
-            <label class="tier-label"><input type="checkbox" class="tier-cb" id="tier-A" value="A" /> <span class="tier-chip tier-a">A</span> Westside</label>
-            <label class="tier-label"><input type="checkbox" class="tier-cb" id="tier-B" value="B" /> <span class="tier-chip tier-b">B</span> South Valley</label>
-            <label class="tier-label"><input type="checkbox" class="tier-cb" id="tier-C" value="C" /> <span class="tier-chip tier-c">C</span> Central &amp; North Valley</label>
-            <p class="tri-hint">None checked = all tiers</p>
-          </div>
-        </details>
-
-        <details open>
-          <summary>Status &amp; overlays</summary>
-          <div class="filter-group" id="fg-overlays">
-            <div class="tri-row" data-key="v"><span>Vacant</span><div class="tri" data-state="any"></div></div>
-            <div class="tri-row" data-key="f"><span>Fire hazard (High/VH)</span><div class="tri" data-state="any"></div></div>
-            <div class="tri-row" data-key="c"><span>Coastal zone</span><div class="tri" data-state="any"></div></div>
-            <div class="tri-row" data-key="h"><span>Hillside area</span><div class="tri" data-state="any"></div></div>
-            <p class="tri-hint">Click to cycle: any → only → exclude</p>
-          </div>
-        </details>
+        </div>
       </div>
 
-      <div id="results-bar">
-        <span id="result-count">–</span>
-        <span id="result-label">parcels in view</span>
+      <div class="dropdown" data-dd="lot">
+        <button class="pill" data-dd-btn>Lot size <span class="pill-val" id="pv-lot"></span> <span class="caret">▾</span></button>
+        <div class="dd-panel">
+          <label>Lot size (sqft)</label>
+          <div class="range-row">
+            <input type="number" id="lsf-min" placeholder="min" min="0" />
+            <span>–</span>
+            <input type="number" id="lsf-max" placeholder="max" min="0" />
+          </div>
+        </div>
       </div>
-    </aside>
 
-    <main id="map"></main>
+      <div class="dropdown" data-dd="units">
+        <button class="pill" data-dd-btn>Units <span class="pill-val" id="pv-units"></span> <span class="caret">▾</span></button>
+        <div class="dd-panel">
+          <label>Units on lot</label>
+          <div class="range-row">
+            <input type="number" id="u-min" placeholder="min" min="0" />
+            <span>–</span>
+            <input type="number" id="u-max" placeholder="max" min="0" />
+          </div>
+        </div>
+      </div>
+
+      <div class="dropdown" data-dd="zoning">
+        <button class="pill" data-dd-btn>Zoning <span class="pill-val" id="pv-zoning"></span> <span class="caret">▾</span></button>
+        <div class="dd-panel">
+          <label class="check-label"><input type="checkbox" class="zone-family" value="1" /> Single-family (R1, RS, RE, RA…)</label>
+          <label class="check-label"><input type="checkbox" class="zone-family" value="2" /> Multifamily (R2, R3, R4, RD…)</label>
+          <label class="check-label"><input type="checkbox" class="zone-family" value="0" /> Commercial / industrial / other</label>
+          <input type="text" id="zone-text" placeholder="or exact classes, e.g. R1,RD1.5" />
+        </div>
+      </div>
+
+      <div class="dropdown" data-dd="tier">
+        <button class="pill" data-dd-btn>Tier <span class="pill-val" id="pv-tier"></span> <span class="caret">▾</span></button>
+        <div class="dd-panel">
+          <label class="check-label"><input type="checkbox" class="tier-cb" id="tier-A" value="A" /> <span class="tier-chip tier-a">A</span> Westside</label>
+          <label class="check-label"><input type="checkbox" class="tier-cb" id="tier-B" value="B" /> <span class="tier-chip tier-b">B</span> South Valley</label>
+          <label class="check-label"><input type="checkbox" class="tier-cb" id="tier-C" value="C" /> <span class="tier-chip tier-c">C</span> Central &amp; North Valley</label>
+        </div>
+      </div>
+
+      <div class="dropdown" data-dd="status">
+        <button class="pill" data-dd-btn>Status <span class="pill-val" id="pv-status"></span> <span class="caret">▾</span></button>
+        <div class="dd-panel">
+          <label class="check-label"><input type="radio" name="vac" value="any" checked /> Any</label>
+          <label class="check-label"><input type="radio" name="vac" value="only" /> Vacant only</label>
+          <label class="check-label"><input type="radio" name="vac" value="exclude" /> Exclude vacant</label>
+          <p class="dd-hint">Fire, coastal &amp; hillside parcels never qualify — excluded from candidates automatically.</p>
+        </div>
+      </div>
+
+      <button id="reset-btn" class="pill pill-ghost">Clear</button>
+    </nav>
+
+    <div id="main">
+      <aside id="sidepanel">
+        <div id="demo-banner" class="hidden">
+          Demo — <strong>synthetic parcels</strong>, not real LA data.
+        </div>
+
+        <div id="stat-tiles">
+          <div class="stat-tile stat-active">
+            <span class="stat-num" id="result-count">–</span>
+            <span class="stat-label" id="result-label">parcels in view</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-num stat-green" id="stat-candidates">–</span>
+            <span class="stat-label">candidates</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-num" id="stat-medlot">–</span>
+            <span class="stat-label">median lot sf</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-num" id="stat-medwidth">–</span>
+            <span class="stat-label">median width ft</span>
+          </div>
+        </div>
+
+        <div id="sb1123-explainer" class="hidden">
+          <strong>SB 1123 / SB 684 screening</strong>
+          <ul>
+            <li>Vacant lot (no/negligible improvements)</li>
+            <li>SF zone &amp; ≤ 1.5 ac, or MF zone &amp; ≤ 5 ac</li>
+            <li>Fire, coastal &amp; hillside excluded automatically</li>
+          </ul>
+          <p>Screening only — verify in ZIMAS and with counsel.</p>
+        </div>
+
+        <div id="list-header">
+          <span>Candidates in view</span>
+          <span id="list-count"></span>
+        </div>
+        <ul id="site-list"></ul>
+        <div id="empty-sites" class="empty-state">
+          No qualifying parcels in view. Zoom or pan the map, or relax filters.
+        </div>
+      </aside>
+
+      <main id="map"></main>
+    </div>
   </div>
 
   <script src="vendor/pmtiles/pmtiles.js"></script>

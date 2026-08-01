@@ -1,11 +1,13 @@
-# Land-Map — LA City Development Site Targeting
+# Land (LAAA Team) — LA Development Site Targeting
 
-An interactive parcel map for finding development sites in the City of Los
-Angeles. Filter every parcel by the criteria that decide whether a deal pencils —
-**lot width, lot size, units on lot, zoning, fire hazard zone, coastal zone,
-hillside area** — with a one-click preset for **SB 1123 / SB 684 small-home
-subdivision** candidates. Click any parcel for its details and a direct link to
-its LA County Assessor page (ownership info).
+An interactive parcel map for finding development sites in Los Angeles,
+styled after the team's comps tool and intended to live at **land.laaa.com**.
+Every parcel renders in neutral gray; **only qualifying SB 1123 / SB 684
+candidates are colored** — vacant lots within the acreage caps, with fire
+hazard, coastal zone, and hillside parcels excluded automatically. Filter by
+lot width, lot size, units, zoning, and market tier (A Westside / B South
+Valley / C Central & North Valley); click any parcel for details and a direct
+link to its LA County Assessor page (ownership info).
 
 Static architecture: all ~780k city parcels are preprocessed into a single
 [PMTiles](https://protomaps.com/docs/pmtiles) vector-tile file with every
@@ -56,24 +58,31 @@ code needed.
 
 ## Using the app
 
-- **SB 1123 / SB 684 button** — one click applies the screening preset:
-  vacant lots, outside High/Very High fire hazard zones, single-family zone
-  ≤ 1.5 ac or multifamily zone ≤ 5 ac. Coastal parcels stay in the results
-  but carry a red warning (they keep eligibility but lose ministerial
-  streamlining — a Coastal Development Permit is required). Hillside parcels
-  are likewise flagged, not excluded.
-- **Filters** — min/max lot width, lot size, and units; zoning by family
-  (single-family / multifamily / other) or exact zone classes; tri-state
-  controls (any / only / exclude) for vacant, fire, coastal, and hillside.
-- **Colors** — green = SB-candidate, amber = vacant (but not SB-eligible),
-  gray = everything else; red dashed outline = fire/coastal/hillside warning.
-  Zoomed out (< z13), parcels display as dots.
-- **Parcel popup** — zoning, use code, units, lot size, computed width,
+- **SB 1123 candidates button** — shows only qualifying parcels: vacant,
+  single-family zone ≤ 1.5 ac or multifamily zone ≤ 5 ac. Fire hazard
+  (High/Very High), coastal zone, and hillside parcels never qualify and are
+  excluded from candidates automatically (their popups say why).
+- **Filter pills** — min/max lot width, lot size, and units; zoning by family
+  (single-family / multifamily / other) or exact zone classes; market tier
+  (A/B/C); vacancy status.
+- **Colors** — green = qualifying candidate; every other parcel stays
+  neutral gray. Zoomed out (< z13), parcels display as dots.
+- **Left panel** — stat tiles (parcels in view, candidates, median lot size
+  and width) plus a ranked candidates list; click a row to zoom to the lot.
+- **Parcel popup** — tier, zoning, use code, units, lot size, computed width,
   improvement value, and links to the **Assessor portal** (ownership — CA law
   keeps owner names out of bulk open data, so it's one click away per parcel)
   and **ZIMAS**.
 - **Share a search** — filter state lives in the URL hash; copy the link.
 - **Satellite toggle** — top-right button.
+
+## Hosting at land.laaa.com
+
+The app is static files — deploy the repo (minus `data/raw|enriched|tiles`)
+to any web server or CDN behind land.laaa.com. Requirements: serve
+`.pmtiles` with HTTP **Range** support (nginx/Apache/S3/R2 all do) and, if
+the tileset lives on another host, CORS for the site origin. Point
+`PMTILES_URL` in `js/config.js` at the tileset and it's live.
 
 ## Data & caveats
 

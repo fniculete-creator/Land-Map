@@ -3,22 +3,22 @@
 //   ranges: { w: [min,max|null], lsf: [...], u: [...] }   (null = unbounded)
 //   zoneFamilies: Set of 0/1/2 (empty = all)
 //   zoneClasses: array of exact zone-class strings (overrides families if set)
-//   tri: { v, f, c, h } each "any" | "only" | "exclude"
+//   tri: { v } "any" | "only" | "exclude"  (vacancy; fire/coastal/hillside
+//   are hard exclusions inside the eligibility flag, not filters)
 export function emptyState() {
   return {
     ranges: { w: [null, null], lsf: [null, null], u: [null, null] },
     zoneFamilies: new Set(),
     zoneClasses: [],
     tiers: new Set(),
-    tri: { v: "any", f: "any", c: "any", h: "any" },
+    tri: { v: "any" },
   };
 }
 
 export function sb1123State(cfg) {
+  // The 'e' attribute already encodes vacant + fire/coastal/hillside
+  // exclusions + zone-family acreage caps, computed in the pipeline.
   const s = emptyState();
-  s.tri.v = "only";
-  s.tri.f = "exclude";
-  // Zone-family-aware acreage caps live in buildFilter's special-case below.
   s.sbPreset = true;
   return s;
 }
@@ -43,20 +43,11 @@ export function buildFilter(state, cfg) {
 
   for (const [key, mode] of Object.entries(state.tri)) {
     if (mode === "any") continue;
-    if (key === "f") {
-      // fire is 0/1/2: "only" = in a hazard zone, "exclude" = outside both.
-      clauses.push(mode === "only" ? [">=", ["get", "f"], 1] : ["==", ["get", "f"], 0]);
-    } else {
-      clauses.push(["==", ["get", key], mode === "only" ? 1 : 0]);
-    }
+    clauses.push(["==", ["get", key], mode === "only" ? 1 : 0]);
   }
 
   if (state.sbPreset) {
-    clauses.push([
-      "any",
-      ["all", ["==", ["get", "zf"], 1], ["<=", ["get", "lsf"], cfg.SB_SF_MAX_SQFT]],
-      ["all", ["==", ["get", "zf"], 2], ["<=", ["get", "lsf"], cfg.SB_MF_MAX_SQFT]],
-    ]);
+    clauses.push(["==", ["get", "e"], 1]);
   }
 
   return clauses.length > 1 ? clauses : null;
@@ -106,7 +97,7 @@ export function stateFromHash(hash) {
   if (p.get("zc")) state.zoneClasses = p.get("zc").split(",").filter(Boolean);
   else if (p.get("zf")) state.zoneFamilies = new Set(p.get("zf").split(",").map(Number));
   if (p.get("t")) state.tiers = new Set(p.get("t").split(",").filter(Boolean));
-  for (const key of ["v", "f", "c", "h"]) {
+  for (const key of ["v"]) {
     const v = p.get(key);
     if (v === "1") state.tri[key] = "only";
     else if (v === "0") state.tri[key] = "exclude";

@@ -185,6 +185,26 @@ def main():
                 "properties": {"ZONE_CMPLT": zone, "ZONE_CLASS": zc},
             }, separators=(",", ":")) + "\n")
 
+    # Street grid along block boundaries, so the demo tileset reads as a map
+    # even without an external basemap (self-contained preview builds). The
+    # real-data pipeline never produces this file; the deployed app uses
+    # OSM/satellite basemaps instead.
+    with open(raw_path("streets"), "w") as f:
+        for c in range(cols + 1):
+            x = west + c * block_w_deg
+            f.write(json.dumps({
+                "type": "Feature",
+                "geometry": {"type": "LineString", "coordinates": [[x, south], [x, north]]},
+                "properties": {"cls": "major" if c % 5 == 0 else "minor"},
+            }, separators=(",", ":")) + "\n")
+        for r in range(rows + 1):
+            y = south + r * block_h_deg
+            f.write(json.dumps({
+                "type": "Feature",
+                "geometry": {"type": "LineString", "coordinates": [[west, y], [east, y]]},
+                "properties": {"cls": "major" if r % 6 == 0 else "minor"},
+            }, separators=(",", ":")) + "\n")
+
     # Mark raw data as synthetic so 02_enrich can watermark the tileset.
     with open(raw_path("parcels") + ".meta", "w") as f:
         json.dump({"synthetic": True, "seed": args.seed, "count": n_parcels}, f)

@@ -30,9 +30,16 @@ except Exception:
     print('false')
 ")
 
+# Fixture builds include a synthetic street grid so the demo reads as a map.
+STREETS_LAYER=()
+if [ -s "$REPO/data/raw/streets.ndjson" ]; then
+  STREETS_LAYER=(-L "streets:$REPO/data/raw/streets.ndjson")
+fi
+
 tippecanoe -o "$OUT" --force --quiet \
   -L parcels:"$ENRICHED/parcels.ndjson" \
   -L centroids:"$ENRICHED/centroids.ndjson" \
+  "${STREETS_LAYER[@]}" \
   --minimum-zoom=8 --maximum-zoom=15 \
   -j '{"parcels":["any",[">=","$zoom",13]],"centroids":["any",["<=","$zoom",12]]}' \
   --coalesce-densest-as-needed \

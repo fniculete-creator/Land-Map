@@ -77,16 +77,24 @@ const popup = await page.evaluate(() => ({
 assert(/^APN \d+/.test(popup.title), `popup shows APN (${popup.title})`);
 assert(popup.assessorHref.includes("portal.assessor.lacounty.gov/parceldetail/"), "popup links to assessor portal");
 
-// SB 1123 preset must strictly reduce the visible parcel count.
+// Candidates stat + list should reflect only qualifying (colored) parcels.
+const candStat = await page.evaluate(() => Number(document.getElementById("stat-candidates").textContent.replace(/,/g, "")));
+assert(candStat > 0 && candStat < baseline.parcels, `candidates stat is a strict subset (${candStat}/${baseline.parcels})`);
+const listRows = await page.evaluate(() => document.querySelectorAll("#site-list .site-item").length);
+assert(listRows > 0, `candidates list is populated (${listRows} rows)`);
+
+// SB 1123 preset must show only qualifying parcels.
 await page.click("#sb1123-btn");
 await page.waitForTimeout(1200);
 const afterPreset = await counts();
 assert(afterPreset.parcels < baseline.parcels, `SB preset reduced parcels ${baseline.parcels} -> ${afterPreset.parcels}`);
 assert(afterPreset.parcels > 0, `SB preset still shows candidates (${afterPreset.parcels})`);
+assert(afterPreset.parcels === candStat, `SB preset count matches candidates stat (${afterPreset.parcels})`);
 const hash = await page.evaluate(() => location.hash);
 assert(hash.includes("sb=1"), `filter state serialized to URL hash (${hash})`);
 
-// Range filter: min lot size high enough to cut the SB set further.
+// Range filter lives in the Lot size dropdown: open it, set a min.
+await page.click('.dropdown[data-dd="lot"] [data-dd-btn]');
 await page.fill("#lsf-min", "6000");
 await page.dispatchEvent("#lsf-min", "change");
 await page.waitForTimeout(1200);
@@ -99,8 +107,8 @@ await page.waitForTimeout(1200);
 const afterReset = await counts();
 assert(afterReset.parcels === baseline.parcels, `reset restores baseline (${afterReset.parcels})`);
 
-// Tier filter: fixture parcels are all Tier A (Westside box). Selecting only
-// Tier B must hide everything; adding Tier A restores the full set.
+// Tier filter (in the Tier dropdown): fixture parcels are all Tier A.
+await page.click('.dropdown[data-dd="tier"] [data-dd-btn]');
 await page.check("#tier-B");
 await page.waitForTimeout(1200);
 const tierB = await counts();

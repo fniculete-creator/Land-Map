@@ -57,14 +57,13 @@ def is_vacant(props_use_code, props_use_type, units, improvement_value, vac_cfg)
     return units == 0 and improvement_value < vac_cfg["improvement_value_max"]
 
 
-def sb1123_eligible(vacant, fire, zf, lot_sqft, sb_cfg):
+def sb1123_eligible(vacant, fire, coastal, hillside, zf, lot_sqft, sb_cfg):
     """Screening heuristic for SB 1123 (vacant SF lots) / SB 684 (MF lots).
 
-    Coastal and hillside do NOT disqualify here: coastal keeps eligibility but
-    loses ministerial streamlining, hillside adds constraints — both are
-    surfaced as warnings in the UI instead.
+    Fire (High/Very High), coastal zone, and hillside all disqualify — the
+    map colors qualifying parcels only, and these don't qualify.
     """
-    if not vacant or fire != 0:
+    if not vacant or fire != 0 or coastal or hillside:
         return 0
     if zf == 1 and lot_sqft <= sb_cfg["sf_max_lot_sqft"]:
         return 1
@@ -236,7 +235,7 @@ def main():
             c_flag = 1 if coastal.contains(rep) else 0
             h_flag = 1 if hillside.contains(rep) else 0
             v_flag = 1 if is_vacant(use_code, use_type, units, iv, vac_cfg) else 0
-            e_flag = sb1123_eligible(v_flag, f_cls, zf, lot_sqft, sb_cfg)
+            e_flag = sb1123_eligible(v_flag, f_cls, c_flag, h_flag, zf, lot_sqft, sb_cfg)
 
             stats["vacant"] += v_flag
             stats["eligible"] += e_flag
