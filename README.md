@@ -76,6 +76,24 @@ code needed.
 - **Share a search** — filter state lives in the URL hash; copy the link.
 - **Satellite toggle** — top-right button.
 
+## Deploying to Vercel (fastest path to a URL)
+
+The repo is a zero-build static site — Vercel serves it as-is:
+
+1. Go to [vercel.com/new](https://vercel.com/new) and import the
+   `Land-Map` GitHub repo (framework preset: **Other**; no build command;
+   output directory: repo root).
+2. Deploy — you get `https://<project>.vercel.app` in about a minute,
+   running on the bundled demo tileset.
+3. For **land.laaa.com**: Vercel project → Settings → Domains → add
+   `land.laaa.com`, then create the CNAME it shows you at your DNS host.
+
+Vercel's CDN serves static files with the HTTP Range support PMTiles
+needs, and `vercel.json` adds CORS/caching headers for tilesets. Note the
+~100 MB static-file limit: the demo tileset is fine, but host the full
+region/city tileset on Cloudflare R2 (or Vercel Blob) and point
+`PMTILES_URL` in `js/config.js` at it.
+
 ## Hosting at land.laaa.com
 
 The app is static files — deploy the repo (minus `data/raw|enriched|tiles`)
