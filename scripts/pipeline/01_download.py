@@ -101,6 +101,58 @@ def download_geojson_url(key, cfg):
     print(f"  {key}: done, {len(feats)} features -> {out}")
 
 
+def download_oid_paged(key, cfg):
+    """OBJECTID-range paging: WHERE OBJECTID > last ORDER BY OBJECTID.
+    Stays fast at any depth, unlike resultOffset which degrades badly past
+    ~1M rows on hosted feature services. Used for large attributes-only
+    pulls (cfg["oid_paging"]). Resumable via last_oid in the state file."""
+    url = cfg["url"].rstrip("/")
+    where = cfg.get("where", "1=1")
+    out = raw_path(key)
+    state = load_state(key)
+    if state.get("done"):
+        print(f"  {key}: already complete ({state.get('total_written', 0)} features), skipping")
+        return
+
+    if state.get("expected_count") is None:
+        state["expected_count"] = get_count(url, where, None)
+        save_state(key, state)
+
+    out_fields = sorted(set(cfg.get("fields", {}).values()) | {"OBJECTID"})
+    last_oid = state.get("last_oid", 0)
+    total = state.get("total_written", 0)
+    print(f"  {key}: {state['expected_count']} expected, OID paging from OBJECTID>{last_oid}")
+    with open(out, "w" if total == 0 else "a") as fh:
+        while True:
+            params = {
+                "where": f"({where}) AND OBJECTID > {last_oid}",
+                "outFields": ",".join(out_fields),
+                "f": "json",
+                "returnGeometry": "false",
+                "resultRecordCount": PAGE_SIZE,
+                "orderByFields": "OBJECTID",
+            }
+            body = request_json(f"{url}/query", params)
+            feats = body.get("features", [])
+            if not feats:
+                break
+            for feat in feats:
+                attrs = feat.get("attributes", {})
+                fh.write(json.dumps({"type": "Feature", "geometry": None,
+                                     "properties": attrs}, separators=(",", ":")) + "\n")
+            last_oid = feats[-1]["attributes"]["OBJECTID"]
+            total += len(feats)
+            state.update({"last_oid": last_oid, "total_written": total, "offset": total})
+            save_state(key, state)
+            print(f"    {total}/{state['expected_count']}", end="\r", flush=True)
+            if len(feats) < PAGE_SIZE:
+                break
+    print()
+    state["done"] = True
+    save_state(key, state)
+    print(f"  {key}: done, {total} features -> {out}")
+
+
 def download_source(key, cfg, bboxes, use_situs_where):
     """bboxes: list of bbox-or-None; each is paged fully in turn. Progress is
     resumable across both pages (offset) and boxes (bbox_i). Where boxes
@@ -109,6 +161,9 @@ def download_source(key, cfg, bboxes, use_situs_where):
     features are written with null geometry."""
     if cfg.get("download_url"):
         download_geojson_url(key, cfg)
+        return
+    if cfg.get("oid_paging"):
+        download_oid_paged(key, cfg)
         return
 
     url = cfg["url"].rstrip("/")

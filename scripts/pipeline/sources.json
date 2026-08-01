@@ -57,6 +57,7 @@
     "name": "LA County Assessor Parcels 2025 (use codes only, attributes-only download)",
     "url": "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/ASSR_PARCELS_25_View/FeatureServer/0",
     "attributes_only": true,
+    "oid_paging": true,
     "fields": {
       "ain": "AIN",
       "use_code": "UseCode"
