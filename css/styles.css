@@ -40,21 +40,39 @@ html, body {
   flex-shrink: 0;
 }
 
-#brand { display: flex; flex-direction: column; line-height: 1.15; white-space: nowrap; }
+#brand { display: flex; align-items: center; gap: 14px; white-space: nowrap; }
+
+#brand-mm { display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
+
+#brand-mm-name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.92rem;
+  color: #fff;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.55);
+  padding-bottom: 2px;
+}
+
+#brand-mm-team {
+  font-size: 0.58rem;
+  color: #cbd7e2;
+  text-transform: uppercase;
+  letter-spacing: 2.4px;
+  margin-top: 2px;
+}
+
+#brand-divider {
+  width: 1px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.28);
+}
 
 #brand-name {
   font-family: Georgia, "Times New Roman", serif;
   font-weight: 700;
-  letter-spacing: 4px;
-  font-size: 1.18rem;
-  color: #d9b45c;
-}
-
-#brand-sub {
-  font-size: 0.62rem;
-  color: #9db1c5;
-  text-transform: uppercase;
-  letter-spacing: 1.6px;
+  letter-spacing: 8px;
+  font-size: 1.3rem;
+  color: #f2a33c;
 }
 
 #search-box { flex: 1; max-width: 560px; }
@@ -402,5 +420,5 @@ html, body {
 @media (max-width: 860px) {
   #main { flex-direction: column; }
   #sidepanel { width: 100%; min-width: 0; max-height: 45vh; }
-  #brand-sub { display: none; }
+  #brand-mm, #brand-divider { display: none; }
 }
