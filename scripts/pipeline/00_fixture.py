@@ -148,9 +148,12 @@ def main():
                         # Roughly 30% of vacant lots have no assigned situs
                         # address, mirroring the real assessor roll.
                         house_no = 100 * r + 2 * int((x - bw) / lot_w_deg + 1) + half + 300
-                        addr = f"{house_no} {street_for_col(c)}"
+                        addr = f"{house_no} {street_for_col(c)} LOS ANGELES CA"
                         if use_type == "Vacant" and rng.random() < 0.3:
                             addr = ""
+                        sale = ""
+                        if rng.random() < 0.7:
+                            sale = f"{rng.randint(1988, 2025)}{rng.randint(1, 12):02d}{rng.randint(1, 28):02d}"
                         feat = {
                             "type": "Feature",
                             "geometry": {"type": "Polygon", "coordinates": coords},
@@ -158,10 +161,10 @@ def main():
                                 "AIN": str(ain),
                                 "UseCode": use_code,
                                 "UseType": use_type,
-                                "Units": units,
                                 "Roll_ImpValue": iv,
-                                "SitusCity": "LOS ANGELES CA",
-                                "SitusAddress": addr,
+                                "Roll_LandValue": rng.randint(150000, 900000),
+                                "SitusFullAddress": addr,
+                                "LastSaleDate": sale or "00000000",
                             },
                         }
                         pf.write(json.dumps(feat, separators=(",", ":")) + "\n")

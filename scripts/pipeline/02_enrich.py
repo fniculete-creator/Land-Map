@@ -47,14 +47,26 @@ def zone_family(zc):
     return 0
 
 
-def is_vacant(props_use_code, props_use_type, units, improvement_value, vac_cfg):
+def is_vacant(props_use_code, props_use_type, units, improvement_value, land_value, vac_cfg):
     uc = (props_use_code or "").strip().upper()
     ut = (props_use_type or "").strip().lower()
-    if any(uc.startswith(p.upper()) for p in vac_cfg["vacant_use_codes"]):
-        return True
+    if uc:
+        # Use codes are authoritative when present: vacant codes end in V
+        # (e.g. 010V residential vacant) or match the configured list.
+        if uc.endswith("V") or any(uc.startswith(p.upper()) for p in vac_cfg["vacant_use_codes"]):
+            return True
     if any(ut == t.lower() for t in vac_cfg["vacant_use_types"]):
         return True
-    return units == 0 and improvement_value < vac_cfg["improvement_value_max"]
+    # Value heuristic (used when no use code): improvements negligible both
+    # absolutely and relative to land, guarding against Prop-13 low bases.
+    if units > 0:
+        return False
+    if improvement_value >= vac_cfg["improvement_value_max"]:
+        return False
+    ratio_max = vac_cfg.get("improvement_land_ratio_max", 1.0)
+    if land_value > 0 and improvement_value > ratio_max * land_value:
+        return False
+    return True
 
 
 def sb1123_eligible(vacant, fire, coastal, hillside, zf, lot_sqft, sb_cfg):
@@ -130,6 +142,19 @@ def main():
                 return letter
         return ""
 
+    # Optional AIN -> current use code map (attributes-only download).
+    usecode_map = {}
+    uc_path = raw_path("parcels_usecode")
+    if os.path.exists(uc_path):
+        uc_cfg = sources.get("parcels_usecode", {}).get("fields", {})
+        ain_f, code_f = uc_cfg.get("ain", "AIN"), uc_cfg.get("use_code", "UseCode")
+        for feat in read_ndjson(uc_path):
+            p = feat.get("properties") or {}
+            a, c = str(p.get(ain_f) or "").strip(), str(p.get(code_f) or "").strip()
+            if a and c:
+                usecode_map[a] = c
+        print(f"use codes loaded for {len(usecode_map)} parcels")
+
     print("loading overlays...")
     boundary = Overlay(raw_path("city_boundary"))
     zoning = Overlay(raw_path("zoning"))
@@ -203,17 +228,30 @@ def main():
             side2 = Point(xs[1], ys[1]).distance(Point(xs[2], ys[2]))
             width_ft = int(round(min(side1, side2)))
 
-            use_code = str(props.get(pf["use_code"]) or "")
-            addr = str(props.get(pf.get("situs_address", "")) or "").strip()
-            use_type = str(props.get(pf.get("use_type", "")) or "")
+            def prop_of(field_key, default=""):
+                name = pf.get(field_key)
+                return props.get(name) if name else default
+
+            # Use code: joined 2025 map first, then any inline column.
+            use_code = usecode_map.get(ain) or str(props.get("UseCode") or "")
+            addr = str(prop_of("situs_address") or "").strip()
+            use_type = str(prop_of("use_type") or "")
             try:
-                units = int(props.get(pf["units"]) or 0)
+                units = int(prop_of("units", None) or -1)  # -1 = unknown
             except (TypeError, ValueError):
-                units = 0
+                units = -1
             try:
-                iv = int(props.get(pf["improvement_value"]) or 0)
+                iv = int(prop_of("improvement_value") or 0)
             except (TypeError, ValueError):
                 iv = 0
+            try:
+                lv = int(prop_of("land_value") or 0)
+            except (TypeError, ValueError):
+                lv = 0
+            raw_sale = str(prop_of("last_sale") or "").strip()
+            last_sale = ""
+            if len(raw_sale) == 8 and raw_sale.isdigit() and raw_sale != "00000000":
+                last_sale = f"{raw_sale[:4]}-{raw_sale[4:6]}-{raw_sale[6:]}"
 
             zprops = zoning.lookup(rep)
             zone_str = (zprops or {}).get(zone_field) or ""
@@ -235,7 +273,7 @@ def main():
 
             c_flag = 1 if coastal.contains(rep) else 0
             h_flag = 1 if hillside.contains(rep) else 0
-            v_flag = 1 if is_vacant(use_code, use_type, units, iv, vac_cfg) else 0
+            v_flag = 1 if is_vacant(use_code, use_type, units, iv, lv, vac_cfg) else 0
             e_flag = sb1123_eligible(v_flag, f_cls, c_flag, h_flag, zf, lot_sqft, sb_cfg)
 
             stats["vacant"] += v_flag
@@ -251,7 +289,7 @@ def main():
                 "ain": ain, "a": addr, "z": zone_str, "zc": zc, "zf": zf,
                 "uc": use_code, "u": units, "lsf": lot_sqft, "w": width_ft,
                 "iv": iv, "v": v_flag, "f": f_cls, "c": c_flag, "h": h_flag,
-                "e": e_flag, "t": tier,
+                "e": e_flag, "t": tier, "ls": last_sale,
             }
             po.write(json.dumps({
                 "type": "Feature", "geometry": mapping(geom), "properties": out_props,

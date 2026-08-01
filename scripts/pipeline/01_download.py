@@ -81,19 +81,46 @@ def get_count(url, where, bbox):
     return request_json(f"{url}/query", params)["count"]
 
 
+def download_geojson_url(key, cfg):
+    """Single-file GeoJSON source (e.g. an opendata mirror of a blocked host)."""
+    out = raw_path(key)
+    state = load_state(key)
+    if state.get("done"):
+        print(f"  {key}: already complete, skipping")
+        return
+    print(f"  {key}: downloading GeoJSON from {cfg['download_url'][:80]}…")
+    r = requests.get(cfg["download_url"], timeout=600)
+    r.raise_for_status()
+    body = r.json()
+    feats = body.get("features", [])
+    with open(out, "w") as fh:
+        for feat in feats:
+            fh.write(json.dumps(feat, separators=(",", ":")) + "\n")
+    state.update({"done": True, "offset": len(feats), "total_written": len(feats)})
+    save_state(key, state)
+    print(f"  {key}: done, {len(feats)} features -> {out}")
+
+
 def download_source(key, cfg, bboxes, use_situs_where):
     """bboxes: list of bbox-or-None; each is paged fully in turn. Progress is
     resumable across both pages (offset) and boxes (bbox_i). Where boxes
-    overlap, duplicate parcels are written — 02_enrich.py dedupes by AIN."""
+    overlap, duplicate parcels are written — 02_enrich.py dedupes by AIN.
+    cfg["attributes_only"]: skip geometry (f=json, returnGeometry=false) —
+    features are written with null geometry."""
+    if cfg.get("download_url"):
+        download_geojson_url(key, cfg)
+        return
+
     url = cfg["url"].rstrip("/")
     where = cfg.get("where", "1=1")
+    attrs_only = bool(cfg.get("attributes_only"))
     if key == "parcels" and use_situs_where and cfg.get("situs_city_where"):
         where = cfg["situs_city_where"]
 
     out = raw_path(key)
     state = load_state(key)
     if state.get("done"):
-        print(f"  {key}: already complete ({state['offset']} features), skipping")
+        print(f"  {key}: already complete ({state.get('total_written', state['offset'])} features), skipping")
         return
 
     out_fields = sorted(set(cfg.get("fields", {}).values())) or ["*"]
@@ -113,23 +140,29 @@ def download_source(key, cfg, bboxes, use_situs_where):
                 params = {
                     "where": where,
                     "outFields": ",".join(out_fields),
-                    "f": "geojson",
+                    "f": "json" if attrs_only else "geojson",
                     "outSR": "4326",
                     "resultOffset": state["offset"],
                     "resultRecordCount": PAGE_SIZE,
                     "orderByFields": "OBJECTID",
                 }
+                if attrs_only:
+                    params["returnGeometry"] = "false"
                 params.update(geometry_params(bbox))
                 body = request_json(f"{url}/query", params)
                 feats = body.get("features", [])
                 for feat in feats:
+                    if attrs_only:
+                        feat = {"type": "Feature", "geometry": None,
+                                "properties": feat.get("attributes", {})}
                     fh.write(json.dumps(feat, separators=(",", ":")) + "\n")
                 state["offset"] += len(feats)
                 total_written += len(feats)
                 state["total_written"] = total_written
                 save_state(key, state)
                 print(f"    {state['offset']}/{state['expected_count']}", end="\r", flush=True)
-                more = body.get("properties", {}).get("exceededTransferLimit") or len(feats) == PAGE_SIZE
+                more = (body.get("properties", {}) or {}).get("exceededTransferLimit") \
+                    or body.get("exceededTransferLimit") or len(feats) == PAGE_SIZE
                 if not feats or not more:
                     break
             print()
@@ -158,16 +191,24 @@ def main():
     elif args.bbox:
         bboxes = [[float(v) for v in args.bbox.split(",")]]
 
-    keys = [args.source] if args.source else ["parcels"] + OVERLAY_SOURCES
+    keys = [args.source] if args.source else ["parcels", "parcels_usecode"] + OVERLAY_SOURCES
     print(f"Downloading {keys} (boxes={bboxes})")
     for key in keys:
         cfg = sources.get(key)
-        if not cfg or not cfg.get("url") or "verify" in cfg["url"].lower():
-            print(f"  {key}: no valid URL configured in sources.json — fix it and re-run", file=sys.stderr)
+        if not cfg:
             continue
-        # Overlays are small; always download their full extent so flags are
-        # correct even for parcels at the bbox edge.
-        src_bboxes = bboxes if key == "parcels" else [None]
+        if not cfg.get("url") and not cfg.get("download_url"):
+            print(f"  {key}: no URL configured in sources.json — fix it and re-run", file=sys.stderr)
+            continue
+        # Parcel-scoped sources follow the subset boxes. Overlays default to
+        # full extent (so flags are right at bbox edges) unless the source
+        # config pins its own bbox (statewide layers).
+        if key.startswith("parcels"):
+            src_bboxes = bboxes
+        elif cfg.get("bbox"):
+            src_bboxes = [cfg["bbox"]]
+        else:
+            src_bboxes = [None]
         download_source(key, cfg, src_bboxes, args.situs_where)
 
 

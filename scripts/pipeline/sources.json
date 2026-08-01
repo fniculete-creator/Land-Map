@@ -1,58 +1,66 @@
 {
-  "_comment": "Declarative source config. Verify each FeatureServer URL on the hub site before a full run: open the dataset page, 'I want to use this' -> 'API' -> copy the FeatureServer layer URL (ends in /FeatureServer/0 or /MapServer/N). Field names below are mappings from source schema -> pipeline schema; if the source schema drifts, fix it here, not in code.",
+  "_comment": "Verified live sources (checked 2026-08-01 against the ArcGIS services). parcels = LA County 2022 assessment roll polygons (2.42M county-wide). parcels_usecode = 2025 parcel view, attributes only, for current 4-char use codes (vacancy detection). Overlays: LA City zoning + hillside, statewide coastal zone + fire hazard severity (bbox-limited).",
 
   "parcels": {
-    "name": "LA County Assessor Parcels (search 'Assessor Parcels' on egis-lacounty.hub.arcgis.com)",
-    "url": "https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/Assessor_Parcels/FeatureServer/0",
+    "name": "LA County Parcels 2022 Roll (county eGIS)",
+    "url": "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Parcels_2022Roll/FeatureServer/0",
     "where": "1=1",
     "fields": {
       "ain": "AIN",
-      "use_code": "UseCode",
       "use_type": "UseType",
-      "units": "Units",
       "improvement_value": "Roll_ImpValue",
-      "situs_city": "SitusCity",
-      "situs_address": "SitusAddress"
-    },
-    "situs_city_where": "SitusCity LIKE 'LOS ANGELES%'"
+      "land_value": "Roll_LandValue",
+      "situs_address": "SitusFullAddress",
+      "last_sale": "LastSaleDate"
+    }
+  },
+
+  "parcels_usecode": {
+    "name": "LA County Assessor Parcels 2025 (use codes only, attributes-only download)",
+    "url": "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/ASSR_PARCELS_25_View/FeatureServer/0",
+    "attributes_only": true,
+    "fields": {
+      "ain": "AIN",
+      "use_code": "UseCode"
+    }
   },
 
   "city_boundary": {
-    "name": "City Boundary of Los Angeles (geohub.lacity.org, search 'City Boundary')",
-    "url": "https://services5.arcgis.com/7nsPwEMP38bSkCjy/arcgis/rest/services/City_Boundary/FeatureServer/0",
+    "name": "Los Angeles City Boundary (LA Dept of City Planning)",
+    "url": "https://services1.arcgis.com/tzwalEyxl2rpamKs/arcgis/rest/services/Los_Angeles_City_Boundary/FeatureServer/0",
     "fields": {}
   },
 
   "zoning": {
-    "name": "Zoning (geohub.lacity.org, search 'Zoning')",
-    "url": "https://services5.arcgis.com/7nsPwEMP38bSkCjy/arcgis/rest/services/Zoning/FeatureServer/0",
+    "name": "Zoning (City of LA Hub)",
+    "url": "https://services5.arcgis.com/7nsPwEMP38bSkCjy/arcgis/rest/services/Zoning/FeatureServer/15",
     "fields": {
-      "zone_complete": "ZONE_CMPLT",
-      "zone_class": "ZONE_CLASS"
+      "zone_complete": "Zoning"
     }
   },
 
   "hillside": {
-    "name": "Hillside Ordinance Area (geohub.lacity.org, search 'Hillside')",
-    "url": "https://services5.arcgis.com/7nsPwEMP38bSkCjy/arcgis/rest/services/Hillside_Ordinance/FeatureServer/0",
+    "name": "Hillside Ordinance (City of LA Hub, via opendata mirror)",
+    "download_url": "https://opendata.arcgis.com/api/v3/datasets/3ac07567df1c4f3b916ac258e426e3f5_6/downloads/data?format=geojson&spatialRefId=4326",
     "fields": {}
   },
 
   "coastal": {
-    "name": "Coastal Zone (geohub.lacity.org, search 'Coastal Zone')",
-    "url": "https://services5.arcgis.com/7nsPwEMP38bSkCjy/arcgis/rest/services/Coastal_Zone/FeatureServer/0",
+    "name": "California Coastal Zone (Cal OES statewide)",
+    "url": "https://services.arcgis.com/BLN4oKB0N1YSgvY8/arcgis/rest/services/Coastal_Zone/FeatureServer/0",
+    "bbox": [-118.75, 33.85, -118.25, 34.4],
     "fields": {}
   },
 
   "vhfhsz": {
-    "name": "Fire Hazard Severity Zones (geohub.lacity.org 'Very High Fire Hazard Severity Zone' or CAL FIRE FRAP FHSZ; keep the hazard-class field)",
-    "url": "https://services5.arcgis.com/7nsPwEMP38bSkCjy/arcgis/rest/services/Very_High_Fire_Hazard_Severity_Zone/FeatureServer/0",
+    "name": "CAL FIRE Fire Hazard Severity Zones 2024/25 (statewide, bbox-limited)",
+    "url": "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/fhsz24_1/FeatureServer/0",
+    "bbox": [-118.75, 33.85, -118.25, 34.4],
     "fields": {
-      "hazard_class": "HAZ_CLASS"
+      "hazard_class": "FHSZ_Description"
     },
     "hazard_class_map": {
       "Very High": 2,
-      "VHFHSZ": 2,
       "High": 1,
       "Moderate": 0
     },
@@ -60,31 +68,17 @@
   },
 
   "vacancy": {
-    "_comment": "A parcel counts as vacant if its use code is in vacant_use_codes (prefix match) OR (units == 0 AND improvement value < improvement_value_max). County use codes starting with these prefixes are vacant land categories.",
+    "_comment": "Vacant if the 2025 use code ends in V / is in vacant_use_codes, OR use_type says vacant, OR improvements are negligible both absolutely (< improvement_value_max) and relative to land value (< improvement_land_ratio_max * land) - the ratio guard avoids Prop-13 low-assessment false positives.",
     "vacant_use_codes": ["010V", "100V", "300V", "VAC"],
     "vacant_use_types": ["Vacant"],
-    "improvement_value_max": 20000
+    "improvement_value_max": 20000,
+    "improvement_land_ratio_max": 0.05
   },
 
   "sb1123": {
     "_comment": "Thresholds in sqft. SF: 1.5 ac (SB 1123 vacant single-family lots). MF: 5 ac (SB 684 multifamily-zoned lots). Fire: High(1) and Very High(2) both disqualify.",
     "sf_max_lot_sqft": 65340,
     "mf_max_lot_sqft": 217800
-  },
-
-  "tiers": {
-    "_comment": "Market tiers baked into each parcel as attribute 't'. Each tier is a list of bboxes [minLon,minLat,maxLon,maxLat]; a parcel gets the first tier (A, then B, then C) whose box contains it, so overlaps resolve to the better tier. Rough approximations of submarket boundaries - tune freely. A: Westside. B: south Valley / Ventura corridor (Woodland Hills, Tarzana, Encino, Sherman Oaks, Studio City) + West Hills. C: central & north Valley (Canoga Park, Reseda, Northridge, Chatsworth, Granada Hills, North Hills, Panorama City, Van Nuys, North Hollywood, Pacoima, Sylmar).",
-    "A": [
-      [-118.53, 33.95, -118.32, 34.11]
-    ],
-    "B": [
-      [-118.68, 34.13, -118.36, 34.18],
-      [-118.68, 34.18, -118.62, 34.23]
-    ],
-    "C": [
-      [-118.64, 34.15, -118.33, 34.34],
-      [-118.68, 34.18, -118.36, 34.28]
-    ]
   },
 
   "subsets": {
@@ -99,6 +93,21 @@
       [-118.68, 34.13, -118.36, 34.24],
       [-118.64, 34.15, -118.33, 34.34],
       [-118.53, 33.95, -118.32, 34.11]
+    ]
+  },
+
+  "tiers": {
+    "_comment": "Market tiers baked into each parcel as attribute 't'. Each tier is a list of bboxes [minLon,minLat,maxLon,maxLat]; a parcel gets the first tier (A, then B, then C) whose box contains it, so overlaps resolve to the better tier. Rough approximations of submarket boundaries - tune freely. A: Westside. B: south Valley / Ventura corridor (Woodland Hills, Tarzana, Encino, Sherman Oaks, Studio City) + West Hills. C: central & north Valley (Canoga Park, Reseda, Northridge, Chatsworth, Granada Hills, North Hills, Panorama City, Van Nuys, North Hollywood, Pacoima, Sylmar).",
+    "A": [
+      [-118.53, 33.95, -118.32, 34.11]
+    ],
+    "B": [
+      [-118.68, 34.13, -118.36, 34.18],
+      [-118.68, 34.18, -118.62, 34.23]
+    ],
+    "C": [
+      [-118.64, 34.15, -118.33, 34.34],
+      [-118.68, 34.18, -118.36, 34.28]
     ]
   }
 }

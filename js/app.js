@@ -338,9 +338,10 @@ function detailHtml(p, lngLat) {
     <section class="dp-section">
       <h4>Parcel</h4>
       ${kvRow("Zoning", `${p.z || "?"} <span class="muted">(${p.zc || "?"})</span>`)}
-      ${kvRow("Use code", p.uc || "?")}
-      ${kvRow("Units", p.u)}
+      ${kvRow("Use code", p.uc || "–")}
+      ${kvRow("Units", p.u >= 0 ? p.u : "–")}
       ${kvRow("Improvements", "$" + fmt(p.iv))}
+      ${p.ls ? kvRow("Last sale", p.ls) : ""}
     </section>
     <section class="dp-section">
       <h4>Owner information</h4>
