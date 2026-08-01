@@ -32,16 +32,24 @@ def main():
     print(f"read {total}, wrote {written} "
           f"(outside city: {stats['outside_city']}, invalid geom: {stats['invalid_geometry']})")
 
-    # Expected-count check: download .state (real runs) or fixture .meta.
+    # Expected-count check: sum download .states across all parcel layers
+    # (real runs) or use the fixture .meta.
+    from common import load_sources
     expected = None
-    state_file = raw_path("parcels") + ".state"
-    meta_file = raw_path("parcels") + ".meta"
-    if os.path.exists(state_file):
-        with open(state_file) as f:
-            expected = json.load(f).get("expected_count")
-    elif os.path.exists(meta_file):
-        with open(meta_file) as f:
-            expected = json.load(f).get("count")
+    layer_keys = load_sources().get("parcel_layers", ["parcels"])
+    state_total = 0
+    for k in layer_keys:
+        sf = raw_path(k) + ".state"
+        if os.path.exists(sf):
+            with open(sf) as f:
+                state_total += json.load(f).get("expected_count") or 0
+    if state_total:
+        expected = state_total
+    else:
+        meta_file = raw_path("parcels") + ".meta"
+        if os.path.exists(meta_file):
+            with open(meta_file) as f:
+                expected = json.load(f).get("count")
     if expected:
         drift = abs(total - expected) / expected
         print(f"expected {expected} raw parcels, read {total} (drift {drift:.2%})")

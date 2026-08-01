@@ -9,3 +9,4 @@ data/tiles/
 *.pmtiles
 !data/demo/demo.pmtiles
 data/pipeline.log
+!data/real/land-map-region.pmtiles

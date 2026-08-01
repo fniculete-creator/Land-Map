@@ -2,12 +2,14 @@
 // Swap PMTILES_URL for the full-city tileset once you've built and hosted it
 // (see scripts/pipeline/README.md) — everything else stays the same.
 export const CONFIG = {
-  PMTILES_URL: "data/demo/demo.pmtiles",
+  // Real parcels, target region (Valley + Westside). The full tri-county
+  // tileset (~400 MB) needs external hosting (Cloudflare R2 / Vercel Blob) —
+  // point this at its URL once uploaded to unlock all three counties.
+  PMTILES_URL: "data/real/land-map-region.pmtiles",
 
-  // Where the map opens. Demo data covers Venice; the full-city build should
-  // use [-118.41, 34.02] zoom 10.
-  START_CENTER: [-118.457, 33.993],
-  START_ZOOM: 13,
+  // Where the map opens.
+  START_CENTER: [-118.47, 34.09],
+  START_ZOOM: 11,
 
   // Team logo image (the exact Marcus & Millichap LAAA Team lockup).
   // Either commit the file to assets/ and set "assets/laaa-logo.png", or
