@@ -59,12 +59,13 @@ python3 01_download.py --subset target_region   # W/S Valley + Westside (see bel
 python3 01_download.py                          # full county parcels (~1–2 h, ~3–5 GB)
 ```
 
-**`target_region`** is the recommended starting preset: two boxes covering the
-west & south San Fernando Valley (West Hills, Canoga Park, Woodland Hills,
-Tarzana, Encino, Sherman Oaks, Studio City) and the Westside (Santa Monica,
-Venice, Mar Vista, Palms, Westwood, Brentwood, Century City, West
-Hollywood/Fairfax, east to Mid-City). Roughly 150–250k parcels — expect
-~15–30 minutes. Multi-box presets download sequentially and are resumable
+**`target_region`** is the recommended starting preset: three boxes covering
+the west & south San Fernando Valley (West Hills, Canoga Park, Woodland Hills,
+Tarzana, Encino, Sherman Oaks, Studio City), the north-central Valley
+(Reseda, Northridge, Van Nuys, North Hollywood), and the Westside (Santa
+Monica, Venice, Mar Vista, Palms, Westwood, Brentwood, Century City, West
+Hollywood/Fairfax, east to Mid-City). Roughly 250–350k parcels — expect
+~30–45 minutes. Multi-box presets download sequentially and are resumable
 across boxes; overlapping-box duplicates are deduped by AIN in step 2.
 
 > The Westside box includes **Santa Monica, West Hollywood, Beverly Hills,
