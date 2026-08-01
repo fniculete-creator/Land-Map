@@ -15,7 +15,7 @@ import sys
 
 from pyproj import Transformer
 from shapely import STRtree, oriented_envelope
-from shapely.geometry import shape, mapping, Point
+from shapely.geometry import shape, mapping, Point, box as shp_box
 from shapely.ops import transform as shp_transform
 from shapely.validation import make_valid
 
@@ -118,6 +118,19 @@ def main():
     haz_default = sources["vhfhsz"].get("default_hazard_when_inside", 2)
     zone_field = sources["zoning"]["fields"]["zone_complete"]
 
+    # Market tiers: parcel gets the first tier (A, then B, then C…) whose box
+    # contains its representative point; overlaps resolve to the better tier.
+    tier_boxes = []
+    for letter in sorted(k for k in sources.get("tiers", {}) if not k.startswith("_")):
+        for bb in sources["tiers"][letter]:
+            tier_boxes.append((letter, shp_box(bb[0], bb[1], bb[2], bb[3])))
+
+    def tier_of(pt):
+        for letter, b in tier_boxes:
+            if b.contains(pt):
+                return letter
+        return ""
+
     print("loading overlays...")
     boundary = Overlay(raw_path("city_boundary"))
     zoning = Overlay(raw_path("zoning"))
@@ -130,7 +143,7 @@ def main():
     stats = {
         "total_read": 0, "written": 0, "outside_city": 0, "duplicate_ain": 0,
         "invalid_geometry": 0, "vacant": 0, "eligible": 0, "fire1": 0, "fire2": 0,
-        "coastal": 0, "hillside": 0, "no_zone": 0, "widths": [],
+        "coastal": 0, "hillside": 0, "no_zone": 0, "widths": [], "tiers": {},
     }
     seen_ains = set()  # multi-bbox downloads duplicate parcels where boxes overlap
 
@@ -217,6 +230,9 @@ def main():
             else:
                 f_cls = haz_default
 
+            tier = tier_of(rep)
+            stats["tiers"][tier or "none"] = stats["tiers"].get(tier or "none", 0) + 1
+
             c_flag = 1 if coastal.contains(rep) else 0
             h_flag = 1 if hillside.contains(rep) else 0
             v_flag = 1 if is_vacant(use_code, use_type, units, iv, vac_cfg) else 0
@@ -235,6 +251,7 @@ def main():
                 "ain": ain, "z": zone_str, "zc": zc, "zf": zf, "uc": use_code,
                 "u": units, "lsf": lot_sqft, "w": width_ft, "iv": iv,
                 "v": v_flag, "f": f_cls, "c": c_flag, "h": h_flag, "e": e_flag,
+                "t": tier,
             }
             po.write(json.dumps({
                 "type": "Feature", "geometry": mapping(geom), "properties": out_props,
@@ -242,7 +259,7 @@ def main():
             co.write(json.dumps({
                 "type": "Feature",
                 "geometry": {"type": "Point", "coordinates": [round(rep.x, 6), round(rep.y, 6)]},
-                "properties": {"ain": ain, "e": e_flag, "v": v_flag, "lsf": lot_sqft},
+                "properties": {"ain": ain, "e": e_flag, "v": v_flag, "lsf": lot_sqft, "t": tier},
             }, separators=(",", ":")) + "\n")
             stats["written"] += 1
 

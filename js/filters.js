@@ -9,6 +9,7 @@ export function emptyState() {
     ranges: { w: [null, null], lsf: [null, null], u: [null, null] },
     zoneFamilies: new Set(),
     zoneClasses: [],
+    tiers: new Set(),
     tri: { v: "any", f: "any", c: "any", h: "any" },
   };
 }
@@ -34,6 +35,10 @@ export function buildFilter(state, cfg) {
     clauses.push(["in", ["get", "zc"], ["literal", state.zoneClasses]]);
   } else if (state.zoneFamilies.size > 0) {
     clauses.push(["in", ["get", "zf"], ["literal", [...state.zoneFamilies]]]);
+  }
+
+  if (state.tiers.size > 0) {
+    clauses.push(["in", ["get", "t"], ["literal", [...state.tiers]]]);
   }
 
   for (const [key, mode] of Object.entries(state.tri)) {
@@ -65,6 +70,7 @@ export function buildCentroidFilter(state, cfg) {
   if (lmin !== null) clauses.push([">=", ["get", "lsf"], lmin]);
   if (lmax !== null) clauses.push(["<=", ["get", "lsf"], lmax]);
   if (state.tri.v !== "any") clauses.push(["==", ["get", "v"], state.tri.v === "only" ? 1 : 0]);
+  if (state.tiers.size > 0) clauses.push(["in", ["get", "t"], ["literal", [...state.tiers]]]);
   if (state.sbPreset) clauses.push(["==", ["get", "e"], 1]);
   return clauses.length > 1 ? clauses : null;
 }
@@ -77,6 +83,7 @@ export function stateToHash(state) {
   }
   if (state.zoneClasses.length) p.set("zc", state.zoneClasses.join(","));
   else if (state.zoneFamilies.size) p.set("zf", [...state.zoneFamilies].join(","));
+  if (state.tiers.size) p.set("t", [...state.tiers].join(","));
   for (const [key, mode] of Object.entries(state.tri)) {
     if (mode !== "any") p.set(key, mode === "only" ? "1" : "0");
   }
@@ -98,6 +105,7 @@ export function stateFromHash(hash) {
   }
   if (p.get("zc")) state.zoneClasses = p.get("zc").split(",").filter(Boolean);
   else if (p.get("zf")) state.zoneFamilies = new Set(p.get("zf").split(",").map(Number));
+  if (p.get("t")) state.tiers = new Set(p.get("t").split(",").filter(Boolean));
   for (const key of ["v", "f", "c", "h"]) {
     const v = p.get(key);
     if (v === "1") state.tri[key] = "only";

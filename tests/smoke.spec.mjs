@@ -99,6 +99,21 @@ await page.waitForTimeout(1200);
 const afterReset = await counts();
 assert(afterReset.parcels === baseline.parcels, `reset restores baseline (${afterReset.parcels})`);
 
+// Tier filter: fixture parcels are all Tier A (Westside box). Selecting only
+// Tier B must hide everything; adding Tier A restores the full set.
+await page.check("#tier-B");
+await page.waitForTimeout(1200);
+const tierB = await counts();
+assert(tierB.parcels === 0, `tier B only hides all fixture parcels (${tierB.parcels})`);
+await page.check("#tier-A");
+await page.waitForTimeout(1200);
+const tierAB = await counts();
+assert(tierAB.parcels === baseline.parcels, `tiers A+B restore baseline (${tierAB.parcels})`);
+const tierHash = await page.evaluate(() => location.hash);
+assert(/t=/.test(tierHash), `tier filter serialized to hash (${tierHash})`);
+await page.click("#reset-btn");
+await page.waitForTimeout(800);
+
 // Zoom out to centroid mode and confirm dots render.
 await page.evaluate(() => window.LandMap.map.jumpTo({ zoom: 11 }));
 await page.waitForFunction(() => {

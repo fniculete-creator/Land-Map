@@ -71,6 +71,21 @@
     "mf_max_lot_sqft": 217800
   },
 
+  "tiers": {
+    "_comment": "Market tiers baked into each parcel as attribute 't'. Each tier is a list of bboxes [minLon,minLat,maxLon,maxLat]; a parcel gets the first tier (A, then B, then C) whose box contains it, so overlaps resolve to the better tier. Rough approximations of submarket boundaries - tune freely. A: Westside. B: south Valley / Ventura corridor (Woodland Hills, Tarzana, Encino, Sherman Oaks, Studio City) + West Hills. C: central & north Valley (Canoga Park, Reseda, Northridge, Chatsworth, Granada Hills, North Hills, Panorama City, Van Nuys, North Hollywood, Pacoima, Sylmar).",
+    "A": [
+      [-118.53, 33.95, -118.32, 34.11]
+    ],
+    "B": [
+      [-118.68, 34.13, -118.36, 34.18],
+      [-118.68, 34.18, -118.62, 34.23]
+    ],
+    "C": [
+      [-118.64, 34.15, -118.33, 34.34],
+      [-118.68, 34.18, -118.36, 34.28]
+    ]
+  },
+
   "subsets": {
     "_comment": "A subset is one bbox [minLon,minLat,maxLon,maxLat] or a list of bboxes (downloaded sequentially; 02_enrich dedupes parcels by AIN where boxes overlap).",
     "venice": [-118.4776, 33.9769, -118.4370, 34.0083],

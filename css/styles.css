@@ -168,6 +168,30 @@ html, body {
 
 .tri-hint { font-size: 0.7rem; color: var(--muted); margin: 6px 0 0; }
 
+.tier-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.83rem;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.tier-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.tier-a { background: #1f9d55; }
+.tier-b { background: #d97706; }
+.tier-c { background: #64748b; }
+
 /* ---------- results bar ---------- */
 #results-bar {
   position: sticky;

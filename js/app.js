@@ -144,6 +144,7 @@ function popupHtml(p) {
       <div class="popup-title">APN ${p.ain}</div>
       <div class="popup-badges">${badges.join(" ")}</div>
       <table class="popup-table">
+        <tr><td>Tier</td><td>${p.t ? p.t + " — " + ({ A: "Westside", B: "South Valley", C: "Central/North Valley" }[p.t] || "") : "–"}</td></tr>
         <tr><td>Zoning</td><td>${p.z || "?"} <span class="muted">(${p.zc || "?"})</span></td></tr>
         <tr><td>Use code</td><td>${p.uc || "?"}</td></tr>
         <tr><td>Units</td><td>${p.u}</td></tr>
@@ -170,6 +171,9 @@ function syncControlsFromState() {
     cb.checked = state.zoneFamilies.has(Number(cb.value));
   });
   document.getElementById("zone-text").value = state.zoneClasses.join(",");
+  document.querySelectorAll(".tier-cb").forEach((cb) => {
+    cb.checked = state.tiers.has(cb.value);
+  });
   document.querySelectorAll(".tri-row").forEach((row) => {
     const mode = state.tri[row.dataset.key];
     row.querySelector(".tri").dataset.state = mode;
@@ -201,6 +205,13 @@ function bindControls() {
     cb.addEventListener("change", () => {
       const v = Number(cb.value);
       if (cb.checked) state.zoneFamilies.add(v); else state.zoneFamilies.delete(v);
+      applyFilters();
+    });
+  });
+
+  document.querySelectorAll(".tier-cb").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      if (cb.checked) state.tiers.add(cb.value); else state.tiers.delete(cb.value);
       applyFilters();
     });
   });
