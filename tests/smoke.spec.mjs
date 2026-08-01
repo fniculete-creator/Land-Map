@@ -176,6 +176,31 @@ await page.evaluate((ain) => window.LandMap.setStatus(ain, ""), statusAin);
 await page.click("#reset-btn");
 await page.waitForTimeout(800);
 
+// Local neighborhood search: "Venice" jumps instantly (no geocoder).
+await page.fill("#search-input", "Venice");
+await page.press("#search-input", "Enter");
+await page.waitForTimeout(1500);
+const center = await page.evaluate(() => {
+  const c = window.LandMap.map.getCenter();
+  return { lng: c.lng, lat: c.lat };
+});
+assert(center.lng > -118.49 && center.lng < -118.43 && center.lat > 33.96 && center.lat < 34.02,
+  `neighborhood search jumped to Venice (${center.lng.toFixed(3)}, ${center.lat.toFixed(3)})`);
+
+// Shareable link includes map position.
+const mHash = await page.evaluate(() => location.hash);
+assert(/m=-?\d+\.\d+,-?\d+\.\d+,\d+/.test(mHash), `hash carries map position (${mHash.slice(0, 40)}…)`);
+
+// CSV export covers the candidates in view with the right columns.
+const csv = await page.evaluate(() => window.LandMap.exportCsv());
+const csvLines = csv.split("\n");
+assert(csvLines[0].startsWith("address,apn,tier,zone_class"), "CSV header correct");
+assert(csvLines.length > 10, `CSV has candidate rows (${csvLines.length - 1})`);
+assert(/portal\.assessor\.lacounty\.gov/.test(csvLines[1]), "CSV rows include assessor URLs");
+
+// Legend present.
+assert(await page.isVisible("#legend"), "map legend visible");
+
 // Zoom out to centroid mode and confirm dots render.
 await page.evaluate(() => window.LandMap.map.jumpTo({ zoom: 11 }));
 await page.waitForFunction(() => {

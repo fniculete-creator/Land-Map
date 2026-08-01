@@ -21,7 +21,9 @@
         <span id="brand-name">LAND</span>
       </div>
       <div id="search-box">
-        <input type="text" id="search-input" placeholder="Search a city, ZIP, or neighborhood…" />
+        <input type="text" id="search-input" list="hood-list"
+               placeholder="Search a neighborhood, city, or ZIP…" />
+        <datalist id="hood-list"></datalist>
       </div>
       <div id="topbar-right">
         <button id="sat-btn" title="Toggle satellite">Satellite</button>
@@ -141,15 +143,29 @@
 
         <div id="list-header">
           <span>Candidates in view</span>
-          <span id="list-count"></span>
+          <span id="list-actions">
+            <button id="copy-link-btn" title="Copy a shareable link to this exact view and filters">Link</button>
+            <button id="export-btn" title="Download the candidates in view as CSV">CSV</button>
+          </span>
         </div>
+        <div id="list-count"></div>
         <ul id="site-list"></ul>
         <div id="empty-sites" class="empty-state">
           No qualifying parcels in view. Zoom or pan the map, or relax filters.
         </div>
       </aside>
 
-      <main id="map"></main>
+      <main id="map">
+        <div id="legend">
+          <div class="lg-row"><span class="lg-swatch lg-cand"></span>SB 1123 candidate</div>
+          <div class="lg-row"><span class="lg-swatch lg-other"></span>Other parcel</div>
+          <div class="lg-sep"></div>
+          <div class="lg-row"><span class="lg-line" style="background:#2563eb"></span>Submitted</div>
+          <div class="lg-row"><span class="lg-line" style="background:#7c3aed"></span>Approved</div>
+          <div class="lg-row"><span class="lg-line" style="background:#0f766e"></span>Completed</div>
+          <div class="lg-row"><span class="lg-line" style="background:#d97706"></span>For Sale</div>
+        </div>
+      </main>
 
       <aside id="detail-panel" class="hidden"></aside>
     </div>

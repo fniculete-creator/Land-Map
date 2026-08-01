@@ -307,7 +307,27 @@ html, body {
   letter-spacing: 1px;
   color: var(--muted);
 }
-#list-count { font-variant-numeric: tabular-nums; }
+#list-count {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.68rem;
+  color: var(--muted);
+  padding: 0 14px 4px;
+}
+
+#list-actions { display: flex; gap: 6px; }
+
+#list-actions button {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--blue);
+  cursor: pointer;
+  letter-spacing: 0.3px;
+}
+#list-actions button:hover { border-color: var(--blue); background: #f2f6ff; }
 
 #site-list {
   list-style: none;
@@ -363,6 +383,31 @@ html, body {
 
 /* ---------- map ---------- */
 #map { flex: 1; height: 100%; background: #eef1f4; }
+
+/* ---------- legend ---------- */
+#legend {
+  position: absolute;
+  right: 10px;
+  bottom: 28px;
+  z-index: 800;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 9px 12px;
+  font-size: 0.7rem;
+  color: var(--text);
+}
+
+.lg-row { display: flex; align-items: center; gap: 7px; padding: 2px 0; }
+
+.lg-swatch { width: 14px; height: 10px; border-radius: 3px; }
+.lg-cand { background: rgba(16, 185, 129, 0.6); border: 1px solid #047857; }
+.lg-other { background: rgba(100, 116, 139, 0.12); border: 1px solid #c3cbd3; }
+
+.lg-line { width: 14px; height: 3px; border-radius: 2px; }
+
+.lg-sep { height: 1px; background: var(--border); margin: 5px 0; }
 
 /* ---------- parcel detail panel ---------- */
 #detail-panel {

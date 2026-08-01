@@ -48,6 +48,40 @@ export const CONFIG = {
     },
   },
 
+  // Instant local neighborhood search (no geocoder round-trip). Names feed
+  // the search box autocomplete; anything not matched falls back to
+  // OpenStreetMap's Nominatim geocoder.
+  NEIGHBORHOODS: {
+    "Encino": [-118.53, 34.14, -118.46, 34.18],
+    "Tarzana": [-118.57, 34.14, -118.52, 34.18],
+    "Woodland Hills": [-118.65, 34.13, -118.57, 34.19],
+    "West Hills": [-118.67, 34.18, -118.62, 34.23],
+    "Canoga Park": [-118.62, 34.19, -118.575, 34.24],
+    "Winnetka": [-118.585, 34.19, -118.555, 34.24],
+    "Reseda": [-118.555, 34.18, -118.51, 34.24],
+    "Northridge": [-118.57, 34.21, -118.50, 34.28],
+    "Chatsworth": [-118.64, 34.23, -118.57, 34.28],
+    "Granada Hills": [-118.54, 34.26, -118.46, 34.30],
+    "North Hills": [-118.50, 34.22, -118.45, 34.26],
+    "Panorama City": [-118.46, 34.21, -118.43, 34.24],
+    "Van Nuys": [-118.48, 34.17, -118.43, 34.22],
+    "Sherman Oaks": [-118.47, 34.14, -118.42, 34.18],
+    "Studio City": [-118.42, 34.13, -118.36, 34.17],
+    "North Hollywood": [-118.41, 34.16, -118.35, 34.22],
+    "Sylmar": [-118.47, 34.28, -118.41, 34.33],
+    "Pacoima": [-118.44, 34.24, -118.39, 34.29],
+    "Venice": [-118.48, 33.97, -118.44, 34.01],
+    "Mar Vista": [-118.46, 33.99, -118.41, 34.03],
+    "Palms": [-118.42, 34.01, -118.38, 34.04],
+    "Westwood": [-118.46, 34.05, -118.42, 34.08],
+    "Brentwood": [-118.52, 34.05, -118.46, 34.09],
+    "Santa Monica": [-118.52, 33.99, -118.44, 34.05],
+    "West Hollywood": [-118.40, 34.07, -118.34, 34.10],
+    "Century City": [-118.42, 34.05, -118.40, 34.07],
+    "Culver City": [-118.43, 33.99, -118.37, 34.03],
+    "Pacific Palisades": [-118.58, 34.02, -118.50, 34.09],
+  },
+
   ASSESSOR_URL: (ain) => `https://portal.assessor.lacounty.gov/parceldetail/${ain}`,
   ZIMAS_URL: "https://zimas.lacity.org/",
   // Free Street View deep link (opens Google Maps in a new tab; no API key).

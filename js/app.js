@@ -19,6 +19,10 @@ const STATUS_LABELS = {
   submitted: "Submitted", approved: "Approved",
   completed: "Completed", forsale: "For Sale",
 };
+const STATUS_COLORS = {
+  submitted: "#2563eb", approved: "#7c3aed",
+  completed: "#0f766e", forsale: "#d97706",
+};
 
 // Team-assigned deal statuses, keyed by AIN. Browser-local for now; syncing
 // across the team needs a small backend (roadmap).
@@ -118,6 +122,14 @@ function baseStyle() {
         },
       },
       {
+        // Deal-status outlines: always visible regardless of filters, so the
+        // team's tracked pipeline never disappears from the map.
+        id: "parcels-status", type: "line", source: "parcels", "source-layer": "parcels",
+        minzoom: 13,
+        filter: ["==", ["get", "ain"], "___none___"],
+        paint: { "line-color": "#2563eb", "line-width": 2.5 },
+      },
+      {
         id: "parcels-selected", type: "line", source: "parcels", "source-layer": "parcels",
         minzoom: 13,
         filter: ["==", ["get", "ain"], "___none___"],
@@ -129,6 +141,32 @@ function baseStyle() {
 
 const FILTERED_LAYERS = ["parcels-fill", "parcels-line"];
 
+function updateHash() {
+  const filters = stateToHash(state).slice(1);
+  let m = "";
+  if (map) {
+    const c = map.getCenter();
+    m = `m=${c.lng.toFixed(5)},${c.lat.toFixed(5)},${map.getZoom().toFixed(2)}`;
+  }
+  const full = [filters, m].filter(Boolean).join("&");
+  history.replaceState(null, "", location.pathname + location.search + "#" + full);
+}
+
+function applyStatusOutlines() {
+  const tagged = Object.keys(dealStatuses);
+  if (!tagged.length) {
+    map.setFilter("parcels-status", ["==", ["get", "ain"], "___none___"]);
+    return;
+  }
+  const match = ["match", ["get", "ain"]];
+  for (const [ain, st] of Object.entries(dealStatuses)) {
+    match.push(ain, STATUS_COLORS[st] || "#2563eb");
+  }
+  match.push("#2563eb");
+  map.setPaintProperty("parcels-status", "line-color", match);
+  map.setFilter("parcels-status", ["in", ["get", "ain"], ["literal", tagged]]);
+}
+
 function applyFilters() {
   const statusAins = state.dealStatus === "any" ? [] : statusAinsFor(state.dealStatus);
   const f = buildFilter(state, CONFIG, statusAins);
@@ -136,13 +174,15 @@ function applyFilters() {
   const selBase = ["==", ["get", "ain"], selectedAin ?? "___none___"];
   map.setFilter("parcels-selected", f ? ["all", f, selBase] : selBase);
   map.setFilter("centroids", buildCentroidFilter(state, CONFIG, statusAins));
-  history.replaceState(null, "", location.pathname + location.search + (stateToHash(state) || "#"));
+  applyStatusOutlines();
+  updateHash();
   scheduleCount();
 }
 
 /* ---------------- stats + candidates list ---------------- */
 
 let countTimer = null;
+let lastCandidates = [];
 function scheduleCount() {
   clearTimeout(countTimer);
   countTimer = setTimeout(updateCount, 250);
@@ -169,6 +209,7 @@ function updateCount() {
     zoom >= 13 ? "parcels in view" : "parcel dots in view";
 
   const candidates = [...byAin.values()].filter((f) => f.properties.e === 1);
+  lastCandidates = candidates;
   document.getElementById("stat-candidates").textContent = candidates.length.toLocaleString();
 
   const lots = candidates.map((f) => f.properties.lsf).sort((a, b) => a - b);
@@ -508,15 +549,42 @@ function bindControls() {
     btn.classList.toggle("active", !sat);
   });
 
+  document.getElementById("export-btn").addEventListener("click", () => LandMap.downloadCsv());
+
+  document.getElementById("copy-link-btn").addEventListener("click", async () => {
+    const btn = document.getElementById("copy-link-btn");
+    try {
+      await navigator.clipboard.writeText(location.href);
+      btn.textContent = "Copied!";
+    } catch (e) {
+      btn.textContent = "Copy failed";
+    }
+    setTimeout(() => { btn.textContent = "Link"; }, 1500);
+  });
+
   bindSearch();
 }
 
 function bindSearch() {
   const input = document.getElementById("search-input");
-  input.addEventListener("keydown", (e) => {
-    if (e.key !== "Enter") return;
+  const datalist = document.getElementById("hood-list");
+  const hoods = CONFIG.NEIGHBORHOODS || {};
+  for (const name of Object.keys(hoods)) {
+    const opt = document.createElement("option");
+    opt.value = name;
+    datalist.appendChild(opt);
+  }
+
+  function run() {
     const q = input.value.trim();
     if (!q) return;
+    // Instant local jump for known neighborhoods; geocoder for the rest.
+    const hood = Object.keys(hoods).find((n) => n.toLowerCase() === q.toLowerCase());
+    if (hood) {
+      const [w, s, e2, n2] = hoods[hood];
+      map.fitBounds([[w, s], [e2, n2]]);
+      return;
+    }
     const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
       encodeURIComponent(q + ", Los Angeles County, CA");
     fetch(url, { headers: { Accept: "application/json" } })
@@ -532,7 +600,10 @@ function bindSearch() {
         }
       })
       .catch(() => { input.value = ""; input.placeholder = `No results for "${q}"`; });
-  });
+  }
+
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
+  input.addEventListener("change", run); // datalist pick
 }
 
 /* ---------------- v2 hook: overlay points (e.g. comps / listings) ---------------- */
@@ -543,6 +614,31 @@ const LandMap = {
     else delete dealStatuses[ain];
     saveStatuses();
     applyFilters();
+  },
+  // CSV of the candidates currently in view (what the list shows, uncapped).
+  exportCsv() {
+    const header = ["address", "apn", "tier", "zone_class", "zoning", "lot_sqft",
+      "width_ft", "units", "use_code", "improvement_value", "vacant",
+      "sb1123_candidate", "status", "assessor_url"];
+    const esc = (v) => {
+      const s = String(v ?? "");
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const rows = lastCandidates.map((f) => {
+      const p = f.properties;
+      return [fmtAddr(p.a), p.ain, p.t, p.zc, p.z, p.lsf, p.w, p.u, p.uc, p.iv,
+        p.v, p.e, STATUS_LABELS[dealStatuses[p.ain]] || "",
+        CONFIG.ASSESSOR_URL(p.ain)].map(esc).join(",");
+    });
+    return [header.join(","), ...rows].join("\n");
+  },
+  downloadCsv() {
+    const blob = new Blob([LandMap.exportCsv()], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "land-candidates.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
   },
   addOverlayPoints(geojson, options = {}) {
     const id = options.id || "overlay-points";
@@ -614,7 +710,7 @@ async function fetchMergedStyle(styleUrl, fallback) {
   };
   const overlayIds = new Set([
     "basemap-satellite", "centroids",
-    "parcels-fill", "parcels-line", "parcels-selected",
+    "parcels-fill", "parcels-line", "parcels-status", "parcels-selected",
   ]);
   base.layers = [...base.layers, ...fallback.layers.filter((l) => overlayIds.has(l.id))];
   return base;
@@ -678,11 +774,23 @@ async function boot() {
     document.getElementById("demo-banner").classList.remove("hidden");
     document.getElementById("sat-btn").style.display = "none";
   }
+  // Restore map position from a shared link's m= hash param.
+  let startCenter = CONFIG.START_CENTER;
+  let startZoom = CONFIG.START_ZOOM;
+  const mParam = new URLSearchParams(location.hash.slice(1)).get("m");
+  if (mParam) {
+    const [lng, lat, z] = mParam.split(",").map(Number);
+    if ([lng, lat, z].every(Number.isFinite)) {
+      startCenter = [lng, lat];
+      startZoom = z;
+    }
+  }
+
   map = new maplibregl.Map({
     container: "map",
     style: synthetic ? demoStyle() : await buildStyle(),
-    center: CONFIG.START_CENTER,
-    zoom: CONFIG.START_ZOOM,
+    center: startCenter,
+    zoom: startZoom,
     maxZoom: 20,
     attributionControl: { compact: true },
     transformRequest: mapboxTransform,
@@ -702,7 +810,7 @@ async function boot() {
   map.on("styledata", init);
 
   map.on("idle", scheduleCount);
-  map.on("moveend", scheduleCount);
+  map.on("moveend", () => { scheduleCount(); updateHash(); });
   map.on("sourcedata", scheduleCount);
 
   map.on("click", "parcels-fill", (e) => {
