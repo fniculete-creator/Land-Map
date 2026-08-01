@@ -8,6 +8,7 @@ Output: data/enriched/parcels.ndjson    (polygon features, short-key props)
         data/enriched/centroids.ndjson  (point features: ain,e,v,lsf)
         data/enriched/stats.json        (counters for validation + UI metadata)
 """
+import argparse
 import json
 import os
 import sys
@@ -98,6 +99,13 @@ class Overlay:
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--keep-outside-city", action="store_true",
+                    help="keep parcels outside the LA City boundary (e.g. Santa Monica, "
+                         "West Hollywood, Culver City in a Westside pull). They carry "
+                         "no LA zoning, so zone-based filters won't match them.")
+    args = ap.parse_args()
+
     sources = load_sources()
     ensure_dirs()
     os.makedirs(ENRICHED_DIR, exist_ok=True)
@@ -120,10 +128,11 @@ def main():
           f"coastal={len(coastal.geoms)} fire={len(fire.geoms)}")
 
     stats = {
-        "total_read": 0, "written": 0, "outside_city": 0, "invalid_geometry": 0,
-        "vacant": 0, "eligible": 0, "fire1": 0, "fire2": 0, "coastal": 0,
-        "hillside": 0, "no_zone": 0, "widths": [],
+        "total_read": 0, "written": 0, "outside_city": 0, "duplicate_ain": 0,
+        "invalid_geometry": 0, "vacant": 0, "eligible": 0, "fire1": 0, "fire2": 0,
+        "coastal": 0, "hillside": 0, "no_zone": 0, "widths": [],
     }
+    seen_ains = set()  # multi-bbox downloads duplicate parcels where boxes overlap
 
     meta_path = raw_path("parcels") + ".meta"
     synthetic = False
@@ -155,10 +164,19 @@ def main():
                 stats["invalid_geometry"] += 1
                 continue
 
+            props = feat.get("properties") or {}
+            ain = str(props.get(pf["ain"]) or "").strip()
+            if ain:
+                if ain in seen_ains:
+                    stats["duplicate_ain"] += 1
+                    continue
+                seen_ains.add(ain)
+
             rep = geom.representative_point()
             if boundary.tree and not boundary.contains(rep):
                 stats["outside_city"] += 1
-                continue
+                if not args.keep_outside_city:
+                    continue
 
             # Measurements in State Plane feet. For MultiPolygon width, use the
             # largest part (pole/remnant slivers shouldn't define the lot).
@@ -173,8 +191,6 @@ def main():
             side2 = Point(xs[1], ys[1]).distance(Point(xs[2], ys[2]))
             width_ft = int(round(min(side1, side2)))
 
-            props = feat.get("properties") or {}
-            ain = str(props.get(pf["ain"]) or "").strip()
             use_code = str(props.get(pf["use_code"]) or "")
             use_type = str(props.get(pf.get("use_type", "")) or "")
             try:

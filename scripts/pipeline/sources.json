@@ -72,8 +72,15 @@
   },
 
   "subsets": {
+    "_comment": "A subset is one bbox [minLon,minLat,maxLon,maxLat] or a list of bboxes (downloaded sequentially; 02_enrich dedupes parcels by AIN where boxes overlap).",
     "venice": [-118.4776, 33.9769, -118.4370, 34.0083],
     "marvista": [-118.4600, 33.9930, -118.4130, 34.0270],
-    "nohovalley": [-118.4200, 34.1600, -118.3500, 34.2100]
+    "nohovalley": [-118.4200, 34.1600, -118.3500, 34.2100],
+    "valley_west_south": [-118.68, 34.13, -118.36, 34.24],
+    "westside": [-118.53, 33.95, -118.32, 34.11],
+    "target_region": [
+      [-118.68, 34.13, -118.36, 34.24],
+      [-118.53, 33.95, -118.32, 34.11]
+    ]
   }
 }

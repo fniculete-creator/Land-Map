@@ -54,9 +54,24 @@ Datasets to find:
 ## Step 1 — download
 
 ```bash
-python3 01_download.py --subset venice     # quick first run (~minutes)
-python3 01_download.py                     # full county parcels (~1–2 h, ~3–5 GB)
+python3 01_download.py --subset venice          # quick first run (~minutes)
+python3 01_download.py --subset target_region   # W/S Valley + Westside (see below)
+python3 01_download.py                          # full county parcels (~1–2 h, ~3–5 GB)
 ```
+
+**`target_region`** is the recommended starting preset: two boxes covering the
+west & south San Fernando Valley (West Hills, Canoga Park, Woodland Hills,
+Tarzana, Encino, Sherman Oaks, Studio City) and the Westside (Santa Monica,
+Venice, Mar Vista, Palms, Westwood, Brentwood, Century City, West
+Hollywood/Fairfax, east to Mid-City). Roughly 150–250k parcels — expect
+~15–30 minutes. Multi-box presets download sequentially and are resumable
+across boxes; overlapping-box duplicates are deduped by AIN in step 2.
+
+> The Westside box includes **Santa Monica, West Hollywood, Beverly Hills,
+> and Culver City — separate cities outside LA City zoning**. To keep their
+> parcels (size/width/vacancy filters still work; zoning-based filters won't
+> match them), run step 2 with `--keep-outside-city`. Omit the flag to clip
+> strictly to LA City.
 
 - Resumable: re-running continues from the last saved offset (`.state` files
   in `data/raw/`). Delete the `.ndjson` + `.state` pair to restart a source.
@@ -69,7 +84,8 @@ python3 01_download.py                     # full county parcels (~1–2 h, ~3�
 ## Step 2 — enrich
 
 ```bash
-python3 02_enrich.py
+python3 02_enrich.py                     # clip to LA City boundary
+python3 02_enrich.py --keep-outside-city # keep Santa Monica / WeHo / etc. too
 ```
 
 Streams parcels one at a time (constant memory), and per parcel:

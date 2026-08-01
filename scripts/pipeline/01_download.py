@@ -32,9 +32,11 @@ def state_path(source_key):
 def load_state(source_key):
     try:
         with open(state_path(source_key)) as f:
-            return json.load(f)
+            state = json.load(f)
+        state.setdefault("bbox_i", 0)
+        return state
     except (OSError, ValueError):
-        return {"offset": 0, "done": False, "expected_count": None}
+        return {"offset": 0, "done": False, "expected_count": None, "bbox_i": 0}
 
 
 def save_state(source_key, state):
@@ -79,7 +81,10 @@ def get_count(url, where, bbox):
     return request_json(f"{url}/query", params)["count"]
 
 
-def download_source(key, cfg, bbox, use_situs_where):
+def download_source(key, cfg, bboxes, use_situs_where):
+    """bboxes: list of bbox-or-None; each is paged fully in turn. Progress is
+    resumable across both pages (offset) and boxes (bbox_i). Where boxes
+    overlap, duplicate parcels are written — 02_enrich.py dedupes by AIN."""
     url = cfg["url"].rstrip("/")
     where = cfg.get("where", "1=1")
     if key == "parcels" and use_situs_where and cfg.get("situs_city_where"):
@@ -91,39 +96,46 @@ def download_source(key, cfg, bbox, use_situs_where):
         print(f"  {key}: already complete ({state['offset']} features), skipping")
         return
 
-    if state["expected_count"] is None:
-        state["expected_count"] = get_count(url, where, bbox)
-        save_state(key, state)
-    print(f"  {key}: {state['expected_count']} features expected, resuming at offset {state['offset']}")
-
     out_fields = sorted(set(cfg.get("fields", {}).values())) or ["*"]
-    mode = "a" if state["offset"] > 0 else "w"
-    with open(out, mode) as fh:
-        while True:
-            params = {
-                "where": where,
-                "outFields": ",".join(out_fields),
-                "f": "geojson",
-                "outSR": "4326",
-                "resultOffset": state["offset"],
-                "resultRecordCount": PAGE_SIZE,
-                "orderByFields": "OBJECTID",
-            }
-            params.update(geometry_params(bbox))
-            body = request_json(f"{url}/query", params)
-            feats = body.get("features", [])
-            for feat in feats:
-                fh.write(json.dumps(feat, separators=(",", ":")) + "\n")
-            state["offset"] += len(feats)
-            save_state(key, state)
-            print(f"    {state['offset']}/{state['expected_count']}", end="\r", flush=True)
-            more = body.get("properties", {}).get("exceededTransferLimit") or len(feats) == PAGE_SIZE
-            if not feats or not more:
-                break
-    print()
+    fresh = state["bbox_i"] == 0 and state["offset"] == 0
+    total_written = state.get("total_written", 0)
+    with open(out, "w" if fresh else "a") as fh:
+        for bbox_i in range(state["bbox_i"], len(bboxes)):
+            bbox = bboxes[bbox_i]
+            if bbox_i != state["bbox_i"]:
+                state.update({"bbox_i": bbox_i, "offset": 0, "expected_count": None})
+            if state["expected_count"] is None:
+                state["expected_count"] = get_count(url, where, bbox)
+                save_state(key, state)
+            print(f"  {key} [box {bbox_i + 1}/{len(bboxes)}]: {state['expected_count']} features expected, "
+                  f"resuming at offset {state['offset']}")
+            while True:
+                params = {
+                    "where": where,
+                    "outFields": ",".join(out_fields),
+                    "f": "geojson",
+                    "outSR": "4326",
+                    "resultOffset": state["offset"],
+                    "resultRecordCount": PAGE_SIZE,
+                    "orderByFields": "OBJECTID",
+                }
+                params.update(geometry_params(bbox))
+                body = request_json(f"{url}/query", params)
+                feats = body.get("features", [])
+                for feat in feats:
+                    fh.write(json.dumps(feat, separators=(",", ":")) + "\n")
+                state["offset"] += len(feats)
+                total_written += len(feats)
+                state["total_written"] = total_written
+                save_state(key, state)
+                print(f"    {state['offset']}/{state['expected_count']}", end="\r", flush=True)
+                more = body.get("properties", {}).get("exceededTransferLimit") or len(feats) == PAGE_SIZE
+                if not feats or not more:
+                    break
+            print()
     state["done"] = True
     save_state(key, state)
-    print(f"  {key}: done, {state['offset']} features -> {out}")
+    print(f"  {key}: done, {total_written} features -> {out}")
 
 
 def main():
@@ -138,14 +150,16 @@ def main():
     sources = load_sources()
     ensure_dirs()
 
-    bbox = None
+    bboxes = [None]
     if args.subset:
-        bbox = sources["subsets"][args.subset]
+        preset = sources["subsets"][args.subset]
+        # A preset is one bbox [w,s,e,n] or a list of bboxes.
+        bboxes = preset if isinstance(preset[0], list) else [preset]
     elif args.bbox:
-        bbox = [float(v) for v in args.bbox.split(",")]
+        bboxes = [[float(v) for v in args.bbox.split(",")]]
 
     keys = [args.source] if args.source else ["parcels"] + OVERLAY_SOURCES
-    print(f"Downloading {keys} (bbox={bbox})")
+    print(f"Downloading {keys} (boxes={bboxes})")
     for key in keys:
         cfg = sources.get(key)
         if not cfg or not cfg.get("url") or "verify" in cfg["url"].lower():
@@ -153,8 +167,8 @@ def main():
             continue
         # Overlays are small; always download their full extent so flags are
         # correct even for parcels at the bbox edge.
-        src_bbox = bbox if key == "parcels" else None
-        download_source(key, cfg, src_bbox, args.situs_where)
+        src_bboxes = bboxes if key == "parcels" else [None]
+        download_source(key, cfg, src_bboxes, args.situs_where)
 
 
 if __name__ == "__main__":
