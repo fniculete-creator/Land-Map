@@ -445,14 +445,24 @@ window.LandMap = LandMap;
 
 /* ---------------- boot ---------------- */
 
-async function showDemoBannerIfSynthetic() {
+async function isSynthetic() {
   try {
     const meta = await archive.getMetadata();
-    const desc = (meta && meta.description) || "";
-    if (desc.includes("synthetic=true")) {
-      document.getElementById("demo-banner").classList.remove("hidden");
-    }
-  } catch (e) { /* metadata is optional */ }
+    return ((meta && meta.description) || "").includes("synthetic=true");
+  } catch (e) {
+    return false;
+  }
+}
+
+// Synthetic demo parcels are a fictional grid — drawing them over a real
+// basemap misaligns badly. Demo mode gets a self-contained plain map
+// (background + the tileset's own street grid); real data gets the real
+// basemap and no synthetic streets.
+function demoStyle() {
+  const style = baseStyle();
+  style.layers = style.layers.filter(
+    (l) => l.id !== "basemap-streets" && l.id !== "basemap-satellite");
+  return style;
 }
 
 // Prefer the key-free vector basemap (clean gray cartography); fall back to
@@ -473,7 +483,7 @@ async function buildStyle() {
       parcels: fallback.sources.parcels,
     };
     const overlayIds = new Set([
-      "basemap-satellite", "demo-streets", "centroids",
+      "basemap-satellite", "centroids",
       "parcels-fill", "parcels-line", "parcels-selected",
     ]);
     base.layers = [...base.layers, ...fallback.layers.filter((l) => overlayIds.has(l.id))];
@@ -484,9 +494,14 @@ async function buildStyle() {
 }
 
 async function boot() {
+  const synthetic = await isSynthetic();
+  if (synthetic) {
+    document.getElementById("demo-banner").classList.remove("hidden");
+    document.getElementById("sat-btn").style.display = "none";
+  }
   map = new maplibregl.Map({
     container: "map",
-    style: await buildStyle(),
+    style: synthetic ? demoStyle() : await buildStyle(),
     center: CONFIG.START_CENTER,
     zoom: CONFIG.START_ZOOM,
     maxZoom: 20,
@@ -502,7 +517,6 @@ async function boot() {
     inited = true;
     syncControlsFromState();
     applyFilters();
-    showDemoBannerIfSynthetic();
   }
   map.on("load", init);
   map.on("styledata", init);
