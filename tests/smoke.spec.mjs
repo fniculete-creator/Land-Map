@@ -80,18 +80,26 @@ const pt = await page.evaluate(() => {
 });
 assert(pt, "found a rendered parcel to click");
 await page.mouse.click(pt.x, pt.y);
-await page.waitForSelector(".maplibregl-popup .popup-title", { timeout: 10000 });
-const popup = await page.evaluate(() => ({
-  title: document.querySelector(".maplibregl-popup .popup-title")?.textContent || "",
-  apnRow: document.querySelector(".maplibregl-popup .popup-table")?.textContent || "",
-  assessorHref: document.querySelector('.maplibregl-popup a[href*="portal.assessor.lacounty.gov/parceldetail/"]')?.href || "",
+await page.waitForSelector("#detail-panel:not(.hidden) .dp-addr", { timeout: 10000 });
+await page.waitForTimeout(600); // owner lookup settles to fallback (no API here)
+const panel = await page.evaluate(() => ({
+  title: document.querySelector("#detail-panel .dp-addr")?.textContent || "",
+  sub: document.querySelector("#detail-panel .dp-sub")?.textContent || "",
+  assessor: !!document.querySelector('#detail-panel a[href*="portal.assessor.lacounty.gov/parceldetail/"]'),
+  sv: (document.querySelector('#detail-panel a[href*="google.com/maps"]')?.href || ""),
+  ownerFallback: !!document.querySelector("#detail-panel #dp-owner .dp-owner-link"),
+  statusSelect: !!document.querySelector("#detail-panel #dp-status"),
 }));
-assert(/^(\d+ .+|APN \d+)/.test(popup.title), `popup titled by address or APN fallback (${popup.title})`);
-assert(/APN\d+/.test(popup.apnRow.replace(/\s/g, "")), "popup table includes APN");
-assert(popup.assessorHref.includes("portal.assessor.lacounty.gov/parceldetail/"), "popup links to assessor portal");
-const svHref = await page.evaluate(() =>
-  document.querySelector('.maplibregl-popup a[href*="google.com/maps"]')?.href || "");
-assert(svHref.includes("layer=c&cbll="), "popup links to Google Street View");
+assert(/^(\d+ .+|APN \d+)/.test(panel.title), `detail panel titled by address or APN (${panel.title})`);
+assert(/APN \d+/.test(panel.sub), "detail panel shows APN");
+assert(panel.assessor, "detail panel links to assessor portal");
+assert(panel.sv.includes("layer=c&cbll="), "detail panel links to Google Street View");
+assert(panel.ownerFallback, "owner section falls back to assessor link without API");
+assert(panel.statusSelect, "detail panel has deal-status selector");
+await page.click("#dp-close");
+const panelClosed = await page.evaluate(() =>
+  document.getElementById("detail-panel").classList.contains("hidden"));
+assert(panelClosed, "detail panel closes");
 
 // Candidates stat + list should reflect only qualifying (colored) parcels.
 const candStat = await page.evaluate(() => Number(document.getElementById("stat-candidates").textContent.replace(/,/g, "")));

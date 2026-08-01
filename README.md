@@ -95,6 +95,24 @@ Both are optional — the app is fully functional without them.
 Basemap fallback order: Mapbox (if token) → OpenFreeMap (free) → OSM
 raster → plain background.
 
+### Owner data via LandVision / LightBox
+
+The parcel detail panel's **Owner information** section (owner of record,
+mailing address, last sale) is fed by `api/parcel.js`, a Vercel serverless
+function that proxies the LightBox API — the data platform behind
+LandVision — keeping your API key server-side. Setup:
+
+1. Get a LightBox API key (developer.lightboxre.com; ask your LandVision
+   rep to enable API access on your account).
+2. In Vercel: Project → Settings → Environment Variables → add
+   `LIGHTBOX_API_KEY`. Redeploy.
+3. If your subscription's endpoint shape differs, adjust `LIGHTBOX_PATH`
+   (env var) and the field mapping in `api/parcel.js` — both documented in
+   the file.
+
+Without the key the panel falls back to a one-click link to the parcel's
+LA County Assessor page, where ownership is public record.
+
 ## Deploying to Vercel (fastest path to a URL)
 
 The repo is a zero-build static site — Vercel serves it as-is:

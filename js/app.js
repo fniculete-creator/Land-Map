@@ -235,9 +235,8 @@ function renderList(candidates, detailed) {
 
     const center = featureCenter(f);
     li.addEventListener("click", () => {
-      selectedAin = p.ain;
-      applyFilters();
       map.easeTo({ center, zoom: Math.max(map.getZoom(), 15) });
+      showDetail(p, { lat: center[1], lng: center[0] });
     });
 
     li.appendChild(dot);
@@ -247,20 +246,23 @@ function renderList(candidates, detailed) {
   }
 }
 
-/* ---------------- popup ---------------- */
+/* ---------------- parcel detail panel ---------------- */
 
-function popupHtml(p, lngLat) {
+function kvRow(key, value) {
+  return `<div class="kv"><span class="kv-key">${key}</span><span class="kv-val">${value}</span></div>`;
+}
+
+function detailHtml(p, lngLat) {
   const acres = (p.lsf / 43560).toFixed(2);
-  const svLink = lngLat
-    ? `<a href="${CONFIG.STREETVIEW_URL(lngLat.lat.toFixed(6), lngLat.lng.toFixed(6))}" target="_blank" rel="noopener">Street View ↗</a>`
-    : "";
-  // Embedded live Street View via the Maps Embed API (free tier) when a
-  // Google key is configured; the plain link above remains either way.
-  const svEmbed = CONFIG.GOOGLE_MAPS_KEY && lngLat
-    ? `<iframe class="popup-sv" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-         src="https://www.google.com/maps/embed/v1/streetview?key=${CONFIG.GOOGLE_MAPS_KEY}&location=${lngLat.lat.toFixed(6)},${lngLat.lng.toFixed(6)}&fov=80"
+  const lat = lngLat ? lngLat.lat.toFixed(6) : null;
+  const lng = lngLat ? lngLat.lng.toFixed(6) : null;
+
+  const svEmbed = CONFIG.GOOGLE_MAPS_KEY && lat
+    ? `<iframe class="dp-sv" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+         src="https://www.google.com/maps/embed/v1/streetview?key=${CONFIG.GOOGLE_MAPS_KEY}&location=${lat},${lng}&fov=80"
          allowfullscreen></iframe>`
     : "";
+
   const badges = [];
   if (p.e === 1) badges.push('<span class="badge badge-ok">SB 1123 candidate</span>');
   if (p.v === 1) badges.push('<span class="badge badge-vacant">Vacant</span>');
@@ -268,36 +270,99 @@ function popupHtml(p, lngLat) {
   else if (p.f === 1) badges.push('<span class="badge badge-warn">High fire — excluded</span>');
   if (p.c === 1) badges.push('<span class="badge badge-warn">Coastal zone — excluded</span>');
   if (p.h === 1) badges.push('<span class="badge badge-warn">Hillside — excluded</span>');
+
   return `
-    <div class="popup">
-      <div class="popup-title">${displayName(p)}</div>
-      <div class="popup-badges">${badges.join(" ")}</div>
-      ${svEmbed}
-      <table class="popup-table">
-        <tr><td>APN</td><td>${p.ain}</td></tr>
-        <tr><td>Tier</td><td>${p.t ? p.t + " — " + (TIER_NAMES[p.t] || "") : "–"}</td></tr>
-        <tr><td>Zoning</td><td>${p.z || "?"} <span class="muted">(${p.zc || "?"})</span></td></tr>
-        <tr><td>Use code</td><td>${p.uc || "?"}</td></tr>
-        <tr><td>Units</td><td>${p.u}</td></tr>
-        <tr><td>Lot</td><td>${fmt(p.lsf)} sqft (${acres} ac)</td></tr>
-        <tr><td>Width</td><td>≈ ${p.w} ft <span class="muted">(computed, approx.)</span></td></tr>
-        <tr><td>Improvements</td><td>$${fmt(p.iv)}</td></tr>
-      </table>
-      <div class="popup-links">
-        <a href="${CONFIG.ASSESSOR_URL(p.ain)}" target="_blank" rel="noopener">Assessor / owner info ↗</a>
-        <a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>
-        ${svLink}
+    <div class="dp-head">
+      <div>
+        <div class="dp-addr">${displayName(p)}</div>
+        <div class="dp-sub">APN ${p.ain}${p.t ? " · Tier " + p.t + " — " + (TIER_NAMES[p.t] || "") : ""}</div>
       </div>
-      <div class="popup-status">
-        <label>Status
-          <select onchange="window.LandMap.setStatus('${p.ain}', this.value)">
-            <option value="">None</option>
-            ${Object.entries(STATUS_LABELS).map(([val, label]) =>
-              `<option value="${val}"${dealStatuses[p.ain] === val ? " selected" : ""}>${label}</option>`).join("")}
-          </select>
-        </label>
-      </div>
+      <button id="dp-close" title="Close">×</button>
+    </div>
+    <div class="dp-badges">${badges.join(" ")}</div>
+    ${svEmbed}
+    <div class="dp-tiles">
+      <div class="dp-tile"><b>${fmt(p.lsf)}</b><span>Lot sf · ${acres} ac</span></div>
+      <div class="dp-tile dp-tile-navy"><b>≈ ${p.w} ft</b><span>Width · computed</span></div>
+    </div>
+    <section class="dp-section">
+      <h4>Parcel</h4>
+      ${kvRow("Zoning", `${p.z || "?"} <span class="muted">(${p.zc || "?"})</span>`)}
+      ${kvRow("Use code", p.uc || "?")}
+      ${kvRow("Units", p.u)}
+      ${kvRow("Improvements", "$" + fmt(p.iv))}
+    </section>
+    <section class="dp-section">
+      <h4>Owner information</h4>
+      <div id="dp-owner"><div class="dp-loading">Looking up owner…</div></div>
+    </section>
+    <section class="dp-section">
+      <h4>Status</h4>
+      <select id="dp-status">
+        <option value="">None</option>
+        ${Object.entries(STATUS_LABELS).map(([val, label]) =>
+          `<option value="${val}"${dealStatuses[p.ain] === val ? " selected" : ""}>${label}</option>`).join("")}
+      </select>
+    </section>
+    <div class="dp-links">
+      <a href="${CONFIG.ASSESSOR_URL(p.ain)}" target="_blank" rel="noopener">Assessor ↗</a>
+      <a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>
+      ${lat ? `<a href="${CONFIG.STREETVIEW_URL(lat, lng)}" target="_blank" rel="noopener">Street View ↗</a>` : ""}
     </div>`;
+}
+
+function ownerFallbackHtml(p) {
+  return `
+    <p class="dp-note">Owner name, mailing address, and sale history aren't in
+    open data. Connect LandVision/LightBox (see README) for automatic lookups,
+    or check the assessor record:</p>
+    <a class="dp-owner-link" href="${CONFIG.ASSESSOR_URL(p.ain)}" target="_blank" rel="noopener">
+      Owner record on Assessor portal ↗</a>`;
+}
+
+async function fillOwnerInfo(p) {
+  const el = document.getElementById("dp-owner");
+  if (!el) return;
+  if (!CONFIG.OWNER_API) { el.innerHTML = ownerFallbackHtml(p); return; }
+  try {
+    const resp = await fetch(`${CONFIG.OWNER_API}?apn=${encodeURIComponent(p.ain)}`);
+    if (!resp.ok) throw new Error("owner api " + resp.status);
+    const d = await resp.json();
+    if (document.getElementById("dp-owner") !== el) return; // panel changed
+    const rows = [];
+    if (d.owner) rows.push(kvRow("Owner of record", d.owner));
+    if (d.mailingAddress) rows.push(kvRow("Mailing address", d.mailingAddress));
+    if (d.lastSaleDate || d.lastSalePrice) {
+      rows.push(kvRow(d.lastSaleDate || "Last sale",
+        d.lastSalePrice ? "$" + fmt(d.lastSalePrice) : "–"));
+    }
+    if (!rows.length) throw new Error("empty");
+    const ocLink = d.owner && /\b(LLC|L\.P\.|LP|INC|CORP|TRUST)\b/i.test(d.owner)
+      ? `<a class="dp-owner-link" href="https://opencorporates.com/companies/us_ca?q=${encodeURIComponent(d.owner)}" target="_blank" rel="noopener">OpenCorporates ↗</a>`
+      : "";
+    el.innerHTML = rows.join("") + ocLink;
+  } catch (e) {
+    if (document.getElementById("dp-owner") === el) el.innerHTML = ownerFallbackHtml(p);
+  }
+}
+
+function showDetail(p, lngLat) {
+  selectedAin = p.ain;
+  applyFilters();
+  const panel = document.getElementById("detail-panel");
+  panel.innerHTML = detailHtml(p, lngLat);
+  panel.classList.remove("hidden");
+  document.getElementById("dp-close").addEventListener("click", closeDetail);
+  document.getElementById("dp-status").addEventListener("change", (e) => {
+    LandMap.setStatus(p.ain, e.target.value);
+  });
+  fillOwnerInfo(p);
+}
+
+function closeDetail() {
+  document.getElementById("detail-panel").classList.add("hidden");
+  selectedAin = null;
+  applyFilters();
 }
 
 /* ---------------- UI wiring ---------------- */
@@ -625,13 +690,7 @@ async function boot() {
   map.on("sourcedata", scheduleCount);
 
   map.on("click", "parcels-fill", (e) => {
-    const p = e.features[0].properties;
-    selectedAin = p.ain;
-    applyFilters();
-    new maplibregl.Popup({ maxWidth: "320px" })
-      .setLngLat(e.lngLat)
-      .setHTML(popupHtml(p, e.lngLat))
-      .addTo(map);
+    showDetail(e.features[0].properties, e.lngLat);
   });
   map.on("click", "centroids", (e) => {
     map.easeTo({ center: e.lngLat, zoom: 14 });
