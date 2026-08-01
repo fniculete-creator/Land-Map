@@ -8,3 +8,4 @@ data/enriched/
 data/tiles/
 *.pmtiles
 !data/demo/demo.pmtiles
+data/pipeline.log
