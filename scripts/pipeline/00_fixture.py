@@ -98,6 +98,18 @@ def main():
                 return zone, zc
         return ZONE_BANDS[0][0], ZONE_BANDS[0][1]
 
+    STREET_NAMES = [
+        "PACIFIC", "GLENCOE", "LINCOLN", "PENMAR", "WALGROVE", "BEETHOVEN",
+        "GRAND VIEW", "INGLEWOOD", "MOORE", "COOLIDGE", "CENTINELA", "WASATCH",
+        "COLONIAL", "GREENE", "GARFIELD", "SHELL", "VICTORIA", "WADE",
+        "MILDRED", "SUPERBA", "PALMS", "CHARNOCK", "GLYNDON", "MAPLEWOOD",
+    ]
+    STREET_TYPES = ["AVE", "ST", "BLVD", "DR", "PL", "CT"]
+
+    def street_for_col(c):
+        rr = random.Random(args.seed * 77 + c)
+        return f"{STREET_NAMES[c % len(STREET_NAMES)]} {STREET_TYPES[rr.randrange(len(STREET_TYPES))]}"
+
     # Shuffle block order so the fixture covers the whole bbox (incl. the
     # fire/hillside NE corner) even when the parcel quota fills only some blocks.
     blocks = [(c, r) for c in range(cols) for r in range(rows)]
@@ -133,6 +145,12 @@ def main():
                         coords = jitter_quad(rng, x, ls, x + lot_w_deg, ls + lot_d_deg)
                         use_code, use_type, units, iv = rand_use(rng, zc)
                         ain += rng.randint(1, 9)
+                        # Roughly 30% of vacant lots have no assigned situs
+                        # address, mirroring the real assessor roll.
+                        house_no = 100 * r + 2 * int((x - bw) / lot_w_deg + 1) + half + 300
+                        addr = f"{house_no} {street_for_col(c)}"
+                        if use_type == "Vacant" and rng.random() < 0.3:
+                            addr = ""
                         feat = {
                             "type": "Feature",
                             "geometry": {"type": "Polygon", "coordinates": coords},
@@ -143,6 +161,7 @@ def main():
                                 "Units": units,
                                 "Roll_ImpValue": iv,
                                 "SitusCity": "LOS ANGELES CA",
+                                "SitusAddress": addr,
                             },
                         }
                         pf.write(json.dumps(feat, separators=(",", ":")) + "\n")

@@ -17,8 +17,20 @@ const COLORS = {
 const TIER_NAMES = { A: "Westside", B: "South Valley", C: "Central/North Valley" };
 
 let map;
-let state = stateFromHash(location.hash);
+// SB 1123 candidates are the product: start with the preset on, so searching
+// a city immediately shows what qualifies there. A shared URL hash wins.
+let state = location.hash.length > 1 ? stateFromHash(location.hash) : sb1123State(CONFIG);
 let selectedAin = null;
+
+// "4108 WHITSETT AVE" -> "4108 Whitsett Ave"
+function fmtAddr(a) {
+  if (!a) return "";
+  return a.toLowerCase().replace(/\b[a-z]/g, (ch) => ch.toUpperCase());
+}
+
+function displayName(p) {
+  return fmtAddr(p.a) || "APN " + p.ain;
+}
 
 /* ---------------- map setup ---------------- */
 
@@ -184,13 +196,15 @@ function renderList(candidates, detailed) {
     info.className = "site-info";
     const name = document.createElement("div");
     name.className = "site-name";
-    name.textContent = "APN " + p.ain;
+    name.textContent = displayName(p);
     const meta = document.createElement("div");
     meta.className = "site-meta";
     const bits = [];
+    if (p.a) bits.push("APN " + p.ain);
+    else bits.push("no address");
     if (detailed && p.zc) bits.push(p.zc);
     bits.push(fmt(p.lsf) + " sf");
-    if (detailed && p.w) bits.push("≈" + p.w + " ft wide");
+    if (detailed && p.w) bits.push("≈" + p.w + " ft");
     meta.textContent = bits.join(" · ");
     info.appendChild(name);
     info.appendChild(meta);
@@ -229,9 +243,10 @@ function popupHtml(p, lngLat) {
   if (p.h === 1) badges.push('<span class="badge badge-warn">Hillside — excluded</span>');
   return `
     <div class="popup">
-      <div class="popup-title">APN ${p.ain}</div>
+      <div class="popup-title">${displayName(p)}</div>
       <div class="popup-badges">${badges.join(" ")}</div>
       <table class="popup-table">
+        <tr><td>APN</td><td>${p.ain}</td></tr>
         <tr><td>Tier</td><td>${p.t ? p.t + " — " + (TIER_NAMES[p.t] || "") : "–"}</td></tr>
         <tr><td>Zoning</td><td>${p.z || "?"} <span class="muted">(${p.zc || "?"})</span></td></tr>
         <tr><td>Use code</td><td>${p.uc || "?"}</td></tr>

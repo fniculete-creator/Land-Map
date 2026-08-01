@@ -204,6 +204,7 @@ def main():
             width_ft = int(round(min(side1, side2)))
 
             use_code = str(props.get(pf["use_code"]) or "")
+            addr = str(props.get(pf.get("situs_address", "")) or "").strip()
             use_type = str(props.get(pf.get("use_type", "")) or "")
             try:
                 units = int(props.get(pf["units"]) or 0)
@@ -247,10 +248,10 @@ def main():
                 stats["widths"].append(width_ft)
 
             out_props = {
-                "ain": ain, "z": zone_str, "zc": zc, "zf": zf, "uc": use_code,
-                "u": units, "lsf": lot_sqft, "w": width_ft, "iv": iv,
-                "v": v_flag, "f": f_cls, "c": c_flag, "h": h_flag, "e": e_flag,
-                "t": tier,
+                "ain": ain, "a": addr, "z": zone_str, "zc": zc, "zf": zf,
+                "uc": use_code, "u": units, "lsf": lot_sqft, "w": width_ft,
+                "iv": iv, "v": v_flag, "f": f_cls, "c": c_flag, "h": h_flag,
+                "e": e_flag, "t": tier,
             }
             po.write(json.dumps({
                 "type": "Feature", "geometry": mapping(geom), "properties": out_props,
@@ -258,7 +259,7 @@ def main():
             co.write(json.dumps({
                 "type": "Feature",
                 "geometry": {"type": "Point", "coordinates": [round(rep.x, 6), round(rep.y, 6)]},
-                "properties": {"ain": ain, "e": e_flag, "v": v_flag, "lsf": lot_sqft, "t": tier},
+                "properties": {"ain": ain, "a": addr, "e": e_flag, "v": v_flag, "lsf": lot_sqft, "t": tier},
             }, separators=(",", ":")) + "\n")
             stats["written"] += 1
 

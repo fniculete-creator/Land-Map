@@ -44,7 +44,18 @@ const counts = () => page.evaluate(() => {
   return { parcels: dedupe("parcels-fill"), centroids: dedupe("centroids") };
 });
 
+// SB 1123 preset is ON by default — only qualifiers render at first.
+const defaultOn = await page.evaluate(() =>
+  document.getElementById("sb1123-btn").classList.contains("active"));
+assert(defaultOn, "SB 1123 preset is active on first load");
+const presetStart = await counts();
+assert(presetStart.parcels > 0, `default view shows candidates (${presetStart.parcels})`);
+
+// Toggle it off to establish the all-parcels baseline.
+await page.click("#sb1123-btn");
+await page.waitForTimeout(1500);
 const baseline = await counts();
+assert(baseline.parcels > presetStart.parcels, `all parcels exceed candidates (${baseline.parcels} > ${presetStart.parcels})`);
 assert(baseline.parcels > 100, `baseline parcel count is substantial (${baseline.parcels})`);
 
 // Demo banner should be visible (synthetic tileset watermark).
@@ -72,9 +83,11 @@ await page.mouse.click(pt.x, pt.y);
 await page.waitForSelector(".maplibregl-popup .popup-title", { timeout: 10000 });
 const popup = await page.evaluate(() => ({
   title: document.querySelector(".maplibregl-popup .popup-title")?.textContent || "",
+  apnRow: document.querySelector(".maplibregl-popup .popup-table")?.textContent || "",
   assessorHref: document.querySelector('.maplibregl-popup a[href*="portal.assessor.lacounty.gov/parceldetail/"]')?.href || "",
 }));
-assert(/^APN \d+/.test(popup.title), `popup shows APN (${popup.title})`);
+assert(/^(\d+ .+|APN \d+)/.test(popup.title), `popup titled by address or APN fallback (${popup.title})`);
+assert(/APN\d+/.test(popup.apnRow.replace(/\s/g, "")), "popup table includes APN");
 assert(popup.assessorHref.includes("portal.assessor.lacounty.gov/parceldetail/"), "popup links to assessor portal");
 const svHref = await page.evaluate(() =>
   document.querySelector('.maplibregl-popup a[href*="google.com/maps"]')?.href || "");

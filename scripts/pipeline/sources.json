@@ -11,7 +11,8 @@
       "use_type": "UseType",
       "units": "Units",
       "improvement_value": "Roll_ImpValue",
-      "situs_city": "SitusCity"
+      "situs_city": "SitusCity",
+      "situs_address": "SitusAddress"
     },
     "situs_city_where": "SitusCity LIKE 'LOS ANGELES%'"
   },
