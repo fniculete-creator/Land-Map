@@ -23,8 +23,9 @@ for spec in \
   "north:-118.90,34.34,-117.60,35.05" \
   "coast:-121.00,33.90,-118.60,35.15"; do
   name="${spec%%:*}"; bbox="${spec#*:}"
+  rm -f "data/real/land-tiles-$name.pmtiles"  # extract refuses to overwrite
   "$PM" extract data/tiles/land-map-full.pmtiles \
-    "data/real/land-tiles-$name.pmtiles" --bbox="$bbox" --force | tail -1
+    "data/real/land-tiles-$name.pmtiles" --bbox="$bbox" | tail -1
 done
 ls -l data/real/*.pmtiles | awk '{printf "%.1f MiB  %s\n", $5/1048576, $9}'
 echo "=== CHAIN DONE $(date -u) ==="
