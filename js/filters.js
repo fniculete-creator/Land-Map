@@ -37,8 +37,13 @@ const SFR_CLAUSE = ["all",
     ["literal", ["C", "D", "E", "F", "G", "H", "I", "J"]]]],
 ];
 
+// The working universe: SFR homes + vacant lots. Everything the team hunts
+// starts from this set; filters narrow it. Other parcels (commercial,
+// condos, apartments…) render only as faint context.
+export const UNIVERSE_CLAUSE = ["any", SFR_CLAUSE, ["==", ["get", "v"], 1]];
+
 export function buildFilter(state, cfg, statusAins) {
-  const clauses = ["all"];
+  const clauses = ["all", UNIVERSE_CLAUSE];
 
   for (const [key, [min, max]] of Object.entries(state.ranges)) {
     if (min !== null) clauses.push([">=", ["get", key], min]);
@@ -66,7 +71,7 @@ export function buildFilter(state, cfg, statusAins) {
     clauses.push(["==", ["get", "e"], 1]);
   }
 
-  return clauses.length > 1 ? clauses : null;
+  return clauses;
 }
 
 // Centroids now carry the full filterable attribute set (zc/zf/uc/w/…), so

@@ -417,6 +417,10 @@ html, body {
 
 .lg-swatch { width: 14px; height: 10px; border-radius: 3px; }
 .lg-cand { background: rgba(16, 185, 129, 0.6); border: 1px solid #047857; }
+.lg-vac { background: rgba(245, 158, 11, 0.55); border: 1px solid #b45309; }
+.lg-sfr { background: rgba(59, 130, 246, 0.5); border: 1px solid #1d4ed8; }
+.lg-proj-appr { background: rgba(16, 185, 129, 0.75); border: 1px solid #047857; }
+.lg-proj-pend { background: rgba(250, 204, 21, 0.8); border: 1px solid #ca8a04; }
 .lg-other { background: rgba(100, 116, 139, 0.12); border: 1px solid #c3cbd3; }
 
 .lg-line { width: 14px; height: 3px; border-radius: 2px; }
@@ -575,3 +579,5 @@ html, body {
   #sidepanel { width: 100%; min-width: 0; max-height: 45vh; }
   #brand-mm, #brand-divider { display: none; }
 }
+
+.dp-warn { color: #b45309; font-weight: 600; }

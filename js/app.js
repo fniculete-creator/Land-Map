@@ -12,9 +12,16 @@ const COLORS = {
   eligibleLine: "#047857",
   neutralLine: "#c3cbd3",
   highlight: "#2563eb",
-  match: "#3b82f6",
-  matchLine: "#1d4ed8",
+  vacant: "#f59e0b",
+  vacantLine: "#b45309",
+  sfr: "#3b82f6",
+  sfrLine: "#1d4ed8",
 };
+
+// Universe rendering: one uniform blue for every highlighted parcel
+// (SFR homes and vacant lots alike); filters narrow which blues remain.
+const UNIVERSE_COLOR = COLORS.sfr;
+const UNIVERSE_LINE_COLOR = COLORS.sfrLine;
 
 // Any filter beyond the untouched default (the SB preset is tracked apart).
 function hasUserFilters(s) {
@@ -48,9 +55,9 @@ function statusAinsFor(status) {
 }
 
 let map;
-// SB 1123 candidates are the product: start with the preset on, so searching
-// a city immediately shows what qualifies there. A shared URL hash wins.
-let state = location.hash.length > 1 ? stateFromHash(location.hash) : sb1123State(CONFIG);
+// Default view: the hunting universe (SFR homes + vacant lots). The SB 1123
+// preset is one opt-in filter. A shared URL hash wins.
+let state = location.hash.length > 1 ? stateFromHash(location.hash) : emptyState();
 let selectedAin = null;
 let demoMode = false;
 let demoBounds = null;
@@ -119,28 +126,56 @@ function baseStyle() {
         id: "centroids", type: "circle", source: "parcels", "source-layer": "centroids",
         maxzoom: 14,
         paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"],
-            8, ["case", ["==", ["get", "e"], 1], 2, 1],
-            12, ["case", ["==", ["get", "e"], 1], 4.5, 2]],
-          "circle-color": ["case", ["==", ["get", "e"], 1], COLORS.eligible, "#aeb7bf"],
-          "circle-opacity": ["case", ["==", ["get", "e"], 1], 0.95, 0.45],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 1.5, 12, 3],
+          "circle-color": UNIVERSE_COLOR,
+          "circle-opacity": 0.9,
         },
+      },
+      {
+        // Non-universe parcels (commercial, condos, apartments…): faint,
+        // permanent context beneath the working universe.
+        id: "parcels-context", type: "fill", source: "parcels", "source-layer": "parcels",
+        minzoom: 14,
+        paint: { "fill-color": "#64748b", "fill-opacity": 0.05 },
+      },
+      {
+        id: "parcels-context-line", type: "line", source: "parcels", "source-layer": "parcels",
+        minzoom: 14,
+        paint: { "line-color": COLORS.neutralLine, "line-width": 0.5 },
       },
       {
         id: "parcels-fill", type: "fill", source: "parcels", "source-layer": "parcels",
         minzoom: 14,
         paint: {
-          // Only qualifying parcels get color; everything else stays neutral.
-          "fill-color": ["case", ["==", ["get", "e"], 1], COLORS.eligible, "#64748b"],
-          "fill-opacity": ["case", ["==", ["get", "e"], 1], 0.55, 0.05],
+          "fill-color": UNIVERSE_COLOR,
+          "fill-opacity": 0.45,
         },
       },
       {
         id: "parcels-line", type: "line", source: "parcels", "source-layer": "parcels",
         minzoom: 14,
         paint: {
-          "line-color": ["case", ["==", ["get", "e"], 1], COLORS.eligibleLine, COLORS.neutralLine],
-          "line-width": ["case", ["==", ["get", "e"], 1], 1.4, 0.5],
+          "line-color": UNIVERSE_LINE_COLOR,
+          "line-width": 1.0,
+        },
+      },
+      {
+        // LA City Planning SB 684/1123 cases: approved green, pending yellow.
+        // Always visible regardless of filters.
+        id: "parcels-projects", type: "fill", source: "parcels", "source-layer": "parcels",
+        minzoom: 14,
+        filter: ["==", ["get", "ain"], "___none___"],
+        paint: { "fill-color": "#facc15", "fill-opacity": 0.7 },
+      },
+      {
+        id: "projects-centroids", type: "circle", source: "parcels", "source-layer": "centroids",
+        maxzoom: 14,
+        filter: ["==", ["get", "ain"], "___none___"],
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 3, 12, 6],
+          "circle-color": "#facc15",
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 1,
         },
       },
       {
@@ -197,24 +232,9 @@ function applyFilters() {
   map.setFilter("parcels-selected", f ? ["all", f, selBase] : selBase);
   map.setFilter("centroids", buildCentroidFilter(state, CONFIG, statusAins));
 
-  // When actively filtering, every parcel that passes the filter should be
-  // clearly visible: SB candidates green, other matches blue. With no
-  // filters, non-candidates stay as faint context so candidates pop.
-  const filtering = state.sbPreset || hasUserFilters(state);
-  map.setPaintProperty("parcels-fill", "fill-color",
-    ["case", ["==", ["get", "e"], 1], COLORS.eligible, filtering ? COLORS.match : "#64748b"]);
-  map.setPaintProperty("parcels-fill", "fill-opacity",
-    ["case", ["==", ["get", "e"], 1], 0.55, filtering ? 0.4 : 0.05]);
-  map.setPaintProperty("parcels-line", "line-color",
-    ["case", ["==", ["get", "e"], 1], COLORS.eligibleLine, filtering ? COLORS.matchLine : COLORS.neutralLine]);
-  map.setPaintProperty("parcels-line", "line-width",
-    ["case", ["==", ["get", "e"], 1], 1.4, filtering ? 1.1 : 0.5]);
-  map.setPaintProperty("centroids", "circle-color",
-    ["case", ["==", ["get", "e"], 1], COLORS.eligible, filtering ? COLORS.match : "#aeb7bf"]);
-  map.setPaintProperty("centroids", "circle-opacity",
-    ["case", ["==", ["get", "e"], 1], 0.95, filtering ? 0.85 : 0.45]);
-
   applyStatusOutlines();
+  document.getElementById("list-title").textContent =
+    state.sbPreset ? "Candidates in view" : "Matches in view";
   updateHash();
   scheduleCount();
 }
@@ -251,13 +271,10 @@ function updateCount() {
   const candidates = [...byAin.values()].filter((f) => f.properties.e === 1);
   document.getElementById("stat-candidates").textContent = candidates.length.toLocaleString();
 
-  // Actively filtering -> the list is your matches (rendered features already
-  // pass the filters). Untouched default -> curated candidates-only list.
-  const filtering = state.sbPreset || hasUserFilters(state);
-  const listSource = filtering ? [...byAin.values()] : candidates;
+  // The list is always the current matches (rendered features pass the
+  // universe + filters). With the SB preset on, matches ARE the candidates.
+  const listSource = [...byAin.values()];
   lastCandidates = listSource;
-  document.getElementById("list-title").textContent =
-    filtering && !state.sbPreset ? "Matches in view" : "Candidates in view";
 
   const lots = listSource.map((f) => f.properties.lsf).sort((a, b) => a - b);
   const widths = listSource.map((f) => f.properties.w).filter((w) => w != null).sort((a, b) => a - b);
@@ -305,7 +322,10 @@ function renderList(candidates, detailed) {
 
     const dot = document.createElement("span");
     dot.className = "site-dot";
-    if (p.e !== 1) dot.style.background = COLORS.match;
+    const proj = sbProjects[p.ain];
+    dot.style.background = proj
+      ? (proj.status === "approved" ? "#10b981" : "#facc15")
+      : COLORS.sfr;
 
     const info = document.createElement("div");
     info.className = "site-info";
@@ -320,6 +340,10 @@ function renderList(candidates, detailed) {
     if (detailed && p.zc) bits.push(p.zc);
     bits.push(fmt(p.lsf) + " sf");
     if (detailed && p.w) bits.push("≈" + p.w + " ft");
+    if (proj) {
+      bits.push(`SB ${proj.status === "approved" ? "approved" : "submitted"} ${proj.filed || ""}`.trim());
+      if (proj.units) bits.push(proj.units + " homes");
+    }
     if (dealStatuses[p.ain]) bits.push(STATUS_LABELS[dealStatuses[p.ain]]);
     meta.textContent = bits.join(" · ");
     info.appendChild(name);
@@ -389,6 +413,7 @@ function detailHtml(p, lngLat) {
       ${kvRow("Improvements", "$" + fmt(p.iv))}
       ${p.ls ? kvRow("Last sale", p.ls) : ""}
     </section>
+    ${projectSectionHtml(p)}
     <section class="dp-section">
       <h4>Owner information</h4>
       <div id="dp-owner"><div class="dp-loading">Looking up owner…</div></div>
@@ -406,6 +431,31 @@ function detailHtml(p, lngLat) {
       ${(!p.co || p.co === "LA") ? `<a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>` : ""}
       ${lat ? `<a href="${CONFIG.STREETVIEW_URL(lat, lng)}" target="_blank" rel="noopener">Street View ↗</a>` : ""}
     </div>`;
+}
+
+function projectSectionHtml(p) {
+  const pr = sbProjects[p.ain];
+  if (!pr) return "";
+  const badge = pr.status === "approved"
+    ? '<span class="badge" style="background:#059669">Approved</span>'
+    : '<span class="badge" style="background:#ca8a04">Submitted</span>';
+  const closedNote = pr.status === "closed"
+    ? `<p class="dp-note dp-warn">Case ${pr.rawStatus.toLowerCase()}${pr.decided ? " on " + pr.decided : ""} — was submitted ${pr.filed || ""}.</p>`
+    : "";
+  return `
+    <section class="dp-section">
+      <h4>SB 684 / 1123 project ${badge}</h4>
+      ${closedNote}
+      ${kvRow("Case", pr.case)}
+      ${kvRow("Bill", pr.bill || "–")}
+      ${kvRow("Submitted", pr.filed || "–")}
+      ${pr.status === "approved" && pr.decided ? kvRow("Approved", pr.decided) : ""}
+      ${kvRow("Homes", pr.units ?? "–")}
+      ${pr.entity ? kvRow("Owner entity", pr.entity) : ""}
+      ${pr.rep ? kvRow("Representative", `${pr.rep}${pr.repCompany ? " · " + pr.repCompany : ""}`) : ""}
+      ${pr.phone && pr.phone !== "n/a" ? kvRow("Contact", pr.phone) : ""}
+      ${pr.desc ? `<p class="dp-note">${pr.desc}</p>` : ""}
+    </section>`;
 }
 
 function ownerFallbackHtml(p) {
@@ -841,9 +891,39 @@ async function loadRemoteConfig() {
   } catch (e) { /* offline/dev: config.js values apply */ }
 }
 
+// LA City Planning SB 684/1123 cases, keyed by AIN (data/projects.json,
+// compiled from Planning's case reports). Approved = green, pending = yellow.
+let sbProjects = {};
+
+async function loadProjects() {
+  try {
+    const resp = await fetch("data/projects.json");
+    if (resp.ok) sbProjects = await resp.json();
+  } catch (e) { /* optional dataset */ }
+}
+
+function applyProjectLayers() {
+  const ains = Object.keys(sbProjects);
+  if (!ains.length || !map.getLayer("parcels-projects")) return;
+  const colorMatch = ["match", ["get", "ain"]];
+  const active = [];
+  for (const [ain, pr] of Object.entries(sbProjects)) {
+    active.push(ain);
+    colorMatch.push(ain, pr.status === "approved" ? "#10b981" : "#facc15");
+  }
+  colorMatch.push("#facc15");
+  if (!active.length) return;
+  for (const id of ["parcels-projects", "projects-centroids"]) {
+    map.setFilter(id, ["in", ["get", "ain"], ["literal", active]]);
+  }
+  map.setPaintProperty("parcels-projects", "fill-color", colorMatch);
+  map.setPaintProperty("projects-centroids", "circle-color", colorMatch);
+}
+
 async function boot() {
   initBrandLogo();
   await loadRemoteConfig();
+  await loadProjects();
   const synthetic = await isSynthetic();
   demoMode = synthetic;
   if (synthetic) {
@@ -887,6 +967,10 @@ async function boot() {
   }
   map.on("load", init);
   map.on("styledata", init);
+  map.once("styledata", applyProjectLayers);
+  map.on("click", "parcels-projects", (e) => {
+    showDetail(e.features[0].properties, e.lngLat);
+  });
 
   map.on("idle", scheduleCount);
   map.on("moveend", () => { scheduleCount(); updateHash(); });
@@ -894,6 +978,12 @@ async function boot() {
 
   map.on("click", "parcels-fill", (e) => {
     showDetail(e.features[0].properties, e.lngLat);
+  });
+  map.on("click", "parcels-context", (e) => {
+    // Fires under the universe layer too; only act when no universe parcel
+    // was hit at this point (that handler already opened the panel).
+    const hit = map.queryRenderedFeatures(e.point, { layers: ["parcels-fill"] });
+    if (!hit.length) showDetail(e.features[0].properties, e.lngLat);
   });
   map.on("click", "centroids", (e) => {
     map.easeTo({ center: e.lngLat, zoom: 14 });

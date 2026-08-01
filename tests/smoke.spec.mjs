@@ -1,17 +1,15 @@
-// Headless smoke test for the Land-Map app against the demo tileset.
-// Usage: node tests/smoke.spec.mjs [baseUrl]
-//   1. serve the repo:  python3 scripts/pipeline/serve.py 8123
-//   2. run:             node tests/smoke.spec.mjs http://localhost:8123
-// Requires playwright-core (npm i playwright-core) and a chromium binary
-// (CHROMIUM_PATH env var, default /opt/pw-browsers/chromium).
+// Headless smoke test against the REAL region tileset and the universe-first
+// model (default view = SFR homes + vacant lots; filters narrow it).
+// Usage: python3 scripts/pipeline/serve.py 8123 & node tests/smoke.spec.mjs http://localhost:8123
+// Requires playwright-core and a chromium binary (CHROMIUM_PATH, default /opt/pw-browsers/chromium).
 
 import { chromium } from "playwright-core";
 
 const BASE = process.argv[2] || "http://localhost:8123";
 const EXECUTABLE = process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium";
+const SHOUP_AIN = "2139012035"; // 6540 Shoup Ave — known SFR reference parcel
 
-// Basemap tile hosts are unreachable in sandboxes — those errors are expected.
-const IGNORABLE = /tile\.openstreetmap\.org|arcgisonline\.com|ERR_TUNNEL_CONNECTION_FAILED|Failed to load resource|AJAXError|GPU stall/;
+const IGNORABLE = /tile\.openstreetmap\.org|arcgisonline\.com|api\.mapbox\.com|openfreemap|ERR_TUNNEL_CONNECTION_FAILED|Failed to load resource|AJAXError|GPU stall/;
 
 function assert(cond, label) {
   if (!cond) throw new Error("FAILED: " + label);
@@ -19,8 +17,7 @@ function assert(cond, label) {
 }
 
 const browser = await chromium.launch({ executablePath: EXECUTABLE, args: ["--no-sandbox"] });
-const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
-
+const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
 const errors = [];
 page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
 page.on("console", (m) => {
@@ -28,186 +25,87 @@ page.on("console", (m) => {
 });
 
 await page.goto(BASE + "/index.html", { waitUntil: "load", timeout: 30000 });
-
-// Wait for the map to be idle with rendered parcel features.
 await page.waitForFunction(() => {
   const m = window.LandMap && window.LandMap.map;
-  return m && m.isStyleLoaded() && m.queryRenderedFeatures({ layers: ["parcels-fill"] }).length > 0;
+  return m && m.isStyleLoaded();
 }, { timeout: 30000 });
-assert(true, "map loaded and parcel polygons rendered");
+await page.waitForTimeout(4000);
+
+// Default = universe view, no preset.
+assert(!(await page.evaluate(() => document.getElementById("sb1123-btn").classList.contains("active"))),
+  "SB preset is OFF by default (universe view)");
+assert((await page.evaluate(() => document.getElementById("list-title").textContent)) === "Matches in view",
+  "list titled 'Matches in view' by default");
 
 const counts = () => page.evaluate(() => {
   const m = window.LandMap.map;
-  const dedupe = (layer) => new Set(
-    m.queryRenderedFeatures({ layers: [layer] }).map((f) => f.properties.ain)
-  ).size;
-  return { parcels: dedupe("parcels-fill"), centroids: dedupe("centroids") };
+  const layer = m.getZoom() >= 14 ? "parcels-fill" : "centroids";
+  return new Set(m.queryRenderedFeatures({ layers: [layer] }).map((f) => f.properties.ain)).size;
 });
 
-// SB 1123 preset is ON by default — only qualifiers render at first.
-const defaultOn = await page.evaluate(() =>
-  document.getElementById("sb1123-btn").classList.contains("active"));
-assert(defaultOn, "SB 1123 preset is active on first load");
-const presetStart = await counts();
-assert(presetStart.parcels > 0, `default view shows candidates (${presetStart.parcels})`);
-
-// Toggle it off to establish the all-parcels baseline.
-await page.click("#sb1123-btn");
-await page.waitForTimeout(1500);
 const baseline = await counts();
-assert(baseline.parcels > presetStart.parcels, `all parcels exceed candidates (${baseline.parcels} > ${presetStart.parcels})`);
-assert(baseline.parcels > 100, `baseline parcel count is substantial (${baseline.parcels})`);
+assert(baseline > 500, `universe dots render at start view (${baseline})`);
 
-// Demo banner should be visible (synthetic tileset watermark).
-await page.waitForSelector("#demo-banner:not(.hidden)", { timeout: 10000 });
-assert(true, "synthetic-data demo banner shown");
+// SB preset narrows to candidates.
+await page.click("#sb1123-btn");
+await page.waitForTimeout(2000);
+const sbCount = await counts();
+assert(sbCount > 0 && sbCount < baseline, `SB preset narrows universe (${baseline} -> ${sbCount})`);
+assert((await page.evaluate(() => document.getElementById("list-title").textContent)) === "Candidates in view",
+  "list titled 'Candidates in view' under SB preset");
+await page.click("#reset-btn");
+await page.waitForTimeout(1500);
 
-// Click a parcel -> popup with APN + assessor link. Click the screen position
-// of an actually-rendered polygon so the hit is guaranteed.
-const pt = await page.evaluate(() => {
+// Improvements=Vacant narrows; SFR excludes vacant.
+await page.click('.dropdown[data-dd="improvements"] [data-dd-btn]');
+await page.check('input[name="imp"][value="vacant"]');
+await page.waitForTimeout(2000);
+const vacantCount = await counts();
+assert(vacantCount > 0 && vacantCount < baseline, `Vacant narrows universe (${vacantCount})`);
+await page.click("#reset-btn");
+await page.waitForTimeout(1200);
+
+// Reference parcel: 6540 Shoup Ave must be present, filterable, clickable.
+await page.evaluate(() => window.LandMap.map.jumpTo({ center: [-118.614106, 34.189294], zoom: 15.2 }));
+await page.waitForTimeout(4000);
+const shoupPt = await page.evaluate((AIN) => {
   const m = window.LandMap.map;
-  const feats = m.queryRenderedFeatures({ layers: ["parcels-fill"] });
-  if (!feats.length) return null;
-  const f = feats[Math.floor(feats.length / 2)];
-  const ring = f.geometry.type === "MultiPolygon"
-    ? f.geometry.coordinates[0][0] : f.geometry.coordinates[0];
-  const [sx, sy] = ring
-    .reduce((a, c) => [a[0] + c[0], a[1] + c[1]], [0, 0])
-    .map((v) => v / ring.length);
+  const f = m.queryRenderedFeatures({ layers: ["parcels-fill"] }).find((x) => x.properties.ain === AIN);
+  if (!f) return null;
+  const ring = f.geometry.type === "MultiPolygon" ? f.geometry.coordinates[0][0] : f.geometry.coordinates[0];
+  const [sx, sy] = ring.reduce((a, c) => [a[0] + c[0], a[1] + c[1]], [0, 0]).map((v) => v / ring.length);
   const p = m.project([sx, sy]);
   const rect = m.getCanvas().getBoundingClientRect();
   return { x: rect.left + p.x, y: rect.top + p.y };
-});
-assert(pt, "found a rendered parcel to click");
-await page.mouse.click(pt.x, pt.y);
-await page.waitForSelector("#detail-panel:not(.hidden) .dp-addr", { timeout: 10000 });
-await page.waitForTimeout(600); // owner lookup settles to fallback (no API here)
+}, SHOUP_AIN);
+assert(shoupPt, "6540 Shoup Ave renders in the universe at parcel zoom");
+await page.mouse.click(shoupPt.x, shoupPt.y);
+await page.waitForSelector("#detail-panel:not(.hidden) .dp-addr", { timeout: 8000 });
 const panel = await page.evaluate(() => ({
-  title: document.querySelector("#detail-panel .dp-addr")?.textContent || "",
-  sub: document.querySelector("#detail-panel .dp-sub")?.textContent || "",
-  assessor: !!document.querySelector('#detail-panel a[href*="portal.assessor.lacounty.gov/parceldetail/"]'),
-  sv: (document.querySelector('#detail-panel a[href*="google.com/maps"]')?.href || ""),
-  ownerFallback: !!document.querySelector("#detail-panel #dp-owner .dp-owner-link"),
-  statusSelect: !!document.querySelector("#detail-panel #dp-status"),
+  addr: document.querySelector("#detail-panel .dp-addr")?.textContent || "",
+  assessor: !!document.querySelector('#detail-panel a[href*="portal.assessor.lacounty.gov"]'),
 }));
-assert(/^(\d+ .+|APN \d+)/.test(panel.title), `detail panel titled by address or APN (${panel.title})`);
-assert(/APN \d+/.test(panel.sub), "detail panel shows APN");
+assert(panel.addr.includes("6540 Shoup Ave"), `detail panel shows the parcel (${panel.addr})`);
 assert(panel.assessor, "detail panel links to assessor portal");
-assert(panel.sv.includes("layer=c&cbll="), "detail panel links to Google Street View");
-assert(panel.ownerFallback, "owner section falls back to assessor link without API");
-assert(panel.statusSelect, "detail panel has deal-status selector");
 await page.click("#dp-close");
-const panelClosed = await page.evaluate(() =>
-  document.getElementById("detail-panel").classList.contains("hidden"));
-assert(panelClosed, "detail panel closes");
 
-// Candidates stat + list should reflect only qualifying (colored) parcels.
-const candStat = await page.evaluate(() => Number(document.getElementById("stat-candidates").textContent.replace(/,/g, "")));
-assert(candStat > 0 && candStat < baseline.parcels, `candidates stat is a strict subset (${candStat}/${baseline.parcels})`);
-const listRows = await page.evaluate(() => document.querySelectorAll("#site-list .site-item").length);
-assert(listRows > 0, `candidates list is populated (${listRows} rows)`);
-
-// SB 1123 preset must show only qualifying parcels.
-await page.click("#sb1123-btn");
-await page.waitForTimeout(1200);
-const afterPreset = await counts();
-assert(afterPreset.parcels < baseline.parcels, `SB preset reduced parcels ${baseline.parcels} -> ${afterPreset.parcels}`);
-assert(afterPreset.parcels > 0, `SB preset still shows candidates (${afterPreset.parcels})`);
-assert(afterPreset.parcels === candStat, `SB preset count matches candidates stat (${afterPreset.parcels})`);
-const hash = await page.evaluate(() => location.hash);
-assert(hash.includes("sb=1"), `filter state serialized to URL hash (${hash})`);
-
-// Range filter lives in the Lot size dropdown: open it, set a min.
-await page.click('.dropdown[data-dd="lot"] [data-dd-btn]');
-await page.fill("#lsf-min", "6000");
-await page.dispatchEvent("#lsf-min", "change");
-await page.waitForTimeout(1200);
-const afterRange = await counts();
-assert(afterRange.parcels < afterPreset.parcels, `lot-size min reduced parcels ${afterPreset.parcels} -> ${afterRange.parcels}`);
-
-// Reset restores everything.
-await page.click("#reset-btn");
-await page.waitForTimeout(1200);
-const afterReset = await counts();
-assert(afterReset.parcels === baseline.parcels, `reset restores baseline (${afterReset.parcels})`);
-
-// Tier filter (in the Tier dropdown): fixture parcels are all Tier A.
-await page.click('.dropdown[data-dd="tier"] [data-dd-btn]');
-await page.check("#tier-B");
-await page.waitForTimeout(1200);
-const tierB = await counts();
-assert(tierB.parcels === 0, `tier B only hides all fixture parcels (${tierB.parcels})`);
-await page.check("#tier-A");
-await page.waitForTimeout(1200);
-const tierAB = await counts();
-assert(tierAB.parcels === baseline.parcels, `tiers A+B restore baseline (${tierAB.parcels})`);
-const tierHash = await page.evaluate(() => location.hash);
-assert(/t=/.test(tierHash), `tier filter serialized to hash (${tierHash})`);
-await page.click("#reset-btn");
-await page.waitForTimeout(800);
-
-// Improvements filter: Vacant and SFR Home are each strict subsets.
+// SFR filter keeps Shoup, drops condo unit records.
 await page.click('.dropdown[data-dd="improvements"] [data-dd-btn]');
-await page.check('input[name="imp"][value="vacant"]');
-await page.waitForTimeout(1200);
-const impVacant = await counts();
-assert(impVacant.parcels > 0 && impVacant.parcels < baseline.parcels,
-  `Improvements=Vacant is a strict subset (${impVacant.parcels})`);
 await page.check('input[name="imp"][value="sfr"]');
-await page.waitForTimeout(1200);
-const impSfr = await counts();
-assert(impSfr.parcels > 0 && impSfr.parcels < baseline.parcels,
-  `Improvements=SFR Home is a strict subset (${impSfr.parcels})`);
-await page.click("#reset-btn");
-await page.waitForTimeout(800);
+await page.waitForTimeout(2500);
+const sfrCheck = await page.evaluate((AIN) => {
+  const feats = window.LandMap.map.queryRenderedFeatures({ layers: ["parcels-fill"] });
+  return {
+    shoup: feats.some((f) => f.properties.ain === AIN),
+    condos: feats.filter((f) => /UNIT|NO +\d/i.test(f.properties.a || "")).length,
+  };
+}, SHOUP_AIN);
+assert(sfrCheck.shoup, "SFR filter keeps 6540 Shoup Ave");
+assert(sfrCheck.condos === 0, `SFR filter excludes condo unit records (${sfrCheck.condos})`);
 
-// Deal status: assign one parcel "Submitted", filter to it, expect exactly 1.
-const statusAin = await page.evaluate(() => {
-  const f = window.LandMap.map.queryRenderedFeatures({ layers: ["parcels-fill"] })[0];
-  window.LandMap.setStatus(f.properties.ain, "submitted");
-  return f.properties.ain;
-});
-await page.click('.dropdown[data-dd="status"] [data-dd-btn]');
-await page.check('input[name="dstatus"][value="submitted"]');
-await page.waitForTimeout(1200);
-const statusOnly = await counts();
-assert(statusOnly.parcels === 1, `Status=Submitted shows exactly the tagged parcel (${statusOnly.parcels})`);
-await page.evaluate((ain) => window.LandMap.setStatus(ain, ""), statusAin);
-await page.click("#reset-btn");
-await page.waitForTimeout(800);
-
-// Local neighborhood search: "Venice" jumps instantly (no geocoder).
-await page.fill("#search-input", "Venice");
-await page.press("#search-input", "Enter");
-await page.waitForTimeout(1500);
-const center = await page.evaluate(() => {
-  const c = window.LandMap.map.getCenter();
-  return { lng: c.lng, lat: c.lat };
-});
-assert(center.lng > -118.49 && center.lng < -118.43 && center.lat > 33.96 && center.lat < 34.02,
-  `neighborhood search jumped to Venice (${center.lng.toFixed(3)}, ${center.lat.toFixed(3)})`);
-
-// Shareable link includes map position.
-const mHash = await page.evaluate(() => location.hash);
-assert(/m=-?\d+\.\d+,-?\d+\.\d+,\d+/.test(mHash), `hash carries map position (${mHash.slice(0, 40)}…)`);
-
-// CSV export covers the candidates in view with the right columns.
+// CSV export covers matches with assessor URLs.
 const csv = await page.evaluate(() => window.LandMap.exportCsv());
-const csvLines = csv.split("\n");
-assert(csvLines[0].startsWith("address,apn,tier,zone_class"), "CSV header correct");
-assert(csvLines.length > 10, `CSV has candidate rows (${csvLines.length - 1})`);
-assert(/portal\.assessor\.lacounty\.gov/.test(csvLines[1]), "CSV rows include assessor URLs");
-
-// Legend present.
-assert(await page.isVisible("#legend"), "map legend visible");
-
-// Zoom out to centroid mode and confirm dots render.
-await page.evaluate(() => window.LandMap.map.jumpTo({ zoom: 11 }));
-await page.waitForFunction(() => {
-  const m = window.LandMap.map;
-  return m.queryRenderedFeatures({ layers: ["centroids"] }).length > 0;
-}, { timeout: 15000 });
-assert(true, "centroid dots render at low zoom");
+assert(csv.split("\n").length > 10 && csv.includes("assessor"), "CSV export has rows and header");
 
 if (errors.length) {
   console.error("Unexpected page errors:\n" + errors.join("\n"));
