@@ -1,5 +1,7 @@
 .DS_Store
 node_modules/
+# symlink to the playwright install used by the test runner
+tests/node_modules
 __pycache__/
 
 # pipeline outputs — only the small demo tileset is committed
@@ -9,4 +11,5 @@ data/tiles/
 *.pmtiles
 !data/demo/demo.pmtiles
 data/pipeline.log
+data/*.log
 !data/real/land-map-region.pmtiles
