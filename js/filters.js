@@ -43,7 +43,10 @@ const SFR_CLAUSE = ["all",
 export const UNIVERSE_CLAUSE = ["any", SFR_CLAUSE, ["==", ["get", "v"], 1]];
 
 export function buildFilter(state, cfg, statusAins) {
-  const clauses = ["all", UNIVERSE_CLAUSE];
+  // A status search is a pipeline view: it must surface those parcels even
+  // when they fall outside the SFR+vacant universe (e.g. an approved project
+  // already under construction), so the universe clause is dropped.
+  const clauses = state.dealStatus === "any" ? ["all", UNIVERSE_CLAUSE] : ["all"];
 
   for (const [key, [min, max]] of Object.entries(state.ranges)) {
     if (min !== null) clauses.push([">=", ["get", key], min]);
@@ -67,7 +70,7 @@ export function buildFilter(state, cfg, statusAins) {
     clauses.push(["in", ["get", "ain"], ["literal", statusAins || []]]);
   }
 
-  if (state.sbPreset) {
+  if (state.sbPreset && state.dealStatus === "any") {
     clauses.push(["==", ["get", "e"], 1]);
   }
 

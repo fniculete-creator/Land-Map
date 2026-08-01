@@ -14,7 +14,11 @@
   "rep": "Michael Gonzalez",
   "repCompany": "Gonzalez Law Group APC",
   "phone": "(213) 279-6966",
-  "desc": "A new 10-unit townhouse subdivision (SB 684 + AB 2097). Related case EAR-2025-6718-DB-HCA (density bonus/environmental) filed 12/04/2025 for construction of 9 two-bedroom units."
+  "desc": "A new 10-unit townhouse subdivision (SB 684 + AB 2097). Related case EAR-2025-6718-DB-HCA (density bonus/environmental) filed 12/04/2025 for construction of 9 two-bedroom units.",
+  "lng": -118.290873,
+  "lat": 34.082617,
+  "lotSqft": 7542,
+  "tier": ""
  },
  "5442011034": {
   "case": "AA-2024-8125-PM-SH-HCA",
@@ -31,7 +35,11 @@
   "rep": "Jorge Lopez",
   "repCompany": "Nationwide Advisors Inc",
   "phone": "n/a",
-  "desc": "Split single lot into 3 lots per SB 684. Weekly reports show an initial completion action 08/29/2025; PDIS final status Terminated 03/04/2026."
+  "desc": "Split single lot into 3 lots per SB 684. Weekly reports show an initial completion action 08/29/2025; PDIS final status Terminated 03/04/2026.",
+  "lng": -118.244141,
+  "lat": 34.098296,
+  "lotSqft": 10892,
+  "tier": ""
  },
  "5538008024": {
   "case": "TT-84798-CN-SH-HCA",
@@ -48,7 +56,11 @@
   "rep": "Nick Leathers",
   "repCompany": "Crest Real Estate",
   "phone": "(310) 994-6657",
-  "desc": "9-unit condominium subdivision (Starter Home + New Condominiums)."
+  "desc": "9-unit condominium subdivision (Starter Home + New Condominiums).",
+  "lng": -118.297596,
+  "lat": 34.08406,
+  "lotSqft": 5593,
+  "tier": ""
  },
  "4267029024": {
   "case": "VTT-84786-SH-HCA",
@@ -65,7 +77,11 @@
   "rep": "Sami Kohanim",
   "repCompany": "JDJ Consulting Group",
   "phone": "(818) 827-6243",
-  "desc": "Demo 1 existing SFD; construct 7 new SFDs with attached 2-car garages per Small Lot standards (SB 684 + LAMC 17.50). Appeal period ended 03/23/2026, not appealed."
+  "desc": "Demo 1 existing SFD; construct 7 new SFDs with attached 2-car garages per Small Lot standards (SB 684 + LAMC 17.50). Appeal period ended 03/23/2026, not appealed.",
+  "lng": -118.465226,
+  "lat": 34.037509,
+  "lotSqft": 7615,
+  "tier": "A"
  },
  "2024012007": {
   "case": "VTT-84880-SH-SL-HCA",
@@ -82,7 +98,11 @@
   "rep": "Leonard Yaghoobi",
   "repCompany": "MPY LLC",
   "phone": "(818) 231-8475",
-  "desc": "Small Lot Subdivision Vesting Tentative Tract Map per SB 684 and SB 1123. Hearing waived 10/06/2025. (PDIS lists case as VTT-84880-HCA-SH.)"
+  "desc": "Small Lot Subdivision Vesting Tentative Tract Map per SB 684 and SB 1123. Hearing waived 10/06/2025. (PDIS lists case as VTT-84880-HCA-SH.)",
+  "lng": -118.608599,
+  "lat": 34.200589,
+  "lotSqft": 15754,
+  "tier": "C"
  },
  "5211010016": {
   "case": "AA-2025-3784-PM-SH-HCA",
@@ -99,7 +119,11 @@
   "rep": "Yifu Pan",
   "repCompany": "YDS Architects",
   "phone": "(818) 445-1984",
-  "desc": "Parcel map subdivision per SB 684."
+  "desc": "Parcel map subdivision per SB 684.",
+  "lng": -118.201627,
+  "lat": 34.069477,
+  "lotSqft": 7512,
+  "tier": ""
  },
  "2565016028": {
   "case": "VTT-84535-SH-SL-VHCA",
@@ -116,7 +140,11 @@
   "rep": "Erik Yesayan",
   "repCompany": "Pattern Planning & Development",
   "phone": "(818) 269-6622",
-  "desc": "Subdivide APN 2565-016-028 into 8 new lots; construct 8 three-story townhomes with attached garages. Ministerial per SB 684, no zoning deviations requested."
+  "desc": "Subdivide APN 2565-016-028 into 8 new lots; construct 8 three-story townhomes with attached garages. Ministerial per SB 684, no zoning deviations requested.",
+  "lng": -118.285553,
+  "lat": 34.255361,
+  "lotSqft": 10711,
+  "tier": ""
  },
  "4244026003": {
   "case": "AA-2025-5122-VPM-SH-HCA",
@@ -133,7 +161,11 @@
   "rep": "Brandon Arioli",
   "repCompany": "Samra Living, Inc",
   "phone": "(510) 367-0453",
-  "desc": "Vesting parcel map subdivision into 4 fee-simple parcels per SB 1123."
+  "desc": "Vesting parcel map subdivision into 4 fee-simple parcels per SB 1123.",
+  "lng": -118.456406,
+  "lat": 34.002357,
+  "lotSqft": 10892,
+  "tier": "A"
  },
  "2733006018": {
   "case": "VTT-85028-SH-HCA",
@@ -150,7 +182,11 @@
   "rep": "Patrick Nazaryan",
   "repCompany": "PAGANA",
   "phone": "(818) 726-4005",
-  "desc": "Subdivision to 8 parcels per SB 684. Alter existing SFD at Lot A, demo detached garage, new 3-story SFD with 2-car garage on Lots B-H."
+  "desc": "Subdivision to 8 parcels per SB 684. Alter existing SFD at Lot A, demo detached garage, new 3-story SFD with 2-car garage on Lots B-H.",
+  "lng": -118.520539,
+  "lat": 34.264054,
+  "lotSqft": 10499,
+  "tier": "C"
  },
  "5427014007": {
   "case": "AA-2025-6006-VPM-SH-SL-HCA",
@@ -167,7 +203,11 @@
   "rep": "Sean Nguyen",
   "repCompany": "EZ Permits LLC",
   "phone": "(213) 880-6289",
-  "desc": "4 new 3-story single-family dwellings with roof decks and attached garages per small lot subdivision (LAMC 17.50 / 12.22 C.27)."
+  "desc": "4 new 3-story single-family dwellings with roof decks and attached garages per small lot subdivision (LAMC 17.50 / 12.22 C.27).",
+  "lng": -118.279764,
+  "lat": 34.090879,
+  "lotSqft": 7347,
+  "tier": ""
  },
  "4250010009": {
   "case": "VTT-84972-SH-SL-CN-VHCA",
@@ -184,7 +224,11 @@
   "rep": "Aaron Belliston",
   "repCompany": "BMR Enterprises",
   "phone": "(818) 486-0981",
-  "desc": "VTT/Small Lot subdivision: demo of one SFD, 5 new small lots. Appeal period ends 08/10/2026. (PDIS lists case as VTT-84972-SL-VHCA.)"
+  "desc": "VTT/Small Lot subdivision: demo of one SFD, 5 new small lots. Appeal period ends 08/10/2026. (PDIS lists case as VTT-84972-SL-VHCA.)",
+  "lng": -118.434889,
+  "lat": 34.018634,
+  "lotSqft": 8234,
+  "tier": "A"
  },
  "5589038012": {
   "case": "AA-2025-6487-VPM-SL-SH-VHCA",
@@ -201,7 +245,11 @@
   "rep": "Jason Grant",
   "repCompany": "Local Development",
   "phone": "n/a",
-  "desc": "Preliminary parcel map for creation of four lots using small lot design standards (Govt Code 66445)."
+  "desc": "Preliminary parcel map for creation of four lots using small lot design standards (Govt Code 66445).",
+  "lng": -118.296943,
+  "lat": 34.10308,
+  "lotSqft": 7153,
+  "tier": ""
  },
  "2734031014": {
   "case": "VTT-85020-SH",
@@ -235,7 +283,11 @@
   "rep": "Alex Irvine",
   "repCompany": "Irvine & Associates, Inc",
   "phone": "(213) 473-3403",
-  "desc": "SB 1123 development: 6 lots for 6 small-lot homes + 6 ADUs in the R1-1 zone (Govt Code 65852.28, 65913.4.5, 66499.41)."
+  "desc": "SB 1123 development: 6 lots for 6 small-lot homes + 6 ADUs in the R1-1 zone (Govt Code 65852.28, 65913.4.5, 66499.41).",
+  "lng": -118.373492,
+  "lat": 34.086891,
+  "lotSqft": 9210,
+  "tier": "A"
  },
  "2266007031": {
   "case": "VTT-84941-SL-SH-HCA",
@@ -252,7 +304,11 @@
   "rep": "Sean Nguyen",
   "repCompany": "EZ Permits LLC",
   "phone": "(213) 880-6289",
-  "desc": "SB 684 development: 8 lots for 8 small lots and an ADU in the RD1.5 zone."
+  "desc": "SB 684 development: 8 lots for 8 small lots and an ADU in the RD1.5 zone.",
+  "lng": -118.448912,
+  "lat": 34.148766,
+  "lotSqft": 12895,
+  "tier": "B"
  },
  "2734031018": {
   "case": "VTT-85021-SH",
@@ -269,7 +325,11 @@
   "rep": "Sean Nguyen",
   "repCompany": "EZ Permits LLC",
   "phone": "(213) 880-6289",
-  "desc": "Create 6 new vacant lots from a vacant lot per SB 1123. Accepted for review 01/22/2026. (APN/lot size approximate - address not yet in assessor index.)"
+  "desc": "Create 6 new vacant lots from a vacant lot per SB 1123. Accepted for review 01/22/2026. (APN/lot size approximate - address not yet in assessor index.)",
+  "lng": -118.51246,
+  "lat": 34.251021,
+  "lotSqft": 11401,
+  "tier": "C"
  },
  "4248028001": {
   "case": "VTT-85133-SH-HCA",
@@ -286,7 +346,11 @@
   "rep": "Michelle Lannan",
   "repCompany": "n/a",
   "phone": "(818) 274-9572",
-  "desc": "Starter Home Revitalization Act (SB 1123) development of 7 lots for a total of 7 homes."
+  "desc": "Starter Home Revitalization Act (SB 1123) development of 7 lots for a total of 7 homes.",
+  "lng": -118.431189,
+  "lat": 34.008491,
+  "lotSqft": 17300,
+  "tier": "A"
  },
  "2266006031": {
   "case": "VTT-84942-SL-SH-HCA",
@@ -303,7 +367,11 @@
   "rep": "Sean Nguyen",
   "repCompany": "EZ Permits LLC",
   "phone": "(213) 880-6289",
-  "desc": "Demo existing church; create 7 new 4-story SFDs with attached garages and an ADU per Small Lot Subdivision using SB 684."
+  "desc": "Demo existing church; create 7 new 4-story SFDs with attached garages and an ADU per Small Lot Subdivision using SB 684.",
+  "lng": -118.448743,
+  "lat": 34.149229,
+  "lotSqft": 11927,
+  "tier": "B"
  },
  "5067020018": {
   "case": "TT-85108-SH-SL-HCA",
@@ -320,7 +388,11 @@
   "rep": "n/a",
   "repCompany": "n/a",
   "phone": "(310) 429-6368",
-  "desc": "Small Lot Subdivision for 9 units: 3-story SFDs with garages and roof decks, using SB 684."
+  "desc": "Small Lot Subdivision for 9 units: 3-story SFDs with garages and roof decks, using SB 684.",
+  "lng": -118.354347,
+  "lat": 34.042104,
+  "lotSqft": 12606,
+  "tier": "A"
  },
  "7347008004": {
   "case": "AA-2026-812-SH",
@@ -337,7 +409,11 @@
   "rep": "Nicholas Herrero",
   "repCompany": "C&M EnArch, Inc",
   "phone": "(310) 465-7415",
-  "desc": "Subdivide existing lot into two parcels per SB 684."
+  "desc": "Subdivide existing lot into two parcels per SB 684.",
+  "lng": -118.30811,
+  "lat": 33.823002,
+  "lotSqft": 7548,
+  "tier": ""
  },
  "2139012035": {
   "case": "VTT-85151-SH-VHCA",
@@ -354,7 +430,11 @@
   "rep": "Olivia Joncich",
   "repCompany": "Rand Paster & Nelson LLP",
   "phone": "(213) 557-2703",
-  "desc": "Demo existing vacant SFD; merge and re-subdivide 2 lots into 10 ground lots with 10 SFDs and 5 attached ADUs (LAMC 13B.7.3 + SB 1123). Accepted for review 06/16/2026, approved 07/29/2026."
+  "desc": "Demo existing vacant SFD; merge and re-subdivide 2 lots into 10 ground lots with 10 SFDs and 5 attached ADUs (LAMC 13B.7.3 + SB 1123). Accepted for review 06/16/2026, approved 07/29/2026.",
+  "lng": -118.614106,
+  "lat": 34.189294,
+  "lotSqft": 20910,
+  "tier": "C"
  },
  "4312022004": {
   "case": "AA-2026-1452-PM-SH-HCA",
@@ -371,7 +451,11 @@
   "rep": "Isabel Girado",
   "repCompany": "Dream Design Build",
   "phone": "(909) 480-8648",
-  "desc": "Starter Home SB 684 development: two RD2 lots for two small-lot homes in the RD2-1 zone. Withdrawn 05/12/2026."
+  "desc": "Starter Home SB 684 development: two RD2 lots for two small-lot homes in the RD2-1 zone. Withdrawn 05/12/2026.",
+  "lng": -118.379236,
+  "lat": 34.032145,
+  "lotSqft": 5081,
+  "tier": "A"
  },
  "2103011002": {
   "case": "VTT-85141-SH-VHCA",
@@ -388,7 +472,11 @@
   "rep": "Olivia Joncich",
   "repCompany": "Rand Paster & Nelson, LLP",
   "phone": "(213) 557-2703",
-  "desc": "Subdivision of vacant parcel to create 10 starter-home lots per SB 1123. Legal-description site on the same TR 8939 holding as VTT-85140 (18838 Lanark); lot size included in that parcel's 27,386 SF."
+  "desc": "Subdivision of vacant parcel to create 10 starter-home lots per SB 1123. Legal-description site on the same TR 8939 holding as VTT-85140 (18838 Lanark); lot size included in that parcel's 27,386 SF.",
+  "lng": -118.543824,
+  "lat": 34.217097,
+  "lotSqft": 27386,
+  "tier": "C"
  },
  "2768014013": {
   "case": "VTT-85031-SH-HCA",
@@ -405,7 +493,11 @@
   "rep": "Camille Zeitouny",
   "repCompany": "Zeitounyc & Associates, Inc",
   "phone": "(323) 892-1168",
-  "desc": "Starter Home SB 1123 subdivision for 9 lots. Accepted for review 07/02/2026. Large 2-lot holding (TR 12338 Lots 16-17)."
+  "desc": "Starter Home SB 1123 subdivision for 9 lots. Accepted for review 07/02/2026. Large 2-lot holding (TR 12338 Lots 16-17).",
+  "lng": -118.517272,
+  "lat": 34.229195,
+  "lotSqft": 102081,
+  "tier": "C"
  },
  "5405009027": {
   "case": "VTT-84909-SH-HCA",
@@ -422,7 +514,11 @@
   "rep": "Colin Logan",
   "repCompany": "LTM Development",
   "phone": "(415) 640-2498",
-  "desc": "11-parcel residential development of three-story townhome units."
+  "desc": "11-parcel residential development of three-story townhome units.",
+  "lng": -118.255539,
+  "lat": 34.072962,
+  "lotSqft": 7412,
+  "tier": ""
  },
  "6120021900": {
   "case": "VTT-84320-SH-HCA",
@@ -439,7 +535,11 @@
   "rep": "Stacy Straus",
   "repCompany": "Srour & Associates",
   "phone": "(310) 372-8433",
-  "desc": "Subdivision for 9 residential condominium units. (900-series APN; situs blank in assessor - APN/lot size approximate.)"
+  "desc": "Subdivision for 9 residential condominium units. (900-series APN; situs blank in assessor - APN/lot size approximate.)",
+  "lng": -118.286583,
+  "lat": 33.883629,
+  "lotSqft": 5693,
+  "tier": ""
  },
  "5068006014": {
   "case": "AA-2026-2856-PM-SH-VHCA",
@@ -456,7 +556,11 @@
   "rep": "Susan Steinberg",
   "repCompany": "Howard Robinson & Associates",
   "phone": "(310) 838-0180",
-  "desc": "4 single-family small-lot townhomes subject to SB 684 (Parcel Map, Starter House, Vesting HCA)."
+  "desc": "4 single-family small-lot townhomes subject to SB 684 (Parcel Map, Starter House, Vesting HCA).",
+  "lng": -118.375351,
+  "lat": 34.049149,
+  "lotSqft": 6000,
+  "tier": "A"
  },
  "2116015025": {
   "case": "VTT-85305-SH-HCA",
@@ -473,7 +577,11 @@
   "rep": "Joseph Kasbar",
   "repCompany": "Joseph Kasbar INC",
   "phone": "n/a",
-  "desc": "SB 684/1123 Starter Home project: subdivision of an RA lot into 5 lots with 5 SFD units and attached ADU/JADUs."
+  "desc": "SB 684/1123 Starter Home project: subdivision of an RA lot into 5 lots with 5 SFD units and attached ADU/JADUs.",
+  "lng": -118.557331,
+  "lat": 34.20785,
+  "lotSqft": 28717,
+  "tier": "C"
  },
  "5685012008": {
   "case": "VTT-85203-SH-SL",
@@ -490,7 +598,11 @@
   "rep": "n/a",
   "repCompany": "n/a",
   "phone": "(818) 634-3281",
-  "desc": "VTT map per SB 684: subdivide one lot into 7 with existing residential structure; ministerial, no zoning deviations. Companion environmental case CPC-2026-3239-EAF filed 06/24/2026."
+  "desc": "VTT map per SB 684: subdivide one lot into 7 with existing residential structure; ministerial, no zoning deviations. Companion environmental case CPC-2026-3239-EAF filed 06/24/2026.",
+  "lng": -118.216467,
+  "lat": 34.133836,
+  "lotSqft": 13207,
+  "tier": ""
  },
  "2235001004": {
   "case": "VTT-85188-SH-HCA",
@@ -507,7 +619,11 @@
   "rep": "James Woodson",
   "repCompany": "JRW Consulting",
   "phone": "(310) 922-2190",
-  "desc": "SB 1123 Starter Home subdivision of an R1 lot into 9 parcels; three-story SFDs on 8 lots (LAMC 13B.7.3, Govt Code 66410-66499.41)."
+  "desc": "SB 1123 Starter Home subdivision of an R1 lot into 9 parcels; three-story SFDs on 8 lots (LAMC 13B.7.3, Govt Code 66410-66499.41).",
+  "lng": -118.464503,
+  "lat": 34.187875,
+  "lotSqft": 19651,
+  "tier": "C"
  },
  "5071021039": {
   "case": "TT-85342-SH-HCA",
@@ -524,7 +640,11 @@
   "rep": "Mehrdad Ayati",
   "repCompany": "MehranStudio",
   "phone": "(323) 369-2443",
-  "desc": "Subdivide one parcel in the RD1.5-1 zone into 5 fee-simple lots; construct 5 new single-family townhomes per SB 684."
+  "desc": "Subdivide one parcel in the RD1.5-1 zone into 5 fee-simple lots; construct 5 new single-family townhomes per SB 684.",
+  "lng": -118.337575,
+  "lat": 34.041237,
+  "lotSqft": 7000,
+  "tier": "A"
  },
  "2764017025": {
   "case": "VTT-85221-SH-HCA",
@@ -541,6 +661,10 @@
   "rep": "n/a",
   "repCompany": "Pattern Planning & Development, Inc.",
   "phone": "n/a",
-  "desc": "SB 684/1123 subdivision request for a proposed 6-lot subdivision with ADUs."
+  "desc": "SB 684/1123 subdivision request for a proposed 6-lot subdivision with ADUs.",
+  "lng": -118.53023,
+  "lat": 34.246096,
+  "lotSqft": 20004,
+  "tier": "C"
  }
 }

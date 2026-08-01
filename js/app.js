@@ -198,7 +198,9 @@ function baseStyle() {
 
 const FILTERED_LAYERS = ["parcels-fill", "parcels-line"];
 
-function updateHash() {
+// The address bar stays clean while browsing; filters + map position are
+// encoded only when the user asks for a shareable link.
+function shareUrl() {
   const filters = stateToHash(state).slice(1);
   let m = "";
   if (map) {
@@ -206,7 +208,7 @@ function updateHash() {
     m = `m=${c.lng.toFixed(5)},${c.lat.toFixed(5)},${map.getZoom().toFixed(2)}`;
   }
   const full = [filters, m].filter(Boolean).join("&");
-  history.replaceState(null, "", location.pathname + location.search + "#" + full);
+  return location.origin + location.pathname + location.search + (full ? "#" + full : "");
 }
 
 function applyStatusOutlines() {
@@ -225,7 +227,17 @@ function applyStatusOutlines() {
 }
 
 function applyFilters() {
-  const statusAins = state.dealStatus === "any" ? [] : statusAinsFor(state.dealStatus);
+  // Status matches team-tagged parcels AND LA City Planning case statuses:
+  // Approved = approved cases; Submitted = pending (and terminated/withdrawn,
+  // which display as submitted); Completed / For Sale are team tags only.
+  let statusAins = [];
+  if (state.dealStatus !== "any") {
+    statusAins = statusAinsFor(state.dealStatus);
+    for (const [ain, pr] of Object.entries(sbProjects)) {
+      if (state.dealStatus === "approved" && pr.status === "approved") statusAins.push(ain);
+      else if (state.dealStatus === "submitted" && pr.status !== "approved") statusAins.push(ain);
+    }
+  }
   const f = buildFilter(state, CONFIG, statusAins);
   for (const id of FILTERED_LAYERS) map.setFilter(id, f);
   const selBase = ["==", ["get", "ain"], selectedAin ?? "___none___"];
@@ -235,8 +247,21 @@ function applyFilters() {
   applyStatusOutlines();
   document.getElementById("list-title").textContent =
     state.sbPreset ? "Candidates in view" : "Matches in view";
-  updateHash();
   scheduleCount();
+}
+
+// Picking Submitted/Approved brings the matching planning cases into view —
+// they're scattered citywide and rarely near wherever the map happens to be.
+function zoomToStatusResults() {
+  if (state.dealStatus !== "approved" && state.dealStatus !== "submitted") return;
+  const pts = Object.values(sbProjects)
+    .filter((pr) => state.dealStatus === "approved"
+      ? pr.status === "approved" : pr.status !== "approved")
+    .filter((pr) => pr.lng != null);
+  if (!pts.length) return;
+  const b = new maplibregl.LngLatBounds();
+  for (const pr of pts) b.extend([pr.lng, pr.lat]);
+  map.fitBounds(b, { padding: 80, maxZoom: 14 });
 }
 
 /* ---------------- stats + candidates list ---------------- */
@@ -255,7 +280,10 @@ function median(sorted) {
 function fmt(n) { return Number(n).toLocaleString(); }
 
 function updateCount() {
-  if (!map || !map.isStyleLoaded()) return;
+  if (!map) return;
+  // A filter change briefly marks the style dirty; dropping the update here
+  // would freeze the list on stale results, so re-arm instead.
+  if (!map.isStyleLoaded()) { scheduleCount(); return; }
   const zoom = map.getZoom();
   const layer = zoom >= 14 ? "parcels-fill" : "centroids";
   const feats = map.queryRenderedFeatures({ layers: [layer] });
@@ -273,7 +301,22 @@ function updateCount() {
 
   // The list is always the current matches (rendered features pass the
   // universe + filters). With the SB preset on, matches ARE the candidates.
-  const listSource = [...byAin.values()];
+  let listSource = [...byAin.values()];
+  // A planning-status search lists ALL matching cases citywide, not just the
+  // viewport — the projects are scattered and the panel would look empty.
+  if (state.dealStatus === "approved" || state.dealStatus === "submitted") {
+    const projFeats = Object.entries(sbProjects)
+      .filter(([, pr]) => state.dealStatus === "approved"
+        ? pr.status === "approved" : pr.status !== "approved")
+      .map(([ain, pr]) => ({
+        properties: { ain, a: pr.address || "", lsf: pr.lotSqft ?? null,
+          w: null, t: pr.tier || "", e: 0 },
+        geometry: pr.lng != null
+          ? { type: "Point", coordinates: [pr.lng, pr.lat] } : null,
+      }));
+    const projAins = new Set(projFeats.map((f) => f.properties.ain));
+    listSource = projFeats.concat(listSource.filter((f) => !projAins.has(f.properties.ain)));
+  }
   lastCandidates = listSource;
 
   const lots = listSource.map((f) => f.properties.lsf).sort((a, b) => a - b);
@@ -353,8 +396,9 @@ function renderList(candidates, detailed) {
     tier.className = "site-tier";
     tier.textContent = p.t || "";
 
-    const center = featureCenter(f);
+    const center = f.geometry ? featureCenter(f) : null;
     li.addEventListener("click", () => {
+      if (!center) return;
       map.easeTo({ center, zoom: Math.max(map.getZoom(), 15) });
       showDetail(p, { lat: center[1], lng: center[0] });
     });
@@ -622,8 +666,12 @@ function bindControls() {
   document.querySelectorAll('input[name="dstatus"]').forEach((rb) => {
     rb.addEventListener("change", () => {
       if (rb.checked) state.dealStatus = rb.value;
+      // A status search shows pipeline parcels, which are rarely SB-vacant
+      // candidates — the preset would contradict it.
+      if (state.dealStatus !== "any") state.sbPreset = false;
       syncControlsFromState();
       applyFilters();
+      zoomToStatusResults();
     });
   });
 
@@ -672,7 +720,7 @@ function bindControls() {
   document.getElementById("copy-link-btn").addEventListener("click", async () => {
     const btn = document.getElementById("copy-link-btn");
     try {
-      await navigator.clipboard.writeText(location.href);
+      await navigator.clipboard.writeText(shareUrl());
       btn.textContent = "Copied!";
     } catch (e) {
       btn.textContent = "Copy failed";
@@ -937,6 +985,10 @@ async function boot() {
   let startCenter = CONFIG.START_CENTER;
   let startZoom = CONFIG.START_ZOOM;
   const mParam = new URLSearchParams(location.hash.slice(1)).get("m");
+  // A shared link's hash is consumed once, then dropped from the address bar.
+  if (location.hash.length > 1) {
+    history.replaceState(null, "", location.pathname + location.search);
+  }
   if (mParam) {
     const [lng, lat, z] = mParam.split(",").map(Number);
     if ([lng, lat, z].every(Number.isFinite)) {
@@ -973,7 +1025,7 @@ async function boot() {
   });
 
   map.on("idle", scheduleCount);
-  map.on("moveend", () => { scheduleCount(); updateHash(); });
+  map.on("moveend", scheduleCount);
   map.on("sourcedata", scheduleCount);
 
   map.on("click", "parcels-fill", (e) => {
