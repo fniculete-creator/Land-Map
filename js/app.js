@@ -746,16 +746,23 @@ async function fetchMergedStyle(styleUrl, fallback) {
   return base;
 }
 
-// Basemap preference: Mapbox (with token) -> free OpenFreeMap vector style
-// -> raster OSM -> plain background. Never breaks the app.
+// Basemap preference: Mapbox raster tiles (with token) -> free OpenFreeMap
+// vector style -> raster OSM -> plain background. Never breaks the app.
+// Mapbox is consumed via its Static Tiles API (styled raster tiles) rather
+// than the vector style JSON: identical cartography, and immune to
+// Mapbox-proprietary style-spec features that MapLibre can't apply.
 async function buildStyle() {
   const fallback = baseStyle();
   if (CONFIG.MAPBOX_TOKEN) {
-    try {
-      const m = CONFIG.MAPBOX_STYLE.replace("mapbox://styles/", "");
-      return await fetchMergedStyle(
-        `https://api.mapbox.com/styles/v1/${m}?access_token=${CONFIG.MAPBOX_TOKEN}`, fallback);
-    } catch (e) { /* fall through */ }
+    const stylePath = CONFIG.MAPBOX_STYLE.replace("mapbox://styles/", "");
+    const style = baseStyle();
+    style.sources.streets = {
+      type: "raster",
+      tiles: [`https://api.mapbox.com/styles/v1/${stylePath}/tiles/512/{z}/{x}/{y}@2x?access_token=${CONFIG.MAPBOX_TOKEN}`],
+      tileSize: 512,
+      attribution: '© <a href="https://www.mapbox.com/about/maps/">Mapbox</a> © OpenStreetMap',
+    };
+    return style;
   }
   if (CONFIG.BASEMAP_STYLE_URL) {
     try {
