@@ -42,6 +42,8 @@ html, body {
 
 #brand { display: flex; align-items: center; gap: 14px; white-space: nowrap; }
 
+#brand-logo { height: 34px; width: auto; display: block; }
+
 #brand-mm { display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
 
 #brand-mm-name {

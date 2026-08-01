@@ -9,6 +9,12 @@ export const CONFIG = {
   START_CENTER: [-118.457, 33.993],
   START_ZOOM: 13,
 
+  // Team logo image (the exact Marcus & Millichap LAAA Team lockup).
+  // Either commit the file to assets/ and set "assets/laaa-logo.png", or
+  // paste the image URL from laaa.com (right-click the logo -> Copy image
+  // address). Empty -> the styled text lockup renders instead.
+  LOGO_URL: "assets/laaa-logo.png",
+
   // --- Optional API keys (paste yours; both restrictable by domain) ---
   // Mapbox public token (pk....) -> the app uses Mapbox cartography (same
   // family as comps.laaa.com). Create a URL-restricted token in your Mapbox

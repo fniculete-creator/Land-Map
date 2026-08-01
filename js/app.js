@@ -574,7 +574,24 @@ async function buildStyle() {
   return fallback;
 }
 
+function initBrandLogo() {
+  if (!CONFIG.LOGO_URL) return;
+  const img = document.getElementById("brand-logo");
+  const textLockup = document.getElementById("brand-mm");
+  img.addEventListener("load", () => {
+    img.classList.remove("hidden");
+    textLockup.classList.add("hidden");
+  });
+  // Missing/unreachable logo file -> keep the styled text lockup.
+  img.addEventListener("error", () => {
+    img.classList.add("hidden");
+    textLockup.classList.remove("hidden");
+  });
+  img.src = CONFIG.LOGO_URL;
+}
+
 async function boot() {
+  initBrandLogo();
   const synthetic = await isSynthetic();
   if (synthetic) {
     document.getElementById("demo-banner").classList.remove("hidden");
