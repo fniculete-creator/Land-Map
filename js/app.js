@@ -88,24 +88,114 @@ const COUNTY_NAMES = { LA: "Los Angeles Co.", VC: "Ventura Co.", SB: "Santa Barb
 const protocol = new pmtiles.Protocol();
 maplibregl.addProtocol("pmtiles", protocol.tile);
 
-const tilesUrl = new URL(CONFIG.PMTILES_URL, location.href).href;
-const archive = new pmtiles.PMTiles(tilesUrl);
-protocol.add(archive);
+// One or more PMTiles archives. County-scale coverage is split into
+// <100MB geographic chunks (GitHub/Vercel file limits); each archive becomes
+// its own vector source carrying a full copy of the parcel layer stack.
+const tilesUrls = (CONFIG.PMTILES_URLS && CONFIG.PMTILES_URLS.length
+  ? CONFIG.PMTILES_URLS : [CONFIG.PMTILES_URL])
+  .map((u) => new URL(u, location.href).href);
+const archives = tilesUrls.map((u) => {
+  const a = new pmtiles.PMTiles(u);
+  protocol.add(a);
+  return a;
+});
+const archive = archives[0];
+const SRC_COUNT = tilesUrls.length;
+
+// Layer ids: source 0 keeps the plain name ("parcels-fill"); further sources
+// get a suffix ("parcels-fill@1"). lids() lists every instance of a layer.
+function lid(base, i) { return i === 0 ? base : `${base}@${i}`; }
+function lids(base) {
+  return Array.from({ length: SRC_COUNT }, (_, i) => lid(base, i));
+}
+
+// The full parcel layer stack for one source, ordered bottom → top.
+function parcelLayers(i) {
+  const layers = [
+    {
+      id: "centroids", type: "circle", "source-layer": "centroids",
+      maxzoom: 14,
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 1.5, 12, 3],
+        "circle-color": UNIVERSE_COLOR,
+        "circle-opacity": 0.9,
+      },
+    },
+    {
+      // Non-universe parcels (commercial, condos, apartments…): faint,
+      // permanent context beneath the working universe.
+      id: "parcels-context", type: "fill", "source-layer": "parcels",
+      minzoom: 14,
+      paint: { "fill-color": "#64748b", "fill-opacity": 0.05 },
+    },
+    {
+      id: "parcels-context-line", type: "line", "source-layer": "parcels",
+      minzoom: 14,
+      paint: { "line-color": COLORS.neutralLine, "line-width": 0.5 },
+    },
+    {
+      id: "parcels-fill", type: "fill", "source-layer": "parcels",
+      minzoom: 14,
+      paint: {
+        "fill-color": UNIVERSE_COLOR,
+        "fill-opacity": 0.45,
+      },
+    },
+    {
+      id: "parcels-line", type: "line", "source-layer": "parcels",
+      minzoom: 14,
+      paint: {
+        "line-color": UNIVERSE_LINE_COLOR,
+        "line-width": 1.0,
+      },
+    },
+    {
+      // LA City Planning SB 684/1123 cases: approved green, pending yellow.
+      // Always visible regardless of filters.
+      id: "parcels-projects", type: "fill", "source-layer": "parcels",
+      minzoom: 14,
+      filter: ["==", ["get", "ain"], "___none___"],
+      paint: { "fill-color": "#facc15", "fill-opacity": 0.7 },
+    },
+    {
+      // Deal-status outlines: always visible regardless of filters, so the
+      // team's tracked pipeline never disappears from the map.
+      id: "parcels-status", type: "line", "source-layer": "parcels",
+      minzoom: 14,
+      filter: ["==", ["get", "ain"], "___none___"],
+      paint: { "line-color": "#2563eb", "line-width": 2.5 },
+    },
+    {
+      id: "parcels-selected", type: "line", "source-layer": "parcels",
+      minzoom: 14,
+      filter: ["==", ["get", "ain"], "___none___"],
+      paint: { "line-color": COLORS.highlight, "line-width": 3 },
+    },
+  ];
+  return layers.map((l) => ({ ...l, id: lid(l.id, i), source: "parcels" + i }));
+}
 
 function baseStyle() {
+  const sources = {
+    streets: {
+      type: "raster", tiles: CONFIG.BASEMAPS.streets.tiles, tileSize: 256,
+      attribution: CONFIG.BASEMAPS.streets.attribution,
+    },
+    satellite: {
+      type: "raster", tiles: CONFIG.BASEMAPS.satellite.tiles, tileSize: 256,
+      attribution: CONFIG.BASEMAPS.satellite.attribution,
+    },
+  };
+  tilesUrls.forEach((u, i) => {
+    sources["parcels" + i] = { type: "vector", url: "pmtiles://" + u };
+  });
+  // Planning-project markers come from projects.json coordinates, NOT the
+  // tileset: low-zoom tiles drop most centroids to stay under the tile
+  // budget, so specific project parcels would vanish from the dot view.
+  sources["sb-projects"] = { type: "geojson", data: projectsGeojson() };
   return {
     version: 8,
-    sources: {
-      streets: {
-        type: "raster", tiles: CONFIG.BASEMAPS.streets.tiles, tileSize: 256,
-        attribution: CONFIG.BASEMAPS.streets.attribution,
-      },
-      satellite: {
-        type: "raster", tiles: CONFIG.BASEMAPS.satellite.tiles, tileSize: 256,
-        attribution: CONFIG.BASEMAPS.satellite.attribution,
-      },
-      parcels: { type: "vector", url: "pmtiles://" + tilesUrl },
-    },
+    sources,
     layers: [
       { id: "bg", type: "background", paint: { "background-color": "#eef1f4" } },
       { id: "basemap-streets", type: "raster", source: "streets" },
@@ -114,7 +204,7 @@ function baseStyle() {
       // Synthetic street grid — present only in fixture/demo tilesets; the
       // deployed app gets real streets from the raster basemap instead.
       {
-        id: "demo-streets", type: "line", source: "parcels", "source-layer": "streets",
+        id: "demo-streets", type: "line", source: "parcels0", "source-layer": "streets",
         paint: {
           "line-color": "#ffffff",
           "line-width": ["interpolate", ["linear"], ["zoom"],
@@ -122,81 +212,36 @@ function baseStyle() {
             16, ["case", ["==", ["get", "cls"], "major"], 14, 8]],
         },
       },
+      ...tilesUrls.flatMap((_, i) => parcelLayers(i)),
       {
-        id: "centroids", type: "circle", source: "parcels", "source-layer": "centroids",
+        id: "projects-markers", type: "circle", source: "sb-projects",
         maxzoom: 14,
-        paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 1.5, 12, 3],
-          "circle-color": UNIVERSE_COLOR,
-          "circle-opacity": 0.9,
-        },
-      },
-      {
-        // Non-universe parcels (commercial, condos, apartments…): faint,
-        // permanent context beneath the working universe.
-        id: "parcels-context", type: "fill", source: "parcels", "source-layer": "parcels",
-        minzoom: 14,
-        paint: { "fill-color": "#64748b", "fill-opacity": 0.05 },
-      },
-      {
-        id: "parcels-context-line", type: "line", source: "parcels", "source-layer": "parcels",
-        minzoom: 14,
-        paint: { "line-color": COLORS.neutralLine, "line-width": 0.5 },
-      },
-      {
-        id: "parcels-fill", type: "fill", source: "parcels", "source-layer": "parcels",
-        minzoom: 14,
-        paint: {
-          "fill-color": UNIVERSE_COLOR,
-          "fill-opacity": 0.45,
-        },
-      },
-      {
-        id: "parcels-line", type: "line", source: "parcels", "source-layer": "parcels",
-        minzoom: 14,
-        paint: {
-          "line-color": UNIVERSE_LINE_COLOR,
-          "line-width": 1.0,
-        },
-      },
-      {
-        // LA City Planning SB 684/1123 cases: approved green, pending yellow.
-        // Always visible regardless of filters.
-        id: "parcels-projects", type: "fill", source: "parcels", "source-layer": "parcels",
-        minzoom: 14,
-        filter: ["==", ["get", "ain"], "___none___"],
-        paint: { "fill-color": "#facc15", "fill-opacity": 0.7 },
-      },
-      {
-        id: "projects-centroids", type: "circle", source: "parcels", "source-layer": "centroids",
-        maxzoom: 14,
-        filter: ["==", ["get", "ain"], "___none___"],
         paint: {
           "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 3, 12, 6],
-          "circle-color": "#facc15",
+          "circle-color": ["match", ["get", "status"],
+            "approved", "#10b981", "#facc15"],
           "circle-stroke-color": "#fff",
           "circle-stroke-width": 1,
         },
-      },
-      {
-        // Deal-status outlines: always visible regardless of filters, so the
-        // team's tracked pipeline never disappears from the map.
-        id: "parcels-status", type: "line", source: "parcels", "source-layer": "parcels",
-        minzoom: 14,
-        filter: ["==", ["get", "ain"], "___none___"],
-        paint: { "line-color": "#2563eb", "line-width": 2.5 },
-      },
-      {
-        id: "parcels-selected", type: "line", source: "parcels", "source-layer": "parcels",
-        minzoom: 14,
-        filter: ["==", ["get", "ain"], "___none___"],
-        paint: { "line-color": COLORS.highlight, "line-width": 3 },
       },
     ],
   };
 }
 
-const FILTERED_LAYERS = ["parcels-fill", "parcels-line"];
+function projectsGeojson() {
+  return {
+    type: "FeatureCollection",
+    features: Object.entries(sbProjects)
+      .filter(([, pr]) => pr.lng != null)
+      .map(([ain, pr]) => ({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [pr.lng, pr.lat] },
+        properties: { ain, status: pr.status },
+      })),
+  };
+}
+
+const FILTERED_LAYERS = [...lids("parcels-fill"), ...lids("parcels-line")];
 
 // The address bar stays clean while browsing; filters + map position are
 // encoded only when the user asks for a shareable link.
@@ -214,7 +259,9 @@ function shareUrl() {
 function applyStatusOutlines() {
   const tagged = Object.keys(dealStatuses);
   if (!tagged.length) {
-    map.setFilter("parcels-status", ["==", ["get", "ain"], "___none___"]);
+    for (const id of lids("parcels-status")) {
+      map.setFilter(id, ["==", ["get", "ain"], "___none___"]);
+    }
     return;
   }
   const match = ["match", ["get", "ain"]];
@@ -222,8 +269,10 @@ function applyStatusOutlines() {
     match.push(ain, STATUS_COLORS[st] || "#2563eb");
   }
   match.push("#2563eb");
-  map.setPaintProperty("parcels-status", "line-color", match);
-  map.setFilter("parcels-status", ["in", ["get", "ain"], ["literal", tagged]]);
+  for (const id of lids("parcels-status")) {
+    map.setPaintProperty(id, "line-color", match);
+    map.setFilter(id, ["in", ["get", "ain"], ["literal", tagged]]);
+  }
 }
 
 function applyFilters() {
@@ -241,8 +290,11 @@ function applyFilters() {
   const f = buildFilter(state, CONFIG, statusAins);
   for (const id of FILTERED_LAYERS) map.setFilter(id, f);
   const selBase = ["==", ["get", "ain"], selectedAin ?? "___none___"];
-  map.setFilter("parcels-selected", f ? ["all", f, selBase] : selBase);
-  map.setFilter("centroids", buildCentroidFilter(state, CONFIG, statusAins));
+  for (const id of lids("parcels-selected")) {
+    map.setFilter(id, f ? ["all", f, selBase] : selBase);
+  }
+  const cf = buildCentroidFilter(state, CONFIG, statusAins);
+  for (const id of lids("centroids")) map.setFilter(id, cf);
 
   applyStatusOutlines();
   document.getElementById("list-title").textContent =
@@ -285,8 +337,8 @@ function updateCount() {
   // would freeze the list on stale results, so re-arm instead.
   if (!map.isStyleLoaded()) { scheduleCount(); return; }
   const zoom = map.getZoom();
-  const layer = zoom >= 14 ? "parcels-fill" : "centroids";
-  const feats = map.queryRenderedFeatures({ layers: [layer] });
+  const layers = zoom >= 14 ? lids("parcels-fill") : lids("centroids");
+  const feats = map.queryRenderedFeatures({ layers });
 
   const byAin = new Map();
   for (const f of feats) {
@@ -820,6 +872,8 @@ const LandMap = {
   },
   get map() { return map; },
   get state() { return state; },
+  // Layer-instance lists across all tile sources (used by tests/tools).
+  lids,
 };
 window.LandMap = LandMap;
 
@@ -869,14 +923,16 @@ async function fetchMergedStyle(styleUrl, fallback) {
   clearTimeout(timer);
   if (!resp.ok) throw new Error("style fetch " + resp.status);
   const base = await resp.json();
-  base.sources = {
-    ...base.sources,
-    satellite: fallback.sources.satellite,
-    parcels: fallback.sources.parcels,
-  };
+  base.sources = { ...base.sources };
+  for (const [k, v] of Object.entries(fallback.sources)) {
+    if (k === "satellite" || k === "sb-projects" || k.startsWith("parcels")) {
+      base.sources[k] = v;
+    }
+  }
   const overlayIds = new Set([
-    "basemap-satellite", "centroids",
-    "parcels-fill", "parcels-line", "parcels-status", "parcels-selected",
+    "basemap-satellite", "projects-markers",
+    ...["centroids", "parcels-fill", "parcels-line", "parcels-projects",
+      "parcels-status", "parcels-selected"].flatMap(lids),
   ]);
   base.layers = [...base.layers, ...fallback.layers.filter((l) => overlayIds.has(l.id))];
   return base;
@@ -954,18 +1010,14 @@ function applyProjectLayers() {
   const ains = Object.keys(sbProjects);
   if (!ains.length || !map.getLayer("parcels-projects")) return;
   const colorMatch = ["match", ["get", "ain"]];
-  const active = [];
   for (const [ain, pr] of Object.entries(sbProjects)) {
-    active.push(ain);
     colorMatch.push(ain, pr.status === "approved" ? "#10b981" : "#facc15");
   }
   colorMatch.push("#facc15");
-  if (!active.length) return;
-  for (const id of ["parcels-projects", "projects-centroids"]) {
-    map.setFilter(id, ["in", ["get", "ain"], ["literal", active]]);
+  for (const id of lids("parcels-projects")) {
+    map.setFilter(id, ["in", ["get", "ain"], ["literal", ains]]);
+    map.setPaintProperty(id, "fill-color", colorMatch);
   }
-  map.setPaintProperty("parcels-projects", "fill-color", colorMatch);
-  map.setPaintProperty("projects-centroids", "circle-color", colorMatch);
 }
 
 async function boot() {
@@ -1020,28 +1072,40 @@ async function boot() {
   map.on("load", init);
   map.on("styledata", init);
   map.once("styledata", applyProjectLayers);
-  map.on("click", "parcels-projects", (e) => {
-    showDetail(e.features[0].properties, e.lngLat);
+  for (const id of lids("parcels-projects")) {
+    map.on("click", id, (e) => showDetail(e.features[0].properties, e.lngLat));
+  }
+  // Project markers exist below parcel zoom; a click zooms in and opens the
+  // case using the projects.json record (tiles may not carry this parcel).
+  map.on("click", "projects-markers", (e) => {
+    const ain = e.features[0].properties.ain;
+    const pr = sbProjects[ain] || {};
+    map.easeTo({ center: e.lngLat, zoom: 15 });
+    showDetail({ ain, a: pr.address || "", lsf: pr.lotSqft, t: pr.tier || "" }, e.lngLat);
   });
 
   map.on("idle", scheduleCount);
   map.on("moveend", scheduleCount);
   map.on("sourcedata", scheduleCount);
 
-  map.on("click", "parcels-fill", (e) => {
-    showDetail(e.features[0].properties, e.lngLat);
-  });
-  map.on("click", "parcels-context", (e) => {
-    // Fires under the universe layer too; only act when no universe parcel
-    // was hit at this point (that handler already opened the panel).
-    const hit = map.queryRenderedFeatures(e.point, { layers: ["parcels-fill"] });
-    if (!hit.length) showDetail(e.features[0].properties, e.lngLat);
-  });
-  map.on("click", "centroids", (e) => {
-    map.easeTo({ center: e.lngLat, zoom: 14 });
-  });
-  map.on("mouseenter", "parcels-fill", () => { map.getCanvas().style.cursor = "pointer"; });
-  map.on("mouseleave", "parcels-fill", () => { map.getCanvas().style.cursor = ""; });
+  for (const id of lids("parcels-fill")) {
+    map.on("click", id, (e) => showDetail(e.features[0].properties, e.lngLat));
+    map.on("mouseenter", id, () => { map.getCanvas().style.cursor = "pointer"; });
+    map.on("mouseleave", id, () => { map.getCanvas().style.cursor = ""; });
+  }
+  for (const id of lids("parcels-context")) {
+    map.on("click", id, (e) => {
+      // Fires under the universe layer too; only act when no universe parcel
+      // was hit at this point (that handler already opened the panel).
+      const hit = map.queryRenderedFeatures(e.point, { layers: lids("parcels-fill") });
+      if (!hit.length) showDetail(e.features[0].properties, e.lngLat);
+    });
+  }
+  for (const id of lids("centroids")) {
+    map.on("click", id, (e) => {
+      map.easeTo({ center: e.lngLat, zoom: 14 });
+    });
+  }
 
   bindControls();
 }
