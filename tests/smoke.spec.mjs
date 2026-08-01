@@ -37,10 +37,12 @@ assert(!(await page.evaluate(() => document.getElementById("sb1123-btn").classLi
 assert((await page.evaluate(() => document.getElementById("list-title").textContent)) === "Matches in view",
   "list titled 'Matches in view' by default");
 
+// Counts span every tile source (the county is split into chunk archives).
 const counts = () => page.evaluate(() => {
   const m = window.LandMap.map;
-  const layer = m.getZoom() >= 14 ? "parcels-fill" : "centroids";
-  return new Set(m.queryRenderedFeatures({ layers: [layer] }).map((f) => f.properties.ain)).size;
+  const lids = window.LandMap.lids || ((b) => [b]);
+  const layers = lids(m.getZoom() >= 14 ? "parcels-fill" : "centroids");
+  return new Set(m.queryRenderedFeatures({ layers }).map((f) => f.properties.ain)).size;
 });
 
 const baseline = await counts();
@@ -102,6 +104,19 @@ const sfrCheck = await page.evaluate((AIN) => {
 }, SHOUP_AIN);
 assert(sfrCheck.shoup, "SFR filter keeps 6540 Shoup Ave");
 assert(sfrCheck.condos === 0, `SFR filter excludes condo unit records (${sfrCheck.condos})`);
+
+// Expanded coverage: parcels must render in the non-region chunks too.
+await page.click("#reset-btn");
+for (const [name, center] of [
+  ["Silver Lake", [-118.27, 34.095]],
+  ["Long Beach", [-118.19, 33.77]],
+  ["Oxnard (Ventura Co.)", [-119.18, 34.20]],
+]) {
+  await page.evaluate((c) => window.LandMap.map.jumpTo({ center: c, zoom: 15 }), center);
+  await page.waitForTimeout(4000);
+  const n = await counts();
+  assert(n > 50, `${name} parcels render (${n})`);
+}
 
 // CSV export covers matches with assessor URLs.
 const csv = await page.evaluate(() => window.LandMap.exportCsv());

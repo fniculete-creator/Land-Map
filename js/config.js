@@ -1,11 +1,19 @@
 // Land-Map configuration.
-// Swap PMTILES_URL for the full-city tileset once you've built and hosted it
-// (see scripts/pipeline/README.md) — everything else stays the same.
 export const CONFIG = {
-  // Real parcels, target region (Valley + Westside). The full tri-county
-  // tileset (~400 MB) needs external hosting (Cloudflare R2 / Vercel Blob) —
-  // point this at its URL once uploaded to unlock all three counties.
-  PMTILES_URL: "data/real/land-map-region.pmtiles",
+  // Real parcels: ALL of LA County + Ventura + Santa Barbara (2.8M parcels),
+  // split into geographic chunks so each file stays under GitHub/Vercel
+  // per-file limits. Each chunk loads as its own tile source; the map treats
+  // them as one seamless dataset. First entry doubles as the demo-detection
+  // archive.
+  PMTILES_URLS: [
+    "data/real/land-tiles-west.pmtiles",        // Valley + Westside (original region)
+    "data/real/land-tiles-eastbasin-n.pmtiles", // Silver Lake, Hollywood, Glendale, Pasadena
+    "data/real/land-tiles-eastbasin-s.pmtiles", // DTLA, Koreatown, East & South-Central LA
+    "data/real/land-tiles-sgv.pmtiles",         // San Gabriel Valley east
+    "data/real/land-tiles-south.pmtiles",       // South Bay, Long Beach, SE cities, Catalina
+    "data/real/land-tiles-north.pmtiles",       // Santa Clarita + Antelope Valley
+    "data/real/land-tiles-coast.pmtiles",       // Ventura + Santa Barbara counties
+  ],
 
   // Where the map opens.
   START_CENTER: [-118.47, 34.09],
@@ -82,6 +90,33 @@ export const CONFIG = {
     "Century City": [-118.42, 34.05, -118.40, 34.07],
     "Culver City": [-118.43, 33.99, -118.37, 34.03],
     "Pacific Palisades": [-118.58, 34.02, -118.50, 34.09],
+    "Silver Lake": [-118.29, 34.07, -118.25, 34.11],
+    "Echo Park": [-118.27, 34.06, -118.23, 34.10],
+    "Los Feliz": [-118.31, 34.09, -118.27, 34.13],
+    "Hollywood": [-118.36, 34.08, -118.30, 34.11],
+    "East Hollywood": [-118.31, 34.08, -118.28, 34.10],
+    "Koreatown": [-118.32, 34.05, -118.28, 34.08],
+    "Downtown LA": [-118.28, 34.02, -118.22, 34.07],
+    "Highland Park": [-118.22, 34.10, -118.17, 34.13],
+    "Eagle Rock": [-118.23, 34.13, -118.19, 34.16],
+    "Glendale": [-118.29, 34.12, -118.21, 34.21],
+    "Burbank": [-118.37, 34.15, -118.28, 34.22],
+    "Pasadena": [-118.19, 34.12, -118.06, 34.20],
+    "Inglewood": [-118.38, 33.93, -118.31, 33.98],
+    "Torrance": [-118.39, 33.78, -118.30, 33.89],
+    "Redondo Beach": [-118.40, 33.81, -118.35, 33.87],
+    "Manhattan Beach": [-118.42, 33.87, -118.38, 33.91],
+    "Long Beach": [-118.25, 33.73, -118.08, 33.88],
+    "Santa Clarita": [-118.62, 34.36, -118.40, 34.46],
+    "Palmdale": [-118.20, 34.53, -117.98, 34.63],
+    "Lancaster": [-118.25, 34.65, -118.05, 34.75],
+    "Simi Valley": [-118.83, 34.24, -118.63, 34.31],
+    "Thousand Oaks": [-118.94, 34.14, -118.80, 34.23],
+    "Camarillo": [-119.10, 34.20, -118.97, 34.26],
+    "Oxnard": [-119.25, 34.15, -119.12, 34.25],
+    "Ventura": [-119.31, 34.24, -119.20, 34.31],
+    "Santa Barbara": [-119.77, 34.39, -119.64, 34.46],
+    "Goleta": [-119.90, 34.40, -119.78, 34.47],
   },
 
   ASSESSOR_URL: (ain) => `https://portal.assessor.lacounty.gov/parceldetail/${ain}`,
