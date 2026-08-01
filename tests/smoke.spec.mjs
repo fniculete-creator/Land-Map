@@ -138,6 +138,36 @@ assert(/t=/.test(tierHash), `tier filter serialized to hash (${tierHash})`);
 await page.click("#reset-btn");
 await page.waitForTimeout(800);
 
+// Improvements filter: Vacant and SFR Home are each strict subsets.
+await page.click('.dropdown[data-dd="improvements"] [data-dd-btn]');
+await page.check('input[name="imp"][value="vacant"]');
+await page.waitForTimeout(1200);
+const impVacant = await counts();
+assert(impVacant.parcels > 0 && impVacant.parcels < baseline.parcels,
+  `Improvements=Vacant is a strict subset (${impVacant.parcels})`);
+await page.check('input[name="imp"][value="sfr"]');
+await page.waitForTimeout(1200);
+const impSfr = await counts();
+assert(impSfr.parcels > 0 && impSfr.parcels < baseline.parcels,
+  `Improvements=SFR Home is a strict subset (${impSfr.parcels})`);
+await page.click("#reset-btn");
+await page.waitForTimeout(800);
+
+// Deal status: assign one parcel "Submitted", filter to it, expect exactly 1.
+const statusAin = await page.evaluate(() => {
+  const f = window.LandMap.map.queryRenderedFeatures({ layers: ["parcels-fill"] })[0];
+  window.LandMap.setStatus(f.properties.ain, "submitted");
+  return f.properties.ain;
+});
+await page.click('.dropdown[data-dd="status"] [data-dd-btn]');
+await page.check('input[name="dstatus"][value="submitted"]');
+await page.waitForTimeout(1200);
+const statusOnly = await counts();
+assert(statusOnly.parcels === 1, `Status=Submitted shows exactly the tagged parcel (${statusOnly.parcels})`);
+await page.evaluate((ain) => window.LandMap.setStatus(ain, ""), statusAin);
+await page.click("#reset-btn");
+await page.waitForTimeout(800);
+
 // Zoom out to centroid mode and confirm dots render.
 await page.evaluate(() => window.LandMap.map.jumpTo({ zoom: 11 }));
 await page.waitForFunction(() => {

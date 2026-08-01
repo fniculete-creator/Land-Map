@@ -373,6 +373,17 @@ html, body {
 
 .muted { color: var(--muted); font-size: 0.72rem; }
 
+.popup-status { margin-top: 9px; border-top: 1px solid var(--border); padding-top: 8px; }
+.popup-status label { font-size: 0.74rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.popup-status select {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 0.8rem;
+  background: #fff;
+}
+
 .popup-links { margin-top: 9px; display: flex; gap: 14px; }
 .popup-links a { color: var(--blue); text-decoration: none; font-weight: 700; font-size: 0.8rem; }
 .popup-links a:hover { text-decoration: underline; }

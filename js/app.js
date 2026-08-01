@@ -15,6 +15,24 @@ const COLORS = {
 };
 
 const TIER_NAMES = { A: "Westside", B: "South Valley", C: "Central/North Valley" };
+const STATUS_LABELS = {
+  submitted: "Submitted", approved: "Approved",
+  completed: "Completed", forsale: "For Sale",
+};
+
+// Team-assigned deal statuses, keyed by AIN. Browser-local for now; syncing
+// across the team needs a small backend (roadmap).
+const STATUS_KEY = "land-map-status-v1";
+let dealStatuses = {};
+try { dealStatuses = JSON.parse(localStorage.getItem(STATUS_KEY)) || {}; } catch (e) { /* fresh */ }
+
+function saveStatuses() {
+  try { localStorage.setItem(STATUS_KEY, JSON.stringify(dealStatuses)); } catch (e) { /* private mode */ }
+}
+
+function statusAinsFor(status) {
+  return Object.keys(dealStatuses).filter((ain) => dealStatuses[ain] === status);
+}
 
 let map;
 // SB 1123 candidates are the product: start with the preset on, so searching
@@ -112,11 +130,12 @@ function baseStyle() {
 const FILTERED_LAYERS = ["parcels-fill", "parcels-line"];
 
 function applyFilters() {
-  const f = buildFilter(state, CONFIG);
+  const statusAins = state.dealStatus === "any" ? [] : statusAinsFor(state.dealStatus);
+  const f = buildFilter(state, CONFIG, statusAins);
   for (const id of FILTERED_LAYERS) map.setFilter(id, f);
   const selBase = ["==", ["get", "ain"], selectedAin ?? "___none___"];
   map.setFilter("parcels-selected", f ? ["all", f, selBase] : selBase);
-  map.setFilter("centroids", buildCentroidFilter(state, CONFIG));
+  map.setFilter("centroids", buildCentroidFilter(state, CONFIG, statusAins));
   history.replaceState(null, "", location.pathname + location.search + (stateToHash(state) || "#"));
   scheduleCount();
 }
@@ -205,6 +224,7 @@ function renderList(candidates, detailed) {
     if (detailed && p.zc) bits.push(p.zc);
     bits.push(fmt(p.lsf) + " sf");
     if (detailed && p.w) bits.push("≈" + p.w + " ft");
+    if (dealStatuses[p.ain]) bits.push(STATUS_LABELS[dealStatuses[p.ain]]);
     meta.textContent = bits.join(" · ");
     info.appendChild(name);
     info.appendChild(meta);
@@ -260,6 +280,15 @@ function popupHtml(p, lngLat) {
         <a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>
         ${svLink}
       </div>
+      <div class="popup-status">
+        <label>Status
+          <select onchange="window.LandMap.setStatus('${p.ain}', this.value)">
+            <option value="">None</option>
+            ${Object.entries(STATUS_LABELS).map(([val, label]) =>
+              `<option value="${val}"${dealStatuses[p.ain] === val ? " selected" : ""}>${label}</option>`).join("")}
+          </select>
+        </label>
+      </div>
     </div>`;
 }
 
@@ -283,10 +312,8 @@ function syncControlsFromState() {
   const setVal = (id, v) => { document.getElementById(id).value = v === null ? "" : v; };
   setVal("w-min", r.w[0]); setVal("w-max", r.w[1]);
   setVal("lsf-min", r.lsf[0]); setVal("lsf-max", r.lsf[1]);
-  setVal("u-min", r.u[0]); setVal("u-max", r.u[1]);
   setPillVal("pv-width", rangeSummary(r.w));
   setPillVal("pv-lot", rangeSummary(r.lsf));
-  setPillVal("pv-units", rangeSummary(r.u));
 
   document.querySelectorAll(".zone-family").forEach((cb) => {
     cb.checked = state.zoneFamilies.has(Number(cb.value));
@@ -300,11 +327,16 @@ function syncControlsFromState() {
   });
   setPillVal("pv-tier", state.tiers.size ? [...state.tiers].sort().join("") : "");
 
-  document.querySelectorAll('input[name="vac"]').forEach((rb) => {
-    rb.checked = rb.value === state.tri.v;
+  document.querySelectorAll('input[name="dstatus"]').forEach((rb) => {
+    rb.checked = rb.value === state.dealStatus;
   });
-  setPillVal("pv-status",
-    state.tri.v === "only" ? "vacant" : state.tri.v === "exclude" ? "built" : "");
+  setPillVal("pv-status", state.dealStatus === "any" ? "" : STATUS_LABELS[state.dealStatus]);
+
+  document.querySelectorAll('input[name="imp"]').forEach((rb) => {
+    rb.checked = rb.value === state.imp;
+  });
+  setPillVal("pv-imp",
+    state.imp === "vacant" ? "Vacant" : state.imp === "sfr" ? "SFR" : "");
 
   document.getElementById("sb1123-btn").classList.toggle("active", !!state.sbPreset);
   document.getElementById("sb1123-explainer").classList.toggle("hidden", !state.sbPreset);
@@ -334,11 +366,10 @@ function bindControls() {
     };
     state.ranges.w = [parse("w-min"), parse("w-max")];
     state.ranges.lsf = [parse("lsf-min"), parse("lsf-max")];
-    state.ranges.u = [parse("u-min"), parse("u-max")];
     syncControlsFromState();
     applyFilters();
   };
-  for (const id of ["w-min", "w-max", "lsf-min", "lsf-max", "u-min", "u-max"]) {
+  for (const id of ["w-min", "w-max", "lsf-min", "lsf-max"]) {
     document.getElementById(id).addEventListener("change", onRangeChange);
   }
 
@@ -365,9 +396,17 @@ function bindControls() {
     });
   });
 
-  document.querySelectorAll('input[name="vac"]').forEach((rb) => {
+  document.querySelectorAll('input[name="dstatus"]').forEach((rb) => {
     rb.addEventListener("change", () => {
-      if (rb.checked) state.tri.v = rb.value;
+      if (rb.checked) state.dealStatus = rb.value;
+      syncControlsFromState();
+      applyFilters();
+    });
+  });
+
+  document.querySelectorAll('input[name="imp"]').forEach((rb) => {
+    rb.addEventListener("change", () => {
+      if (rb.checked) state.imp = rb.value;
       syncControlsFromState();
       applyFilters();
     });
@@ -426,6 +465,12 @@ function bindSearch() {
 /* ---------------- v2 hook: overlay points (e.g. comps / listings) ---------------- */
 
 const LandMap = {
+  setStatus(ain, value) {
+    if (value) dealStatuses[ain] = value;
+    else delete dealStatuses[ain];
+    saveStatuses();
+    applyFilters();
+  },
   addOverlayPoints(geojson, options = {}) {
     const id = options.id || "overlay-points";
     if (map.getSource(id)) { map.getSource(id).setData(geojson); return; }

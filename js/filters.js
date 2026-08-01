@@ -1,17 +1,20 @@
 // Filter state -> MapLibre filter expressions.
 // State shape:
-//   ranges: { w: [min,max|null], lsf: [...], u: [...] }   (null = unbounded)
+//   ranges: { w: [min,max|null], lsf: [...] }        (null = unbounded)
 //   zoneFamilies: Set of 0/1/2 (empty = all)
 //   zoneClasses: array of exact zone-class strings (overrides families if set)
-//   tri: { v } "any" | "only" | "exclude"  (vacancy; fire/coastal/hillside
-//   are hard exclusions inside the eligibility flag, not filters)
+//   tiers: Set of "A"/"B"/"C" (empty = all)
+//   imp: "any" | "vacant" | "sfr"                    (improvements on the lot)
+//   dealStatus: "any" | "submitted" | "approved" | "completed" | "forsale"
+//     (team-assigned statuses; the matching AIN list is passed to buildFilter)
 export function emptyState() {
   return {
-    ranges: { w: [null, null], lsf: [null, null], u: [null, null] },
+    ranges: { w: [null, null], lsf: [null, null] },
     zoneFamilies: new Set(),
     zoneClasses: [],
     tiers: new Set(),
-    tri: { v: "any" },
+    imp: "any",
+    dealStatus: "any",
   };
 }
 
@@ -23,7 +26,13 @@ export function sb1123State(cfg) {
   return s;
 }
 
-export function buildFilter(state, cfg) {
+// SFR home = residential use code (01xx) with a structure on it.
+const SFR_CLAUSE = ["all",
+  ["==", ["get", "v"], 0],
+  ["==", ["slice", ["get", "uc"], 0, 2], "01"],
+];
+
+export function buildFilter(state, cfg, statusAins) {
   const clauses = ["all"];
 
   for (const [key, [min, max]] of Object.entries(state.ranges)) {
@@ -41,9 +50,11 @@ export function buildFilter(state, cfg) {
     clauses.push(["in", ["get", "t"], ["literal", [...state.tiers]]]);
   }
 
-  for (const [key, mode] of Object.entries(state.tri)) {
-    if (mode === "any") continue;
-    clauses.push(["==", ["get", key], mode === "only" ? 1 : 0]);
+  if (state.imp === "vacant") clauses.push(["==", ["get", "v"], 1]);
+  else if (state.imp === "sfr") clauses.push(SFR_CLAUSE);
+
+  if (state.dealStatus !== "any") {
+    clauses.push(["in", ["get", "ain"], ["literal", statusAins || []]]);
   }
 
   if (state.sbPreset) {
@@ -53,15 +64,19 @@ export function buildFilter(state, cfg) {
   return clauses.length > 1 ? clauses : null;
 }
 
-// Centroids only carry ain/e/v/lsf, so give them a reduced filter that never
-// references missing attributes (missing -> expression false -> all dots vanish).
-export function buildCentroidFilter(state, cfg) {
+// Centroids carry only ain/a/e/v/lsf/t, so approximate: the SFR improvements
+// filter degrades to "not vacant" at centroid zooms (no use code in tiles).
+export function buildCentroidFilter(state, cfg, statusAins) {
   const clauses = ["all"];
   const [lmin, lmax] = state.ranges.lsf;
   if (lmin !== null) clauses.push([">=", ["get", "lsf"], lmin]);
   if (lmax !== null) clauses.push(["<=", ["get", "lsf"], lmax]);
-  if (state.tri.v !== "any") clauses.push(["==", ["get", "v"], state.tri.v === "only" ? 1 : 0]);
   if (state.tiers.size > 0) clauses.push(["in", ["get", "t"], ["literal", [...state.tiers]]]);
+  if (state.imp === "vacant") clauses.push(["==", ["get", "v"], 1]);
+  else if (state.imp === "sfr") clauses.push(["==", ["get", "v"], 0]);
+  if (state.dealStatus !== "any") {
+    clauses.push(["in", ["get", "ain"], ["literal", statusAins || []]]);
+  }
   if (state.sbPreset) clauses.push(["==", ["get", "e"], 1]);
   return clauses.length > 1 ? clauses : null;
 }
@@ -75,9 +90,8 @@ export function stateToHash(state) {
   if (state.zoneClasses.length) p.set("zc", state.zoneClasses.join(","));
   else if (state.zoneFamilies.size) p.set("zf", [...state.zoneFamilies].join(","));
   if (state.tiers.size) p.set("t", [...state.tiers].join(","));
-  for (const [key, mode] of Object.entries(state.tri)) {
-    if (mode !== "any") p.set(key, mode === "only" ? "1" : "0");
-  }
+  if (state.imp !== "any") p.set("imp", state.imp);
+  if (state.dealStatus !== "any") p.set("ds", state.dealStatus);
   if (state.sbPreset) p.set("sb", "1");
   const s = p.toString();
   return s ? "#" + s : "";
@@ -87,7 +101,7 @@ export function stateFromHash(hash) {
   const state = emptyState();
   if (!hash || hash.length < 2) return state;
   const p = new URLSearchParams(hash.slice(1));
-  for (const key of ["w", "lsf", "u"]) {
+  for (const key of ["w", "lsf"]) {
     const v = p.get(key);
     if (v && v.includes("..")) {
       const [a, b] = v.split("..");
@@ -97,10 +111,9 @@ export function stateFromHash(hash) {
   if (p.get("zc")) state.zoneClasses = p.get("zc").split(",").filter(Boolean);
   else if (p.get("zf")) state.zoneFamilies = new Set(p.get("zf").split(",").map(Number));
   if (p.get("t")) state.tiers = new Set(p.get("t").split(",").filter(Boolean));
-  for (const key of ["v"]) {
-    const v = p.get(key);
-    if (v === "1") state.tri[key] = "only";
-    else if (v === "0") state.tri[key] = "exclude";
+  if (["vacant", "sfr"].includes(p.get("imp"))) state.imp = p.get("imp");
+  if (["submitted", "approved", "completed", "forsale"].includes(p.get("ds"))) {
+    state.dealStatus = p.get("ds");
   }
   if (p.get("sb") === "1") state.sbPreset = true;
   return state;

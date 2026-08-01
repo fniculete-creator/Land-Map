@@ -28,18 +28,15 @@
 
       <button id="sb1123-btn" class="pill pill-primary"
               title="Vacant SF lots ≤1.5 ac / MF lots ≤5 ac; fire, coastal &amp; hillside excluded">
-        SB 1123 candidates
+        SB 1123
       </button>
 
-      <div class="dropdown" data-dd="width">
-        <button class="pill" data-dd-btn>Width <span class="pill-val" id="pv-width"></span> <span class="caret">▾</span></button>
+      <div class="dropdown" data-dd="tier">
+        <button class="pill" data-dd-btn>Tier <span class="pill-val" id="pv-tier"></span> <span class="caret">▾</span></button>
         <div class="dd-panel">
-          <label>Lot width (ft)</label>
-          <div class="range-row">
-            <input type="number" id="w-min" placeholder="min" min="0" />
-            <span>–</span>
-            <input type="number" id="w-max" placeholder="max" min="0" />
-          </div>
+          <label class="check-label"><input type="checkbox" class="tier-cb" id="tier-A" value="A" /> <span class="tier-chip tier-a">A</span> Westside</label>
+          <label class="check-label"><input type="checkbox" class="tier-cb" id="tier-B" value="B" /> <span class="tier-chip tier-b">B</span> South Valley</label>
+          <label class="check-label"><input type="checkbox" class="tier-cb" id="tier-C" value="C" /> <span class="tier-chip tier-c">C</span> Central &amp; North Valley</label>
         </div>
       </div>
 
@@ -55,14 +52,14 @@
         </div>
       </div>
 
-      <div class="dropdown" data-dd="units">
-        <button class="pill" data-dd-btn>Units <span class="pill-val" id="pv-units"></span> <span class="caret">▾</span></button>
+      <div class="dropdown" data-dd="width">
+        <button class="pill" data-dd-btn>Width <span class="pill-val" id="pv-width"></span> <span class="caret">▾</span></button>
         <div class="dd-panel">
-          <label>Units on lot</label>
+          <label>Lot width (ft)</label>
           <div class="range-row">
-            <input type="number" id="u-min" placeholder="min" min="0" />
+            <input type="number" id="w-min" placeholder="min" min="0" />
             <span>–</span>
-            <input type="number" id="u-max" placeholder="max" min="0" />
+            <input type="number" id="w-max" placeholder="max" min="0" />
           </div>
         </div>
       </div>
@@ -77,22 +74,25 @@
         </div>
       </div>
 
-      <div class="dropdown" data-dd="tier">
-        <button class="pill" data-dd-btn>Tier <span class="pill-val" id="pv-tier"></span> <span class="caret">▾</span></button>
-        <div class="dd-panel">
-          <label class="check-label"><input type="checkbox" class="tier-cb" id="tier-A" value="A" /> <span class="tier-chip tier-a">A</span> Westside</label>
-          <label class="check-label"><input type="checkbox" class="tier-cb" id="tier-B" value="B" /> <span class="tier-chip tier-b">B</span> South Valley</label>
-          <label class="check-label"><input type="checkbox" class="tier-cb" id="tier-C" value="C" /> <span class="tier-chip tier-c">C</span> Central &amp; North Valley</label>
-        </div>
-      </div>
-
       <div class="dropdown" data-dd="status">
         <button class="pill" data-dd-btn>Status <span class="pill-val" id="pv-status"></span> <span class="caret">▾</span></button>
         <div class="dd-panel">
-          <label class="check-label"><input type="radio" name="vac" value="any" checked /> Any</label>
-          <label class="check-label"><input type="radio" name="vac" value="only" /> Vacant only</label>
-          <label class="check-label"><input type="radio" name="vac" value="exclude" /> Exclude vacant</label>
-          <p class="dd-hint">Fire, coastal &amp; hillside parcels never qualify — excluded from candidates automatically.</p>
+          <label class="check-label"><input type="radio" name="dstatus" value="any" checked /> Any</label>
+          <label class="check-label"><input type="radio" name="dstatus" value="submitted" /> Submitted</label>
+          <label class="check-label"><input type="radio" name="dstatus" value="approved" /> Approved</label>
+          <label class="check-label"><input type="radio" name="dstatus" value="completed" /> Completed</label>
+          <label class="check-label"><input type="radio" name="dstatus" value="forsale" /> For Sale</label>
+          <p class="dd-hint">Set a parcel's status from its popup. Statuses are
+          saved in this browser.</p>
+        </div>
+      </div>
+
+      <div class="dropdown" data-dd="improvements">
+        <button class="pill" data-dd-btn>Improvements <span class="pill-val" id="pv-imp"></span> <span class="caret">▾</span></button>
+        <div class="dd-panel">
+          <label class="check-label"><input type="radio" name="imp" value="any" checked /> Any</label>
+          <label class="check-label"><input type="radio" name="imp" value="vacant" /> Vacant</label>
+          <label class="check-label"><input type="radio" name="imp" value="sfr" /> SFR Home</label>
         </div>
       </div>
 
