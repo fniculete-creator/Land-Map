@@ -68,8 +68,78 @@ function fmtAddr(a) {
   return a.toLowerCase().replace(/\b[a-z]/g, (ch) => ch.toUpperCase());
 }
 
+// County APN display formats: LA 10-digit -> 5442-023-013,
+// Ventura (V prefix) -> 060-0-123-456, Santa Barbara (S prefix) -> 123-456-789.
+function fmtApn(p) {
+  const ain = p.ain || "";
+  const raw = ain.replace(/^[VS]/, "");
+  if (!/^\d+$/.test(raw)) return ain;
+  if (ain[0] === "V" && raw.length === 10) {
+    return `${raw.slice(0, 3)}-${raw.slice(3, 4)}-${raw.slice(4, 7)}-${raw.slice(7)}`;
+  }
+  if (ain[0] === "S" && raw.length === 9) {
+    return `${raw.slice(0, 3)}-${raw.slice(3, 6)}-${raw.slice(6)}`;
+  }
+  if (raw.length === 10) return `${raw.slice(0, 4)}-${raw.slice(4, 7)}-${raw.slice(7)}`;
+  return raw;
+}
+
+// Split a situs address into street + city lines:
+// "12009 HOFFMAN ST STUDIO CITY CA 91604" ->
+//   { street: "12009 Hoffman St", cityName: "Studio City",
+//     cityLine: "Studio City, CA 91604" }
+const STREET_SUFFIXES = new Set([
+  "AVE", "AVENUE", "ST", "STREET", "BLVD", "BOULEVARD", "DR", "DRIVE",
+  "RD", "ROAD", "PL", "PLACE", "CT", "COURT", "LN", "LANE", "WAY", "TER",
+  "TERRACE", "CIR", "CIRCLE", "HWY", "HIGHWAY", "PKWY", "TRL", "WALK",
+  "ALY", "GLEN", "VIS", "VISTA", "PLZ", "PASEO", "CYN", "CANYON", "MALL",
+]);
+const UNIT_WORDS = new Set(["APT", "UNIT", "STE", "SPC", "NO", "TRLR", "BLDG", "FL", "RM"]);
+
+function splitAddr(a) {
+  const empty = { street: "", cityName: "", cityLine: "" };
+  if (!a) return empty;
+  if (a.includes(", ")) { // Santa Barbara source pre-joins "street, city line"
+    const [s, ...rest] = a.split(", ");
+    const cityLine = fmtAddr(rest.join(", ")).replace(/\bCa\b/, "CA");
+    return { street: fmtAddr(s), cityName: cityLine.replace(/,?\s*CA.*$/, ""), cityLine };
+  }
+  const toks = a.trim().toUpperCase().split(/\s+/);
+  let zip = "", ca = -1;
+  const lastTok = toks[toks.length - 1];
+  if (/^\d{5}(-\d{4})?$/.test(lastTok) && toks[toks.length - 2] === "CA") {
+    zip = lastTok;
+    ca = toks.length - 2;
+  } else if (lastTok === "CA") {
+    ca = toks.length - 1;
+  }
+  if (ca < 0) return { street: fmtAddr(a), cityName: "", cityLine: "" };
+  let si = -1;
+  for (let i = ca - 1; i >= 0; i--) {
+    if (STREET_SUFFIXES.has(toks[i])) { si = i; break; }
+  }
+  if (si < 0) {
+    return { street: fmtAddr(toks.slice(0, ca).join(" ")), cityName: "",
+      cityLine: "CA" + (zip ? " " + zip : "") };
+  }
+  let end = si + 1;
+  // Numbered avenues ("N Avenue 52") and unit designators stay on line 1.
+  if (end < ca && /^\d+$/.test(toks[end])) end++;
+  while (end < ca) {
+    const t = toks[end];
+    if (t.startsWith("#")) { end++; continue; }
+    if (UNIT_WORDS.has(t)) { end += 2; continue; }
+    break;
+  }
+  end = Math.min(end, ca);
+  const street = fmtAddr(toks.slice(0, end).join(" "));
+  const cityName = fmtAddr(toks.slice(end, ca).join(" "));
+  const cityLine = (cityName ? cityName + ", " : "") + "CA" + (zip ? " " + zip : "");
+  return { street, cityName, cityLine };
+}
+
 function displayName(p) {
-  return fmtAddr(p.a) || "APN " + p.ain;
+  return splitAddr(p.a).street || "APN " + fmtApn(p);
 }
 
 // Assessor link: per-parcel URL when the source provides one (Santa Barbara),
@@ -430,7 +500,9 @@ function renderList(candidates, detailed) {
     const meta = document.createElement("div");
     meta.className = "site-meta";
     const bits = [];
-    if (p.a) bits.push("APN " + p.ain);
+    const cityName = splitAddr(p.a).cityName;
+    if (cityName) bits.push(cityName);
+    if (p.a) bits.push("APN " + fmtApn(p));
     else bits.push("no address");
     if (detailed && p.zc) bits.push(p.zc);
     bits.push(fmt(p.lsf) + " sf");
@@ -491,7 +563,8 @@ function detailHtml(p, lngLat) {
     <div class="dp-head">
       <div>
         <div class="dp-addr">${displayName(p)}</div>
-        <div class="dp-sub">APN ${p.ain}${p.t ? " · Tier " + p.t + " — " + (TIER_NAMES[p.t] || "") : ""}${p.co && p.co !== "LA" ? " · " + (COUNTY_NAMES[p.co] || p.co) : ""}</div>
+        ${splitAddr(p.a).cityLine ? `<div class="dp-city">${splitAddr(p.a).cityLine}</div>` : ""}
+        <div class="dp-sub">APN ${fmtApn(p)}${p.t ? " · Tier " + p.t + " — " + (TIER_NAMES[p.t] || "") : ""}${p.co && p.co !== "LA" ? " · " + (COUNTY_NAMES[p.co] || p.co) : ""}</div>
       </div>
       <button id="dp-close" title="Close">×</button>
     </div>
