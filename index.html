@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Land-Map — Ideal Land Site Targeting</title>
+  <title>Land-Map — LA Development Site Targeting</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>" />
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
-  <link rel="stylesheet" href="vendor/leaflet-draw/leaflet.draw.css" />
+  <link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -14,101 +13,99 @@
     <aside id="sidebar">
       <header id="sidebar-header">
         <h1>Land-Map</h1>
-        <p class="tagline">Target your ideal land site</p>
+        <p class="tagline">LA City development site targeting</p>
       </header>
 
-      <div id="search-box">
-        <input type="text" id="search-input" placeholder="Search a place (e.g. Austin, TX)…" />
-        <button id="search-btn" title="Search">Go</button>
+      <div id="demo-banner" class="hidden">
+        Demo dataset — <strong>synthetic parcels</strong>, not real LA data.
+        See README to build the full city tileset.
       </div>
 
-      <nav id="tabs">
-        <button class="tab active" data-tab="sites">Sites</button>
-        <button class="tab" data-tab="criteria">Criteria</button>
-        <button class="tab" data-tab="data">Data</button>
-      </nav>
+      <div id="preset-box">
+        <button id="sb1123-btn" title="Vacant SF lots ≤1.5 ac / MF lots ≤5 ac, outside High &amp; Very High fire zones">
+          ⚡ SB 1123 / SB 684 eligible
+        </button>
+        <button id="reset-btn" title="Clear all filters">Reset</button>
+      </div>
 
-      <!-- SITES TAB -->
-      <section id="tab-sites" class="tab-panel active">
-        <div class="panel-hint">
-          Use the map tools (top-left) to drop a pin or draw a parcel boundary.
-          Sites are ranked by weighted score.
-        </div>
-        <ul id="site-list"></ul>
-        <div id="empty-sites" class="empty-state">
-          No sites yet. Add one from the map to start comparing.
-        </div>
-      </section>
+      <div id="sb1123-explainer" class="hidden">
+        <strong>SB 1123 / SB 684 screening preset</strong>
+        <ul>
+          <li>Vacant lot (no/negligible improvements)</li>
+          <li>Single-family zone &amp; lot ≤ 1.5 acres, or multifamily zone &amp; lot ≤ 5 acres</li>
+          <li>Outside High / Very High fire hazard zones</li>
+          <li><em>Coastal</em> parcels stay eligible but lose ministerial streamlining (Coastal Development Permit required) — shown with a warning.</li>
+          <li><em>Hillside</em> parcels flagged — extra development constraints.</li>
+        </ul>
+        <p>Screening heuristic only — verify every lot in ZIMAS and with counsel.</p>
+      </div>
 
-      <!-- CRITERIA TAB -->
-      <section id="tab-criteria" class="tab-panel">
-        <div class="panel-hint">
-          Define what makes a site “ideal” for you. Weight each criterion
-          (0–10), then rate every site against them (1–5).
-        </div>
-        <ul id="criteria-list"></ul>
-        <form id="add-criterion-form">
-          <input type="text" id="new-criterion-name" placeholder="New criterion (e.g. School district)" maxlength="40" required />
-          <button type="submit">Add</button>
-        </form>
-      </section>
+      <div id="filters">
+        <details open>
+          <summary>Lot dimensions</summary>
+          <div class="filter-group" id="fg-dimensions">
+            <label class="range-label">Lot width (ft)
+              <span class="range-row">
+                <input type="number" id="w-min" placeholder="min" min="0" />
+                <span>–</span>
+                <input type="number" id="w-max" placeholder="max" min="0" />
+              </span>
+            </label>
+            <label class="range-label">Lot size (sqft)
+              <span class="range-row">
+                <input type="number" id="lsf-min" placeholder="min" min="0" />
+                <span>–</span>
+                <input type="number" id="lsf-max" placeholder="max" min="0" />
+              </span>
+            </label>
+            <label class="range-label">Units on lot
+              <span class="range-row">
+                <input type="number" id="u-min" placeholder="min" min="0" />
+                <span>–</span>
+                <input type="number" id="u-max" placeholder="max" min="0" />
+              </span>
+            </label>
+          </div>
+        </details>
 
-      <!-- DATA TAB -->
-      <section id="tab-data" class="tab-panel">
-        <div class="panel-hint">
-          Everything is saved automatically in your browser. Export to back up
-          or share, import to restore.
-        </div>
-        <div class="data-actions">
-          <button id="export-btn">Export JSON</button>
-          <label class="file-btn">
-            Import JSON
-            <input type="file" id="import-input" accept=".json,application/json" hidden />
-          </label>
-          <button id="clear-btn" class="danger">Clear all data</button>
-        </div>
-      </section>
+        <details open>
+          <summary>Zoning</summary>
+          <div class="filter-group" id="fg-zoning">
+            <div class="zone-group" data-group="sf">
+              <label><input type="checkbox" class="zone-family" value="1" /> Single-family (R1, RS, RE, RA…)</label>
+            </div>
+            <div class="zone-group" data-group="mf">
+              <label><input type="checkbox" class="zone-family" value="2" /> Multifamily (R2, R3, R4, RD…)</label>
+            </div>
+            <div class="zone-group" data-group="other">
+              <label><input type="checkbox" class="zone-family" value="0" /> Commercial / industrial / other</label>
+            </div>
+            <input type="text" id="zone-text" placeholder="or exact zone classes, e.g. R1,RD1.5" />
+          </div>
+        </details>
+
+        <details open>
+          <summary>Status &amp; overlays</summary>
+          <div class="filter-group" id="fg-overlays">
+            <div class="tri-row" data-key="v"><span>Vacant</span><div class="tri" data-state="any"></div></div>
+            <div class="tri-row" data-key="f"><span>Fire hazard (High/VH)</span><div class="tri" data-state="any"></div></div>
+            <div class="tri-row" data-key="c"><span>Coastal zone</span><div class="tri" data-state="any"></div></div>
+            <div class="tri-row" data-key="h"><span>Hillside area</span><div class="tri" data-state="any"></div></div>
+            <p class="tri-hint">Click to cycle: any → only → exclude</p>
+          </div>
+        </details>
+      </div>
+
+      <div id="results-bar">
+        <span id="result-count">–</span>
+        <span id="result-label">parcels in view</span>
+      </div>
     </aside>
 
     <main id="map"></main>
-
-    <!-- SITE DETAIL DRAWER -->
-    <div id="site-detail" class="hidden">
-      <div id="detail-header">
-        <span id="detail-score" class="score-badge">–</span>
-        <input type="text" id="detail-name" maxlength="60" />
-        <button id="detail-close" title="Close">×</button>
-      </div>
-      <div id="detail-body">
-        <div class="field-row">
-          <label>Price ($)
-            <input type="number" id="detail-price" min="0" step="1000" placeholder="e.g. 85000" />
-          </label>
-          <label>Acreage
-            <input type="number" id="detail-acreage" min="0" step="0.01" placeholder="auto from polygon" />
-          </label>
-        </div>
-        <div class="field-row">
-          <div class="derived">
-            <span class="derived-label">$/acre</span>
-            <span id="detail-price-per-acre">–</span>
-          </div>
-        </div>
-        <label class="notes-label">Notes
-          <textarea id="detail-notes" rows="2" placeholder="Listing link, seller contact, impressions…"></textarea>
-        </label>
-        <h3>Ratings</h3>
-        <div id="detail-ratings"></div>
-        <div class="detail-footer">
-          <button id="detail-zoom">Zoom to site</button>
-          <button id="detail-delete" class="danger">Delete site</button>
-        </div>
-      </div>
-    </div>
   </div>
 
-  <script src="vendor/leaflet/leaflet.js"></script>
-  <script src="vendor/leaflet-draw/leaflet.draw.js"></script>
-  <script src="js/app.js"></script>
+  <script src="vendor/pmtiles/pmtiles.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

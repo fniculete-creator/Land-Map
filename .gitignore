@@ -1,2 +1,10 @@
 .DS_Store
 node_modules/
+__pycache__/
+
+# pipeline outputs — only the small demo tileset is committed
+data/raw/
+data/enriched/
+data/tiles/
+*.pmtiles
+!data/demo/demo.pmtiles

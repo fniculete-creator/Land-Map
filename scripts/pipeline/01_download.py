@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+"""Download source layers from ArcGIS REST FeatureServers into data/raw/*.ndjson.
+
+Resumable: progress is tracked in a .state sidecar per source; re-running
+continues where it left off. Run this OUTSIDE restricted networks (GIS hosts
+are blocked in some sandboxes) — see scripts/pipeline/README.md.
+
+Usage:
+  python3 01_download.py                    # all sources, full extent
+  python3 01_download.py --source parcels   # one source
+  python3 01_download.py --subset venice    # bbox preset from sources.json
+  python3 01_download.py --bbox -118.5,33.9,-118.3,34.1
+"""
+import argparse
+import json
+import os
+import sys
+import time
+
+import requests
+
+from common import load_sources, ensure_dirs, raw_path, OVERLAY_SOURCES
+
+PAGE_SIZE = 2000
+MAX_RETRIES = 5
+
+
+def state_path(source_key):
+    return raw_path(source_key) + ".state"
+
+
+def load_state(source_key):
+    try:
+        with open(state_path(source_key)) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {"offset": 0, "done": False, "expected_count": None}
+
+
+def save_state(source_key, state):
+    with open(state_path(source_key), "w") as f:
+        json.dump(state, f)
+
+
+def request_json(url, params):
+    """GET with retries/backoff. ArcGIS returns 200 with an 'error' body on failure."""
+    delay = 2
+    for attempt in range(MAX_RETRIES):
+        try:
+            r = requests.get(url, params=params, timeout=120)
+            r.raise_for_status()
+            body = r.json()
+            if "error" in body:
+                raise RuntimeError(f"ArcGIS error: {body['error']}")
+            return body
+        except Exception as e:
+            if attempt == MAX_RETRIES - 1:
+                raise
+            print(f"    retry {attempt + 1}/{MAX_RETRIES} after error: {e}", file=sys.stderr)
+            time.sleep(delay)
+            delay *= 2
+    raise RuntimeError("unreachable")
+
+
+def geometry_params(bbox):
+    if not bbox:
+        return {}
+    return {
+        "geometry": ",".join(str(v) for v in bbox),
+        "geometryType": "esriGeometryEnvelope",
+        "inSR": "4326",
+        "spatialRel": "esriSpatialRelIntersects",
+    }
+
+
+def get_count(url, where, bbox):
+    params = {"where": where, "returnCountOnly": "true", "f": "json"}
+    params.update(geometry_params(bbox))
+    return request_json(f"{url}/query", params)["count"]
+
+
+def download_source(key, cfg, bbox, use_situs_where):
+    url = cfg["url"].rstrip("/")
+    where = cfg.get("where", "1=1")
+    if key == "parcels" and use_situs_where and cfg.get("situs_city_where"):
+        where = cfg["situs_city_where"]
+
+    out = raw_path(key)
+    state = load_state(key)
+    if state.get("done"):
+        print(f"  {key}: already complete ({state['offset']} features), skipping")
+        return
+
+    if state["expected_count"] is None:
+        state["expected_count"] = get_count(url, where, bbox)
+        save_state(key, state)
+    print(f"  {key}: {state['expected_count']} features expected, resuming at offset {state['offset']}")
+
+    out_fields = sorted(set(cfg.get("fields", {}).values())) or ["*"]
+    mode = "a" if state["offset"] > 0 else "w"
+    with open(out, mode) as fh:
+        while True:
+            params = {
+                "where": where,
+                "outFields": ",".join(out_fields),
+                "f": "geojson",
+                "outSR": "4326",
+                "resultOffset": state["offset"],
+                "resultRecordCount": PAGE_SIZE,
+                "orderByFields": "OBJECTID",
+            }
+            params.update(geometry_params(bbox))
+            body = request_json(f"{url}/query", params)
+            feats = body.get("features", [])
+            for feat in feats:
+                fh.write(json.dumps(feat, separators=(",", ":")) + "\n")
+            state["offset"] += len(feats)
+            save_state(key, state)
+            print(f"    {state['offset']}/{state['expected_count']}", end="\r", flush=True)
+            more = body.get("properties", {}).get("exceededTransferLimit") or len(feats) == PAGE_SIZE
+            if not feats or not more:
+                break
+    print()
+    state["done"] = True
+    save_state(key, state)
+    print(f"  {key}: done, {state['offset']} features -> {out}")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--source", help="download only this source key")
+    ap.add_argument("--subset", help="bbox preset name from sources.json subsets")
+    ap.add_argument("--bbox", help="minLon,minLat,maxLon,maxLat (WGS84)")
+    ap.add_argument("--situs-where", action="store_true",
+                    help="pre-filter parcels by situs city (faster download; spatial clip in 02 is still authoritative)")
+    args = ap.parse_args()
+
+    sources = load_sources()
+    ensure_dirs()
+
+    bbox = None
+    if args.subset:
+        bbox = sources["subsets"][args.subset]
+    elif args.bbox:
+        bbox = [float(v) for v in args.bbox.split(",")]
+
+    keys = [args.source] if args.source else ["parcels"] + OVERLAY_SOURCES
+    print(f"Downloading {keys} (bbox={bbox})")
+    for key in keys:
+        cfg = sources.get(key)
+        if not cfg or not cfg.get("url") or "verify" in cfg["url"].lower():
+            print(f"  {key}: no valid URL configured in sources.json — fix it and re-run", file=sys.stderr)
+            continue
+        # Overlays are small; always download their full extent so flags are
+        # correct even for parcels at the bbox edge.
+        src_bbox = bbox if key == "parcels" else None
+        download_source(key, cfg, src_bbox, args.situs_where)
+
+
+if __name__ == "__main__":
+    main()

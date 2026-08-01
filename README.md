@@ -1,77 +1,114 @@
-# Land-Map — Ideal Land Site Targeting
+# Land-Map — LA City Development Site Targeting
 
-An interactive map tool for finding and comparing candidate land sites against
-*your* definition of "ideal". Drop pins or draw parcel boundaries, define
-weighted criteria (price, access, utilities, flood risk, …), rate each site,
-and Land-Map ranks them with color-coded scores so the best site stands out.
+An interactive parcel map for finding development sites in the City of Los
+Angeles. Filter every parcel by the criteria that decide whether a deal pencils —
+**lot width, lot size, units on lot, zoning, fire hazard zone, coastal zone,
+hillside area** — with a one-click preset for **SB 1123 / SB 684 small-home
+subdivision** candidates. Click any parcel for its details and a direct link to
+its LA County Assessor page (ownership info).
 
-## Features
+Static architecture: all ~780k city parcels are preprocessed into a single
+[PMTiles](https://protomaps.com/docs/pmtiles) vector-tile file with every
+filter attribute baked in. Filtering happens entirely in the browser — no
+backend, no tile server, hostable anywhere static files can live.
 
-- **Interactive map** — Streets, satellite, and topographic base layers
-  (OpenStreetMap, Esri World Imagery, OpenTopoMap).
-- **Add sites two ways** — drop a marker for a quick candidate, or draw the
-  actual parcel boundary as a polygon/rectangle. Drawn parcels get their
-  **acreage computed automatically** from the geodesic area.
-- **Customizable scoring criteria** — starts with 8 sensible defaults
-  (price value, road access, utilities, terrain, flood risk, zoning,
-  proximity, views). Rename, remove, add your own, and set a 0–10 weight
-  for each.
-- **Rate & rank** — rate every site 1–5 stars per criterion. Sites get a
-  weighted score out of 100 and are ranked in the sidebar; markers and
-  parcels are colored red → amber → green by score.
-- **Site details** — price, acreage, automatic $/acre, and free-form notes
-  (listing links, seller contacts, impressions).
-- **Location search** — jump to any town/region via OpenStreetMap's
-  Nominatim geocoder.
-- **Persistence** — everything auto-saves to your browser (localStorage),
-  with JSON export/import for backup and sharing.
+## Quick start (demo data)
 
-## Getting started
-
-No build step, no dependencies to install — it's a static site.
+The repo ships with a **synthetic demo tileset** (`data/demo/demo.pmtiles`,
+~8k generated parcels over the Venice area) so the app runs out of the box:
 
 ```bash
-# from the repo root, serve it locally (any static server works):
-python3 -m http.server 8000
-# then open http://localhost:8000
+python3 scripts/pipeline/serve.py 8000
+# open http://localhost:8000
 ```
 
-Or simply open `index.html` directly in a browser.
+> The dev server matters: PMTiles requires HTTP **Range** support, which
+> `python3 -m http.server` does not provide. `npx http-server` also works.
 
-### Workflow
+A yellow banner reminds you the demo parcels are synthetic. To target real
+sites, build the real tileset:
 
-1. **Search** for the area you're hunting in.
-2. **Tune your criteria** in the *Criteria* tab — weight what matters most
-   to you (e.g. flood risk 9, views 2).
-3. **Add candidate sites** with the draw tools in the map's top-left corner.
-4. Click a site to open its detail panel: set the **price**, confirm the
-   **acreage**, and **rate it** against each criterion as you learn more
-   (from listings, county GIS, site visits…).
-5. Watch the **ranking** in the *Sites* tab — the highest scoring site is
-   your best match. Unrated criteria are simply excluded, so partial
-   information never unfairly sinks a site.
-6. **Export** your data from the *Data* tab to back it up or share it.
+## Building the full LA City tileset
 
-## Scoring model
+See **[scripts/pipeline/README.md](scripts/pipeline/README.md)** for the full
+guide. Summary:
 
-Each site's score is a normalized weighted average:
+```bash
+pip3 install -r scripts/pipeline/requirements.txt
+sudo apt-get install -y tippecanoe          # or build from felt/tippecanoe
 
+cd scripts/pipeline
+# 1. verify the FeatureServer URLs in sources.json (see pipeline README)
+python3 01_download.py --subset venice      # fast first run, or omit for full city
+python3 02_enrich.py
+./03_tiles.sh
+python3 04_validate.py
 ```
-score = 100 × Σ(weight_c × rating_c) / Σ(weight_c × 5)
+
+Then point `PMTILES_URL` in `js/config.js` at the produced
+`data/tiles/land-map.pmtiles`.
+
+**Hosting the full tileset:** the citywide file will be roughly 150–400 MB —
+too big for this repo / GitHub Pages. Host it on any static storage with HTTP
+Range support and CORS: Cloudflare R2 (recommended — free tier, zero egress
+fees), S3 + CloudFront, etc. The app fetches byte ranges directly; no server
+code needed.
+
+## Using the app
+
+- **SB 1123 / SB 684 button** — one click applies the screening preset:
+  vacant lots, outside High/Very High fire hazard zones, single-family zone
+  ≤ 1.5 ac or multifamily zone ≤ 5 ac. Coastal parcels stay in the results
+  but carry a red warning (they keep eligibility but lose ministerial
+  streamlining — a Coastal Development Permit is required). Hillside parcels
+  are likewise flagged, not excluded.
+- **Filters** — min/max lot width, lot size, and units; zoning by family
+  (single-family / multifamily / other) or exact zone classes; tri-state
+  controls (any / only / exclude) for vacant, fire, coastal, and hillside.
+- **Colors** — green = SB-candidate, amber = vacant (but not SB-eligible),
+  gray = everything else; red dashed outline = fire/coastal/hillside warning.
+  Zoomed out (< z13), parcels display as dots.
+- **Parcel popup** — zoning, use code, units, lot size, computed width,
+  improvement value, and links to the **Assessor portal** (ownership — CA law
+  keeps owner names out of bulk open data, so it's one click away per parcel)
+  and **ZIMAS**.
+- **Share a search** — filter state lives in the URL hash; copy the link.
+- **Satellite toggle** — top-right button.
+
+## Data & caveats
+
+| Attribute | Source | Notes |
+|---|---|---|
+| Parcel geometry, AIN, use code, units, improvement value | LA County Assessor parcel layer | |
+| Zoning | LA City GeoHub Zoning layer | assigned by parcel representative point |
+| Hillside / Coastal / Fire severity | LA City GeoHub overlay layers | point-in-polygon flags |
+| Lot width | **computed** | short side of the minimum rotated rectangle — an approximation of frontage; verify irregular/flag lots manually |
+| Vacant | **derived** | vacant use code, or 0 units + improvements below a configurable threshold |
+| SB 1123/684 eligible | **derived** | screening heuristic from the above |
+
+**This tool is a screening aid, not legal or zoning advice.** SB 1123/684
+eligibility involves criteria that cannot be fully determined from parcel
+data (urban-infill context, protected-species habitat, wetlands, easements,
+protected housing history…). Verify every candidate in
+[ZIMAS](https://zimas.lacity.org/) and with land-use counsel before acting.
+
+## Development
+
+```bash
+python3 scripts/pipeline/serve.py 8123        # serve the app
+npm i playwright-core                          # once
+node tests/smoke.spec.mjs http://localhost:8123
 ```
 
-summed over criteria the site has been rated on. Criteria with weight 0 or
-no rating are ignored.
+The smoke test drives the real app headlessly: rendering, SB preset,
+filtering, popup, assessor links, URL-hash state.
 
-## Tech
+## Roadmap (v2 ideas)
 
-Plain HTML/CSS/JavaScript with [Leaflet](https://leafletjs.com/) and
-[Leaflet.draw](https://github.com/Leaflet/Leaflet.draw) from CDNs. No
-framework, no build tooling.
-
-## Ideas for later
-
-- Auto-scored criteria from open data (slope from elevation APIs, distance
-  to roads/POIs via Overpass, FEMA flood zones).
-- Shareable read-only links.
-- Side-by-side site comparison table.
+- **On-market cross-reference** — CSV import of listings (Redfin/MLS export)
+  matched to parcels by APN/address. The hook already exists:
+  `LandMap.addOverlayPoints(geojson)`.
+- Exact citywide filter counts + CSV export of matching parcels.
+- Scheduled data refresh (GitHub Actions cron → R2) and email notifications
+  for new parcels matching saved searches.
+- Owner-data import (licensed assessor roll / third-party) for mail-merge.

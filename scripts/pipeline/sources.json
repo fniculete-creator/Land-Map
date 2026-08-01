@@ -1,0 +1,79 @@
+{
+  "_comment": "Declarative source config. Verify each FeatureServer URL on the hub site before a full run: open the dataset page, 'I want to use this' -> 'API' -> copy the FeatureServer layer URL (ends in /FeatureServer/0 or /MapServer/N). Field names below are mappings from source schema -> pipeline schema; if the source schema drifts, fix it here, not in code.",
+
+  "parcels": {
+    "name": "LA County Assessor Parcels (search 'Assessor Parcels' on egis-lacounty.hub.arcgis.com)",
+    "url": "https://services1.arcgis.com/ZIL9uO234SBBPGL7/arcgis/rest/services/Assessor_Parcels/FeatureServer/0",
+    "where": "1=1",
+    "fields": {
+      "ain": "AIN",
+      "use_code": "UseCode",
+      "use_type": "UseType",
+      "units": "Units",
+      "improvement_value": "Roll_ImpValue",
+      "situs_city": "SitusCity"
+    },
+    "situs_city_where": "SitusCity LIKE 'LOS ANGELES%'"
+  },
+
+  "city_boundary": {
+    "name": "City Boundary of Los Angeles (geohub.lacity.org, search 'City Boundary')",
+    "url": "https://services5.arcgis.com/7nsPwEMP38bSkCjy/arcgis/rest/services/City_Boundary/FeatureServer/0",
+    "fields": {}
+  },
+
+  "zoning": {
+    "name": "Zoning (geohub.lacity.org, search 'Zoning')",
+    "url": "https://services5.arcgis.com/7nsPwEMP38bSkCjy/arcgis/rest/services/Zoning/FeatureServer/0",
+    "fields": {
+      "zone_complete": "ZONE_CMPLT",
+      "zone_class": "ZONE_CLASS"
+    }
+  },
+
+  "hillside": {
+    "name": "Hillside Ordinance Area (geohub.lacity.org, search 'Hillside')",
+    "url": "https://services5.arcgis.com/7nsPwEMP38bSkCjy/arcgis/rest/services/Hillside_Ordinance/FeatureServer/0",
+    "fields": {}
+  },
+
+  "coastal": {
+    "name": "Coastal Zone (geohub.lacity.org, search 'Coastal Zone')",
+    "url": "https://services5.arcgis.com/7nsPwEMP38bSkCjy/arcgis/rest/services/Coastal_Zone/FeatureServer/0",
+    "fields": {}
+  },
+
+  "vhfhsz": {
+    "name": "Fire Hazard Severity Zones (geohub.lacity.org 'Very High Fire Hazard Severity Zone' or CAL FIRE FRAP FHSZ; keep the hazard-class field)",
+    "url": "https://services5.arcgis.com/7nsPwEMP38bSkCjy/arcgis/rest/services/Very_High_Fire_Hazard_Severity_Zone/FeatureServer/0",
+    "fields": {
+      "hazard_class": "HAZ_CLASS"
+    },
+    "hazard_class_map": {
+      "Very High": 2,
+      "VHFHSZ": 2,
+      "High": 1,
+      "Moderate": 0
+    },
+    "default_hazard_when_inside": 2
+  },
+
+  "vacancy": {
+    "_comment": "A parcel counts as vacant if its use code is in vacant_use_codes (prefix match) OR (units == 0 AND improvement value < improvement_value_max). County use codes starting with these prefixes are vacant land categories.",
+    "vacant_use_codes": ["010V", "100V", "300V", "VAC"],
+    "vacant_use_types": ["Vacant"],
+    "improvement_value_max": 20000
+  },
+
+  "sb1123": {
+    "_comment": "Thresholds in sqft. SF: 1.5 ac (SB 1123 vacant single-family lots). MF: 5 ac (SB 684 multifamily-zoned lots). Fire: High(1) and Very High(2) both disqualify.",
+    "sf_max_lot_sqft": 65340,
+    "mf_max_lot_sqft": 217800
+  },
+
+  "subsets": {
+    "venice": [-118.4776, 33.9769, -118.4370, 34.0083],
+    "marvista": [-118.4600, 33.9930, -118.4130, 34.0270],
+    "nohovalley": [-118.4200, 34.1600, -118.3500, 34.2100]
+  }
+}
