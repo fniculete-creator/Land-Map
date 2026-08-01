@@ -254,6 +254,13 @@ function popupHtml(p, lngLat) {
   const svLink = lngLat
     ? `<a href="${CONFIG.STREETVIEW_URL(lngLat.lat.toFixed(6), lngLat.lng.toFixed(6))}" target="_blank" rel="noopener">Street View ↗</a>`
     : "";
+  // Embedded live Street View via the Maps Embed API (free tier) when a
+  // Google key is configured; the plain link above remains either way.
+  const svEmbed = CONFIG.GOOGLE_MAPS_KEY && lngLat
+    ? `<iframe class="popup-sv" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+         src="https://www.google.com/maps/embed/v1/streetview?key=${CONFIG.GOOGLE_MAPS_KEY}&location=${lngLat.lat.toFixed(6)},${lngLat.lng.toFixed(6)}&fov=80"
+         allowfullscreen></iframe>`
+    : "";
   const badges = [];
   if (p.e === 1) badges.push('<span class="badge badge-ok">SB 1123 candidate</span>');
   if (p.v === 1) badges.push('<span class="badge badge-vacant">Vacant</span>');
@@ -265,6 +272,7 @@ function popupHtml(p, lngLat) {
     <div class="popup">
       <div class="popup-title">${displayName(p)}</div>
       <div class="popup-badges">${badges.join(" ")}</div>
+      ${svEmbed}
       <table class="popup-table">
         <tr><td>APN</td><td>${p.ain}</td></tr>
         <tr><td>Tier</td><td>${p.t ? p.t + " — " + (TIER_NAMES[p.t] || "") : "–"}</td></tr>
@@ -510,32 +518,60 @@ function demoStyle() {
   return style;
 }
 
-// Prefer the key-free vector basemap (clean gray cartography); fall back to
-// the raster style — and ultimately a plain background — when unreachable.
+// MapLibre can consume Mapbox styles given a token: rewrite mapbox:// URLs
+// (tilesets, sprites, glyphs) to their api.mapbox.com equivalents.
+function mapboxTransform(url) {
+  if (!url.startsWith("mapbox://")) return undefined;
+  const token = "access_token=" + CONFIG.MAPBOX_TOKEN;
+  if (url.startsWith("mapbox://sprites/")) {
+    const path = url.slice("mapbox://sprites/".length)
+      .replace(/(@\dx)?\.(json|png)$/, "/sprite$1.$2");
+    return { url: `https://api.mapbox.com/styles/v1/${path}?${token}` };
+  }
+  if (url.startsWith("mapbox://fonts/")) {
+    return { url: `https://api.mapbox.com/fonts/v1/${url.slice("mapbox://fonts/".length)}?${token}` };
+  }
+  // vector/raster tileset reference, e.g. mapbox://mapbox.mapbox-streets-v8
+  return { url: `https://api.mapbox.com/v4/${url.slice("mapbox://".length)}.json?secure&${token}` };
+}
+
+async function fetchMergedStyle(styleUrl, fallback) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 5000);
+  const resp = await fetch(styleUrl, { signal: ctrl.signal });
+  clearTimeout(timer);
+  if (!resp.ok) throw new Error("style fetch " + resp.status);
+  const base = await resp.json();
+  base.sources = {
+    ...base.sources,
+    satellite: fallback.sources.satellite,
+    parcels: fallback.sources.parcels,
+  };
+  const overlayIds = new Set([
+    "basemap-satellite", "centroids",
+    "parcels-fill", "parcels-line", "parcels-selected",
+  ]);
+  base.layers = [...base.layers, ...fallback.layers.filter((l) => overlayIds.has(l.id))];
+  return base;
+}
+
+// Basemap preference: Mapbox (with token) -> free OpenFreeMap vector style
+// -> raster OSM -> plain background. Never breaks the app.
 async function buildStyle() {
   const fallback = baseStyle();
-  if (!CONFIG.BASEMAP_STYLE_URL) return fallback;
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 5000);
-    const resp = await fetch(CONFIG.BASEMAP_STYLE_URL, { signal: ctrl.signal });
-    clearTimeout(timer);
-    if (!resp.ok) throw new Error("style fetch " + resp.status);
-    const base = await resp.json();
-    base.sources = {
-      ...base.sources,
-      satellite: fallback.sources.satellite,
-      parcels: fallback.sources.parcels,
-    };
-    const overlayIds = new Set([
-      "basemap-satellite", "centroids",
-      "parcels-fill", "parcels-line", "parcels-selected",
-    ]);
-    base.layers = [...base.layers, ...fallback.layers.filter((l) => overlayIds.has(l.id))];
-    return base;
-  } catch (e) {
-    return fallback;
+  if (CONFIG.MAPBOX_TOKEN) {
+    try {
+      const m = CONFIG.MAPBOX_STYLE.replace("mapbox://styles/", "");
+      return await fetchMergedStyle(
+        `https://api.mapbox.com/styles/v1/${m}?access_token=${CONFIG.MAPBOX_TOKEN}`, fallback);
+    } catch (e) { /* fall through */ }
   }
+  if (CONFIG.BASEMAP_STYLE_URL) {
+    try {
+      return await fetchMergedStyle(CONFIG.BASEMAP_STYLE_URL, fallback);
+    } catch (e) { /* fall through */ }
+  }
+  return fallback;
 }
 
 async function boot() {
@@ -551,6 +587,7 @@ async function boot() {
     zoom: CONFIG.START_ZOOM,
     maxZoom: 20,
     attributionControl: { compact: true },
+    transformRequest: mapboxTransform,
   });
   map.addControl(new maplibregl.NavigationControl(), "top-right");
 

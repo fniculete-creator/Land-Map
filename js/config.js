@@ -9,6 +9,18 @@ export const CONFIG = {
   START_CENTER: [-118.457, 33.993],
   START_ZOOM: 13,
 
+  // --- Optional API keys (paste yours; both restrictable by domain) ---
+  // Mapbox public token (pk....) -> the app uses Mapbox cartography (same
+  // family as comps.laaa.com). Create a URL-restricted token in your Mapbox
+  // account. Leave empty to use the free OpenFreeMap basemap.
+  MAPBOX_TOKEN: "",
+  MAPBOX_STYLE: "mapbox://styles/mapbox/light-v11",
+
+  // Google Maps API key with "Maps Embed API" enabled (free, unlimited) ->
+  // clicking a parcel embeds live Street View in its popup. Restrict the key
+  // to your site's domains. Leave empty for a plain Street View link.
+  GOOGLE_MAPS_KEY: "",
+
   // Vector basemap style (clean light-gray cartography, no API key).
   // Fetched at startup; on failure the app falls back to the raster
   // basemaps below, then to a plain background. Self-hosting option:

@@ -76,6 +76,25 @@ code needed.
 - **Share a search** — filter state lives in the URL hash; copy the link.
 - **Satellite toggle** — top-right button.
 
+## Optional API keys (js/config.js)
+
+Both are optional — the app is fully functional without them.
+
+- **`MAPBOX_TOKEN`** — a Mapbox public token (`pk.…`) switches the basemap
+  to Mapbox cartography (`MAPBOX_STYLE`, default `light-v11` — the same
+  family as comps.laaa.com). MapLibre loads the Mapbox style directly;
+  billing is per tile request with a generous free tier. Create the token
+  at account.mapbox.com and **restrict it to your site's URLs**.
+- **`GOOGLE_MAPS_KEY`** — a Google Maps API key with the **Maps Embed API**
+  enabled embeds live Street View inside each parcel popup. The Embed API
+  is free of charge with unlimited usage. Create the key in Google Cloud
+  Console, enable only "Maps Embed API", and **restrict it to your site's
+  domains** (HTTP referrers). Without a key, popups keep the plain Street
+  View link.
+
+Basemap fallback order: Mapbox (if token) → OpenFreeMap (free) → OSM
+raster → plain background.
+
 ## Deploying to Vercel (fastest path to a URL)
 
 The repo is a zero-build static site — Vercel serves it as-is:
