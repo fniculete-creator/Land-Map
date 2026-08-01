@@ -655,8 +655,24 @@ function initBrandLogo() {
   img.src = CONFIG.LOGO_URL;
 }
 
+// Runtime keys from Vercel env vars via api/config (keeps tokens out of the
+// repo). Silently skipped in dev/preview where the endpoint doesn't exist.
+async function loadRemoteConfig() {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2500);
+    const resp = await fetch("api/config", { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!resp.ok) return;
+    const c = await resp.json();
+    if (c.mapboxToken) CONFIG.MAPBOX_TOKEN = c.mapboxToken;
+    if (c.googleMapsKey) CONFIG.GOOGLE_MAPS_KEY = c.googleMapsKey;
+  } catch (e) { /* offline/dev: config.js values apply */ }
+}
+
 async function boot() {
   initBrandLogo();
+  await loadRemoteConfig();
   const synthetic = await isSynthetic();
   if (synthetic) {
     document.getElementById("demo-banner").classList.remove("hidden");

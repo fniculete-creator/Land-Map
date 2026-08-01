@@ -76,9 +76,22 @@ code needed.
 - **Share a search** — filter state lives in the URL hash; copy the link.
 - **Satellite toggle** — top-right button.
 
-## Optional API keys (js/config.js)
+## Optional API keys
 
-Both are optional — the app is fully functional without them.
+All keys are optional — the app is fully functional without them. On Vercel,
+set them as **environment variables** (Project → Settings → Environment
+Variables) and redeploy; `api/config.js` serves the public ones to the app
+at runtime, so no tokens live in the repo (GitHub push protection blocks
+committed tokens anyway):
+
+| Env var | Purpose |
+|---|---|
+| `MAPBOX_PUBLIC_TOKEN` | `pk.…` public token → Mapbox basemap cartography |
+| `GOOGLE_MAPS_KEY` | Maps Embed API key → embedded Street View in the parcel panel |
+| `LIGHTBOX_API_KEY` | LightBox/LandVision API → owner info in the parcel panel (server-side only, never exposed) |
+
+For non-Vercel hosting you can instead paste the two public keys directly
+into `js/config.js` (`MAPBOX_TOKEN`, `GOOGLE_MAPS_KEY`).
 
 - **`MAPBOX_TOKEN`** — a Mapbox public token (`pk.…`) switches the basemap
   to Mapbox cartography (`MAPBOX_STYLE`, default `light-v11` — the same
