@@ -1,10 +1,13 @@
 {
   "_comment": "Verified live sources (checked 2026-08-01 against the ArcGIS services). parcels = LA County 2022 assessment roll polygons (2.42M county-wide). parcels_usecode = 2025 parcel view, attributes only, for current 4-char use codes (vacancy detection). Overlays: LA City zoning + hillside, statewide coastal zone + fire hazard severity (bbox-limited).",
 
+  "parcel_layers": ["parcels", "parcels_ventura", "parcels_sb"],
+
   "parcels": {
     "name": "LA County Parcels 2022 Roll (county eGIS)",
     "url": "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Parcels_2022Roll/FeatureServer/0",
     "where": "1=1",
+    "county": "LA",
     "fields": {
       "ain": "AIN",
       "use_type": "UseType",
@@ -12,6 +15,41 @@
       "land_value": "Roll_LandValue",
       "situs_address": "SitusFullAddress",
       "last_sale": "LastSaleDate"
+    }
+  },
+
+  "parcels_ventura": {
+    "name": "Ventura County Parcels (hosted snapshot, ~2018 vintage; county's live server is not reachable from this network)",
+    "url": "https://services5.arcgis.com/umIjvohPcWJU5ij6/arcgis/rest/services/Ventura_County_Parcels/FeatureServer/0",
+    "where": "1=1",
+    "county": "VC",
+    "ain_prefix": "V",
+    "fields": {
+      "ain": "APN10",
+      "use_code": "SITE_USE",
+      "improvement_value": "I_V",
+      "land_value": "L_V",
+      "situs_address": "SITUS",
+      "last_sale": "DT_SALE",
+      "zone_inline": "ZONE"
+    }
+  },
+
+  "parcels_sb": {
+    "name": "Santa Barbara County Assessor Parcels Public (official, current)",
+    "url": "https://services.arcgis.com/KkJhFbLnXVqahKz2/arcgis/rest/services/Assessor_Parcels_Public1/FeatureServer/0",
+    "where": "1=1",
+    "county": "SB",
+    "ain_prefix": "S",
+    "fields": {
+      "ain": "APN",
+      "use_type": "LandUse",
+      "improvement_value": "StrImpr",
+      "land_value": "LandValue",
+      "situs_address": "Situs1",
+      "situs_address2": "Situs2",
+      "last_sale": "DocDate",
+      "assessor_url": "VAL_NOTICE"
     }
   },
 
@@ -48,14 +86,14 @@
   "coastal": {
     "name": "California Coastal Zone (Cal OES statewide)",
     "url": "https://services.arcgis.com/BLN4oKB0N1YSgvY8/arcgis/rest/services/Coastal_Zone/FeatureServer/0",
-    "bbox": [-118.75, 33.85, -118.25, 34.4],
+    "bbox": [-120.9, 33.6, -118.1, 35.2],
     "fields": {}
   },
 
   "vhfhsz": {
     "name": "CAL FIRE Fire Hazard Severity Zones 2024/25 (statewide, bbox-limited)",
     "url": "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/fhsz24_1/FeatureServer/0",
-    "bbox": [-118.75, 33.85, -118.25, 34.4],
+    "bbox": [-120.9, 33.6, -118.1, 35.2],
     "fields": {
       "hazard_class": "FHSZ_Description"
     },
@@ -70,7 +108,7 @@
   "vacancy": {
     "_comment": "Vacant if the 2025 use code ends in V / is in vacant_use_codes, OR use_type says vacant, OR improvements are negligible both absolutely (< improvement_value_max) and relative to land value (< improvement_land_ratio_max * land) - the ratio guard avoids Prop-13 low-assessment false positives.",
     "vacant_use_codes": ["010V", "100V", "300V", "VAC"],
-    "vacant_use_types": ["Vacant"],
+    "vacant_use_types": ["Vacant", "VACANT LAND"],
     "improvement_value_max": 20000,
     "improvement_land_ratio_max": 0.05
   },

@@ -121,7 +121,6 @@ def main():
     ensure_dirs()
     os.makedirs(ENRICHED_DIR, exist_ok=True)
 
-    pf = sources["parcels"]["fields"]
     vac_cfg = sources["vacancy"]
     sb_cfg = sources["sb1123"]
     haz_map = {k.lower(): v for k, v in sources["vhfhsz"].get("hazard_class_map", {}).items()}
@@ -168,6 +167,7 @@ def main():
         "total_read": 0, "written": 0, "outside_city": 0, "duplicate_ain": 0,
         "invalid_geometry": 0, "vacant": 0, "eligible": 0, "fire1": 0, "fire2": 0,
         "coastal": 0, "hillside": 0, "no_zone": 0, "widths": [], "tiers": {},
+        "counties": {},
     }
     seen_ains = set()  # multi-bbox downloads duplicate parcels where boxes overlap
 
@@ -180,8 +180,20 @@ def main():
     out_parcels = os.path.join(ENRICHED_DIR, "parcels.ndjson")
     out_centroids = os.path.join(ENRICHED_DIR, "centroids.ndjson")
 
+    parcel_layers = [k for k in sources.get("parcel_layers", ["parcels"])
+                     if os.path.exists(raw_path(k))]
+    if not parcel_layers:
+        print("ERROR: no parcel layer files found in data/raw", file=sys.stderr)
+        sys.exit(1)
+
     with open(out_parcels, "w") as po, open(out_centroids, "w") as co:
-        for feat in read_ndjson(raw_path("parcels")):
+      for lkey in parcel_layers:
+        lcfg = sources.get(lkey) or {}
+        pf = lcfg.get("fields", {})
+        county = lcfg.get("county", "LA")
+        ain_prefix = lcfg.get("ain_prefix", "")
+        print(f"\nprocessing {lkey} (county {county})")
+        for feat in read_ndjson(raw_path(lkey)):
             stats["total_read"] += 1
             if stats["total_read"] % 20000 == 0:
                 print(f"  {stats['total_read']} read, {stats['written']} written", end="\r", flush=True)
@@ -202,7 +214,8 @@ def main():
                 continue
 
             props = feat.get("properties") or {}
-            ain = str(props.get(pf["ain"]) or "").strip()
+            raw_ain = str(props.get(pf.get("ain", "AIN")) or "").strip()
+            ain = (ain_prefix + raw_ain) if raw_ain else ""
             if ain:
                 if ain in seen_ains:
                     stats["duplicate_ain"] += 1
@@ -232,29 +245,44 @@ def main():
                 name = pf.get(field_key)
                 return props.get(name) if name else default
 
-            # Use code: joined 2025 map first, then any inline column.
-            use_code = usecode_map.get(ain) or str(props.get("UseCode") or "")
+            # Use code: joined 2025 map (LA) first, then any inline column.
+            use_code = ""
+            if county == "LA":
+                use_code = usecode_map.get(raw_ain, "")
+            use_code = use_code or str(prop_of("use_code") or props.get("UseCode") or "")
             addr = str(prop_of("situs_address") or "").strip()
+            addr2 = str(prop_of("situs_address2") or "").strip()
+            if addr and addr2:
+                addr = addr + ", " + addr2
             use_type = str(prop_of("use_type") or "")
             try:
                 units = int(prop_of("units", None) or -1)  # -1 = unknown
             except (TypeError, ValueError):
                 units = -1
             try:
-                iv = int(prop_of("improvement_value") or 0)
+                iv = int(float(prop_of("improvement_value") or 0))
             except (TypeError, ValueError):
                 iv = 0
             try:
-                lv = int(prop_of("land_value") or 0)
+                lv = int(float(prop_of("land_value") or 0))
             except (TypeError, ValueError):
                 lv = 0
             raw_sale = str(prop_of("last_sale") or "").strip()
             last_sale = ""
             if len(raw_sale) == 8 and raw_sale.isdigit() and raw_sale != "00000000":
                 last_sale = f"{raw_sale[:4]}-{raw_sale[4:6]}-{raw_sale[6:]}"
+            elif "/" in raw_sale:  # MM/DD/YYYY
+                bits = raw_sale.split("/")
+                if len(bits) == 3 and len(bits[2]) == 4:
+                    last_sale = f"{bits[2]}-{int(bits[0]):02d}-{int(bits[1]):02d}"
+            au = str(prop_of("assessor_url") or "").strip()
 
+            # Zoning: LA City layer first, else the source's inline zone column
+            # (e.g. Ventura's county zoning).
             zprops = zoning.lookup(rep)
             zone_str = (zprops or {}).get(zone_field) or ""
+            if not zone_str:
+                zone_str = str(prop_of("zone_inline") or "").strip()
             if not zone_str:
                 stats["no_zone"] += 1
             zc = zone_class_of(zone_str)
@@ -270,6 +298,7 @@ def main():
 
             tier = tier_of(rep)
             stats["tiers"][tier or "none"] = stats["tiers"].get(tier or "none", 0) + 1
+            stats["counties"][county] = stats["counties"].get(county, 0) + 1
 
             c_flag = 1 if coastal.contains(rep) else 0
             h_flag = 1 if hillside.contains(rep) else 0
@@ -289,8 +318,10 @@ def main():
                 "ain": ain, "a": addr, "z": zone_str, "zc": zc, "zf": zf,
                 "uc": use_code, "u": units, "lsf": lot_sqft, "w": width_ft,
                 "iv": iv, "v": v_flag, "f": f_cls, "c": c_flag, "h": h_flag,
-                "e": e_flag, "t": tier, "ls": last_sale,
+                "e": e_flag, "t": tier, "ls": last_sale, "co": county,
             }
+            if au:
+                out_props["au"] = au
             po.write(json.dumps({
                 "type": "Feature", "geometry": mapping(geom), "properties": out_props,
             }, separators=(",", ":")) + "\n")

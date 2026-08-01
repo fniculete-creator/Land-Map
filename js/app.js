@@ -56,6 +56,17 @@ function displayName(p) {
   return fmtAddr(p.a) || "APN " + p.ain;
 }
 
+// Assessor link: per-parcel URL when the source provides one (Santa Barbara),
+// the LA County portal for LA parcels, none otherwise (Ventura has no clean
+// per-parcel deep link).
+function assessorUrl(p) {
+  if (p.au) return p.au;
+  if (!p.co || p.co === "LA") return CONFIG.ASSESSOR_URL(p.ain);
+  return "";
+}
+
+const COUNTY_NAMES = { LA: "Los Angeles Co.", VC: "Ventura Co.", SB: "Santa Barbara Co." };
+
 /* ---------------- map setup ---------------- */
 
 const protocol = new pmtiles.Protocol();
@@ -325,7 +336,7 @@ function detailHtml(p, lngLat) {
     <div class="dp-head">
       <div>
         <div class="dp-addr">${displayName(p)}</div>
-        <div class="dp-sub">APN ${p.ain}${p.t ? " · Tier " + p.t + " — " + (TIER_NAMES[p.t] || "") : ""}</div>
+        <div class="dp-sub">APN ${p.ain}${p.t ? " · Tier " + p.t + " — " + (TIER_NAMES[p.t] || "") : ""}${p.co && p.co !== "LA" ? " · " + (COUNTY_NAMES[p.co] || p.co) : ""}</div>
       </div>
       <button id="dp-close" title="Close">×</button>
     </div>
@@ -356,19 +367,22 @@ function detailHtml(p, lngLat) {
       </select>
     </section>
     <div class="dp-links">
-      <a href="${CONFIG.ASSESSOR_URL(p.ain)}" target="_blank" rel="noopener">Assessor ↗</a>
-      <a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>
+      ${assessorUrl(p) ? `<a href="${assessorUrl(p)}" target="_blank" rel="noopener">Assessor ↗</a>` : ""}
+      ${(!p.co || p.co === "LA") ? `<a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>` : ""}
       ${lat ? `<a href="${CONFIG.STREETVIEW_URL(lat, lng)}" target="_blank" rel="noopener">Street View ↗</a>` : ""}
     </div>`;
 }
 
 function ownerFallbackHtml(p) {
+  const url = assessorUrl(p);
+  const link = url
+    ? `<a class="dp-owner-link" href="${url}" target="_blank" rel="noopener">
+         Owner record on Assessor portal ↗</a>`
+    : "";
   return `
     <p class="dp-note">Owner name, mailing address, and sale history aren't in
-    open data. Connect LandVision/LightBox (see README) for automatic lookups,
-    or check the assessor record:</p>
-    <a class="dp-owner-link" href="${CONFIG.ASSESSOR_URL(p.ain)}" target="_blank" rel="noopener">
-      Owner record on Assessor portal ↗</a>`;
+    open data. Connect LandVision/LightBox (see README) for automatic
+    lookups${url ? ", or check the assessor record:" : "."}</p>${link}`;
 }
 
 async function fillOwnerInfo(p) {
@@ -644,7 +658,7 @@ const LandMap = {
       const p = f.properties;
       return [fmtAddr(p.a), p.ain, p.t, p.zc, p.z, p.lsf, p.w, p.u, p.uc, p.iv,
         p.v, p.e, STATUS_LABELS[dealStatuses[p.ain]] || "",
-        CONFIG.ASSESSOR_URL(p.ain)].map(esc).join(",");
+        assessorUrl(p)].map(esc).join(",");
     });
     return [header.join(","), ...rows].join("\n");
   },

@@ -191,7 +191,8 @@ def main():
     elif args.bbox:
         bboxes = [[float(v) for v in args.bbox.split(",")]]
 
-    keys = [args.source] if args.source else ["parcels", "parcels_usecode"] + OVERLAY_SOURCES
+    parcel_layers = sources.get("parcel_layers", ["parcels"])
+    keys = [args.source] if args.source else parcel_layers + ["parcels_usecode"] + OVERLAY_SOURCES
     print(f"Downloading {keys} (boxes={bboxes})")
     for key in keys:
         cfg = sources.get(key)
@@ -203,7 +204,7 @@ def main():
         # Parcel-scoped sources follow the subset boxes. Overlays default to
         # full extent (so flags are right at bbox edges) unless the source
         # config pins its own bbox (statewide layers).
-        if key.startswith("parcels"):
+        if key in parcel_layers or key == "parcels_usecode":
             src_bboxes = bboxes
         elif cfg.get("bbox"):
             src_bboxes = [cfg["bbox"]]
