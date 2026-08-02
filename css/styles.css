@@ -410,9 +410,7 @@ html, body {
   font-weight: 700;
   font-size: 0.95rem;
   color: var(--navy);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
   font-variant-numeric: tabular-nums;
 }
 

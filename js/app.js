@@ -555,35 +555,21 @@ function renderList(candidates, detailed) {
       badge.textContent = proj.status === "approved" ? "Approved" : "Submitted";
       name.appendChild(badge);
     }
-    const meta = document.createElement("div");
-    meta.className = "site-meta";
-    const bits = [];
-    const cityName = splitAddr(p.a).cityName;
-    if (cityName) bits.push(cityName);
-    if (p.a) bits.push("APN " + fmtApn(p));
-    else bits.push("no address");
-    if (detailed && p.zc) bits.push(p.zc);
-    if (detailed && p.w) bits.push("≈" + p.w + " ft");
-    if (proj) {
-      bits.push(`SB ${proj.status === "approved" ? "approved" : "submitted"} ${proj.filed || ""}`.trim());
-      if (proj.units) bits.push(proj.units + " homes");
-    }
-    if (dealStatuses[p.ain]) bits.push(STATUS_LABELS[dealStatuses[p.ain]]);
-    meta.textContent = bits.join(" · ");
+    // Rows stay minimal: address, lot size, home count, status bubble.
+    // Everything else lives in the detail panel.
     info.appendChild(name);
-    info.appendChild(meta);
+    if (proj && proj.units) {
+      const meta = document.createElement("div");
+      meta.className = "site-meta";
+      meta.textContent = proj.units + " homes";
+      info.appendChild(meta);
+    }
 
-    // Right column, comps-style: lot size bold with the tier beneath.
     const tier = document.createElement("span");
     tier.className = "site-right";
     const lotB = document.createElement("b");
     lotB.textContent = p.lsf != null ? fmt(p.lsf) + " sf" : "";
     tier.appendChild(lotB);
-    if (p.t) {
-      const tierS = document.createElement("span");
-      tierS.textContent = "Tier " + p.t;
-      tier.appendChild(tierS);
-    }
 
     const center = f.geometry ? featureCenter(f) : null;
     li.addEventListener("click", () => {
