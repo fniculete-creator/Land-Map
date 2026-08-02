@@ -266,8 +266,8 @@ html, body {
 #main { display: flex; flex: 1; min-height: 0; }
 
 #sidepanel {
-  width: 330px;
-  min-width: 330px;
+  width: 390px;
+  min-width: 390px;
   display: flex;
   flex-direction: column;
   background: #fff;
@@ -408,9 +408,11 @@ html, body {
 
 .site-name-text {
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--navy);
-  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
 }
 
