@@ -1,7 +1,7 @@
 import * as maplibregl from "../vendor/maplibre-gl/maplibre-gl.mjs";
 import { CONFIG } from "./config.js";
 import {
-  emptyState, sb1123State, buildFilter, buildCentroidFilter,
+  emptyState, sb1123State, buildFilter, buildCentroidFilter, areaBoxes,
   stateToHash, stateFromHash,
 } from "./filters.js";
 
@@ -27,7 +27,8 @@ const UNIVERSE_LINE_COLOR = COLORS.sfrLine;
 function hasUserFilters(s) {
   return Object.values(s.ranges).some(([a, b]) => a !== null || b !== null)
     || s.zoneClasses.length > 0 || s.zoneFamilies.size > 0
-    || s.tiers.size > 0 || s.imp !== "any" || s.dealStatus !== "any";
+    || s.tiers.size > 0 || s.imp !== "any" || s.dealStatus !== "any"
+    || (s.areas && s.areas.length > 0);
 }
 
 const TIER_NAMES = { A: "Westside", B: "South Valley", C: "Central/North Valley" };
@@ -417,20 +418,33 @@ function updateCount() {
   for (const f of feats) {
     if (!byAin.has(f.properties.ain)) byAin.set(f.properties.ain, f);
   }
-  document.getElementById("result-count").textContent = byAin.size.toLocaleString();
+
+  // Area chips scope everything. The centroid layers filter geometrically on
+  // the map; polygon layers can't ("within" is points-only), so the
+  // polygon-zoom stats and list are scoped here instead.
+  const boxes = areaBoxes(state, CONFIG);
+  const inBoxes = (f) => {
+    if (!f.geometry) return false;
+    const [x, y] = featureCenter(f);
+    return boxes.some(([w, s, e, n]) => x >= w && x <= e && y >= s && y <= n);
+  };
+  let inView = [...byAin.values()];
+  if (boxes.length) inView = inView.filter(inBoxes);
+
+  document.getElementById("result-count").textContent = inView.length.toLocaleString();
   document.getElementById("result-label").textContent =
     zoom >= 14 ? "parcels in view" : "parcel dots in view";
 
-  const candidates = [...byAin.values()].filter((f) => f.properties.e === 1);
+  const candidates = inView.filter((f) => f.properties.e === 1);
   document.getElementById("stat-candidates").textContent = candidates.length.toLocaleString();
 
   // The list is always the current matches (rendered features pass the
   // universe + filters). With the SB preset on, matches ARE the candidates.
-  let listSource = [...byAin.values()];
+  let listSource = inView;
   // A planning-status search lists ALL matching cases citywide, not just the
   // viewport — the projects are scattered and the panel would look empty.
   if (state.dealStatus === "approved" || state.dealStatus === "submitted") {
-    const projFeats = Object.entries(sbProjects)
+    let projFeats = Object.entries(sbProjects)
       .filter(([, pr]) => state.dealStatus === "approved"
         ? pr.status === "approved" : pr.status !== "approved")
       .map(([ain, pr]) => ({
@@ -439,6 +453,7 @@ function updateCount() {
         geometry: pr.lng != null
           ? { type: "Point", coordinates: [pr.lng, pr.lat] } : null,
       }));
+    if (boxes.length) projFeats = projFeats.filter(inBoxes);
     const projAins = new Set(projFeats.map((f) => f.properties.ain));
     listSource = projFeats.concat(listSource.filter((f) => !projAins.has(f.properties.ain)));
   }
@@ -751,6 +766,8 @@ function syncControlsFromState() {
 
   document.getElementById("sb1123-btn").classList.toggle("active", !!state.sbPreset);
   document.getElementById("sb1123-explainer").classList.toggle("hidden", !state.sbPreset);
+
+  renderAreaChips();
 }
 
 function bindControls() {
@@ -831,13 +848,18 @@ function bindControls() {
   });
 
   document.getElementById("sb1123-btn").addEventListener("click", () => {
+    const areas = state.areas;   // search scope survives preset toggling
     state = state.sbPreset ? emptyState() : sb1123State(CONFIG);
+    state.areas = areas;
     syncControlsFromState();
     applyFilters();
   });
 
   document.getElementById("reset-btn").addEventListener("click", () => {
+    // Clear resets filters; selected search areas keep their own × chips.
+    const areas = state.areas;
     state = emptyState();
+    state.areas = areas;
     selectedAin = null;
     syncControlsFromState();
     applyFilters();
@@ -875,6 +897,46 @@ function bindControls() {
   bindSearch();
 }
 
+// Selected-area chips inside the search field, comps-style: each shows
+// "Venice ×"; removing one re-scopes the results and view.
+function renderAreaChips() {
+  const wrap = document.getElementById("search-chips");
+  const input = document.getElementById("search-input");
+  if (!wrap || !input) return;
+  wrap.innerHTML = "";
+  for (const name of state.areas || []) {
+    const chip = document.createElement("span");
+    chip.className = "area-chip";
+    chip.appendChild(document.createTextNode(name));
+    const x = document.createElement("button");
+    x.textContent = "×";
+    x.title = "Remove " + name;
+    x.addEventListener("click", () => {
+      state.areas = state.areas.filter((n) => n !== name);
+      syncControlsFromState();
+      applyFilters();
+      zoomToAreas();
+    });
+    chip.appendChild(x);
+    wrap.appendChild(chip);
+  }
+  input.placeholder = (state.areas || []).length
+    ? "Add another area, or search an address…"
+    : "Search a neighborhood, city, or ZIP…";
+}
+
+// Fit the map to the union of the selected areas.
+function zoomToAreas() {
+  const boxes = areaBoxes(state, CONFIG);
+  if (!boxes.length) return;
+  const b = new maplibregl.LngLatBounds();
+  for (const [w, s, e, n] of boxes) {
+    b.extend([w, s]);
+    b.extend([e, n]);
+  }
+  map.fitBounds(b, { padding: 40 });
+}
+
 function bindSearch() {
   const input = document.getElementById("search-input");
   const datalist = document.getElementById("hood-list");
@@ -888,11 +950,15 @@ function bindSearch() {
   function run() {
     const q = input.value.trim();
     if (!q) return;
-    // Instant local jump for known neighborhoods; geocoder for the rest.
+    // Known areas become chips (multi-area scope); anything else geocodes
+    // as a one-off navigation.
     const hood = Object.keys(hoods).find((n) => n.toLowerCase() === q.toLowerCase());
     if (hood) {
-      const [w, s, e2, n2] = hoods[hood];
-      map.fitBounds([[w, s], [e2, n2]]);
+      if (!state.areas.includes(hood)) state.areas.push(hood);
+      input.value = "";
+      syncControlsFromState();
+      applyFilters();
+      zoomToAreas();
       return;
     }
     const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
@@ -912,7 +978,16 @@ function bindSearch() {
       .catch(() => { input.value = ""; input.placeholder = `No results for "${q}"`; });
   }
 
-  input.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") run();
+    // Backspace in an empty input removes the last chip, like comps.
+    if (e.key === "Backspace" && input.value === "" && state.areas.length) {
+      state.areas.pop();
+      syncControlsFromState();
+      applyFilters();
+      zoomToAreas();
+    }
+  });
   input.addEventListener("change", run); // datalist pick
 }
 

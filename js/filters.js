@@ -15,6 +15,7 @@ export function emptyState() {
     tiers: new Set(),
     imp: "any",
     dealStatus: "any",
+    areas: [],   // selected search areas (NEIGHBORHOODS names) — chips
   };
 }
 
@@ -77,6 +78,7 @@ export function buildFilter(state, cfg, statusAins) {
     clauses.push(["in", ["get", "t"], ["literal", [...state.tiers]]]);
   }
 
+
   if (state.imp === "vacant") clauses.push(["==", ["get", "v"], 1]);
   else if (state.imp === "sfr") clauses.push(SFR_CLAUSE);
 
@@ -91,10 +93,30 @@ export function buildFilter(state, cfg, statusAins) {
   return clauses;
 }
 
+// Selected search areas as a MultiPolygon of their boxes (for the map's
+// "within" expression and for JS point-in-box checks).
+export function areaBoxes(state, cfg) {
+  if (!state.areas || !state.areas.length) return [];
+  return state.areas
+    .map((name) => (cfg.NEIGHBORHOODS || {})[name])
+    .filter(Boolean);
+}
+
 // Centroids now carry the full filterable attribute set (zc/zf/uc/w/…), so
-// the dot view honors exactly the same filters as the polygon view.
+// the dot view honors exactly the same filters as the polygon view. Area
+// chips apply here via "within" (points only — the style spec doesn't
+// support "within" for polygon features; the polygon-view list is scoped
+// in JS instead).
 export function buildCentroidFilter(state, cfg, statusAins) {
-  return buildFilter(state, cfg, statusAins);
+  const clauses = buildFilter(state, cfg, statusAins);
+  const boxes = areaBoxes(state, cfg);
+  if (boxes.length) {
+    clauses.push(["within", {
+      type: "MultiPolygon",
+      coordinates: boxes.map(([w, s, e, n]) => [[[w, s], [e, s], [e, n], [w, n], [w, s]]]),
+    }]);
+  }
+  return clauses;
 }
 
 // ---- URL-hash (de)serialization for shareable filter links ----
@@ -109,6 +131,7 @@ export function stateToHash(state) {
   if (state.imp !== "any") p.set("imp", state.imp);
   if (state.dealStatus !== "any") p.set("ds", state.dealStatus);
   if (state.sbPreset) p.set("sb", "1");
+  if (state.areas && state.areas.length) p.set("a", state.areas.join("|"));
   const s = p.toString();
   return s ? "#" + s : "";
 }
@@ -132,5 +155,6 @@ export function stateFromHash(hash) {
     state.dealStatus = p.get("ds");
   }
   if (p.get("sb") === "1") state.sbPreset = true;
+  if (p.get("a")) state.areas = p.get("a").split("|").filter(Boolean);
   return state;
 }
