@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 316" role="img" aria-label="Marcus &amp; Millichap — LAAA Team">
+  <!-- White lockup for dark headers; background transparent. -->
+  <text x="430" y="152" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif" font-weight="500"
+        font-size="96" fill="#ffffff">Marcus &amp; Millichap</text>
+  <rect x="34" y="186" width="792" height="5" fill="#ffffff"/>
+  <text x="439" y="264" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif" font-weight="600"
+        font-size="54" letter-spacing="17" fill="#ffffff">LAAA TEAM</text>
+</svg>
