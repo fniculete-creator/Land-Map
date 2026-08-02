@@ -438,7 +438,7 @@ html, body {
   align-items: flex-end;
   text-align: right;
 }
-.site-right b { font-size: 0.86rem; font-weight: 800; color: var(--navy); font-variant-numeric: tabular-nums; }
+.site-right b { font-size: 0.86rem; font-weight: 400; color: var(--navy); font-variant-numeric: tabular-nums; }
 .site-right span { font-size: 0.68rem; color: var(--muted); margin-top: 1px; }
 
 .empty-state {
