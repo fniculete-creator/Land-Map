@@ -31,11 +31,26 @@ await page.waitForFunction(() => {
 }, { timeout: 30000 });
 await page.waitForTimeout(4000);
 
-// Default = universe view, no preset.
+// Default = Status:Approved with every approved SB project on screen.
 assert(!(await page.evaluate(() => document.getElementById("sb1123-btn").classList.contains("active"))),
-  "SB preset is OFF by default (universe view)");
+  "SB preset is OFF by default");
+assert((await page.evaluate(() => window.LandMap.state.dealStatus)) === "approved",
+  "Status defaults to Approved");
+const defRows = await page.evaluate(() => document.querySelectorAll("#site-list li").length);
+assert(defRows >= 10, `approved projects listed on open (${defRows})`);
+const wrongMarkers = await page.evaluate(() =>
+  window.LandMap.map.queryRenderedFeatures({ layers: ["projects-markers"] })
+    .filter((f) => f.properties.status !== "approved").length);
+assert(wrongMarkers === 0, "map shows ONLY approved project markers by default");
+
+// Switch to Status=Any for the universe baseline the rest of the suite uses.
+await page.click('.dropdown[data-dd="status"] [data-dd-btn]');
+await page.check('input[name="dstatus"][value="any"]');
+await page.keyboard.press("Escape");
+await page.evaluate(() => window.LandMap.map.jumpTo({ center: [-118.47, 34.09], zoom: 11 }));
+await page.waitForTimeout(3500);
 assert((await page.evaluate(() => document.getElementById("list-title").textContent)) === "Matches in view",
-  "list titled 'Matches in view' by default");
+  "list titled 'Matches in view' under Status=Any");
 
 // Counts span every tile source (the county is split into chunk archives).
 const counts = () => page.evaluate(() => {

@@ -56,9 +56,14 @@ function statusAinsFor(status) {
 }
 
 let map;
-// Default view: the hunting universe (SFR homes + vacant lots). The SB 1123
-// preset is one opt-in filter. A shared URL hash wins.
-let state = location.hash.length > 1 ? stateFromHash(location.hash) : emptyState();
+// Default view: the approved SB projects, with Status=Approved selected —
+// the team opens to what's already been entitled. A shared URL hash wins.
+function defaultState() {
+  const s = emptyState();
+  s.dealStatus = "approved";
+  return s;
+}
+let state = location.hash.length > 1 ? stateFromHash(location.hash) : defaultState();
 let selectedAin = null;
 let demoMode = false;
 let demoBounds = null;
@@ -371,9 +376,32 @@ function applyFilters() {
   for (const id of lids("centroids")) map.setFilter(id, cf);
 
   applyStatusOutlines();
+  applyProjectScope();
   document.getElementById("list-title").textContent =
     state.sbPreset ? "Candidates in view" : "Matches in view";
   scheduleCount();
+}
+
+// Status searches scope the project overlays too: Approved shows only
+// approved cases (green), Submitted only pending ones (yellow); any other
+// status shows every case.
+function applyProjectScope() {
+  const wantProj = (pr) =>
+    state.dealStatus === "approved" ? pr.status === "approved"
+      : state.dealStatus === "submitted" ? pr.status !== "approved" : true;
+  if (map.getLayer("projects-markers")) {
+    map.setFilter("projects-markers",
+      state.dealStatus === "approved" ? ["==", ["get", "status"], "approved"]
+        : state.dealStatus === "submitted" ? ["!=", ["get", "status"], "approved"]
+          : null);
+  }
+  const ains = Object.entries(sbProjects)
+    .filter(([, pr]) => wantProj(pr)).map(([ain]) => ain);
+  for (const id of lids("parcels-projects")) {
+    if (map.getLayer(id)) {
+      map.setFilter(id, ["in", ["get", "ain"], ["literal", ains]]);
+    }
+  }
 }
 
 // Picking Submitted/Approved brings the matching planning cases into view —
@@ -1273,6 +1301,10 @@ async function boot() {
       map.easeTo({ center: e.lngLat, zoom: 14 });
     });
   }
+
+  // Fresh open (no shared-link position): fit the default approved-projects
+  // view so every green case is on screen.
+  if (!mParam && state.dealStatus === "approved") zoomToStatusResults();
 
   bindControls();
 }
