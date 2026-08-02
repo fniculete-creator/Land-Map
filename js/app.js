@@ -480,7 +480,7 @@ function updateCount() {
         ? pr.status === "approved" : pr.status !== "approved")
       .map(([ain, pr]) => ({
         properties: { ain, a: pr.address || "", lsf: pr.lotSqft ?? null,
-          w: null, t: pr.tier || "", e: 0 },
+          w: null, t: pr.tier || "", e: 0, v: pr.vacant ?? null },
         geometry: pr.lng != null
           ? { type: "Point", coordinates: [pr.lng, pr.lat] } : null,
       }));
@@ -555,13 +555,14 @@ function renderList(candidates, detailed) {
       badge.textContent = proj.status === "approved" ? "Approved" : "Submitted";
       name.appendChild(badge);
     }
-    // Rows stay minimal: address, lot size, home count, status bubble.
-    // Everything else lives in the detail panel.
+    // Rows stay minimal: address + property type on the left, lot size
+    // (+ proposed homes for SB cases) on the right. The rest lives in the
+    // detail panel.
     info.appendChild(name);
-    if (proj && proj.units) {
+    if (p.v != null) {
       const meta = document.createElement("div");
       meta.className = "site-meta";
-      meta.textContent = proj.units + " homes";
+      meta.textContent = p.v === 1 ? "Vacant Lot" : "Single Family";
       info.appendChild(meta);
     }
 
@@ -570,6 +571,11 @@ function renderList(candidates, detailed) {
     const lotB = document.createElement("b");
     lotB.textContent = p.lsf != null ? fmt(p.lsf) + " sf" : "";
     tier.appendChild(lotB);
+    if (proj && proj.units) {
+      const homes = document.createElement("span");
+      homes.textContent = proj.units + " homes";
+      tier.appendChild(homes);
+    }
 
     const center = f.geometry ? featureCenter(f) : null;
     li.addEventListener("click", () => {
