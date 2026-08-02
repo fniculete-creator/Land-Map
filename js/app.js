@@ -201,11 +201,14 @@ function parcelLayers(i) {
       },
     },
     {
-      // Non-universe parcels (commercial, condos, apartments…): faint,
-      // permanent context beneath the working universe.
+      // Non-universe parcels (commercial, condos, apartments, excluded
+      // lots…): one flat light gray. Opaque on purpose — condo lots stack
+      // one duplicate polygon per unit, and translucent fills would
+      // accumulate into random darker shades (satellite mode drops the
+      // opacity so imagery shows through).
       id: "parcels-context", type: "fill", "source-layer": "parcels",
       minzoom: 14,
-      paint: { "fill-color": "#64748b", "fill-opacity": 0.05 },
+      paint: { "fill-color": "#e4e8ec", "fill-opacity": 1 },
     },
     {
       id: "parcels-context-line", type: "line", "source-layer": "parcels",
@@ -897,6 +900,10 @@ function bindControls() {
     const btn = document.getElementById("sat-btn");
     if (!map.getLayer("basemap-satellite")) return;
     const sat = map.getLayoutProperty("basemap-satellite", "visibility") === "visible";
+    // Opaque gray ghosts would blank out the imagery — fade them on satellite.
+    for (const id of lids("parcels-context")) {
+      if (map.getLayer(id)) map.setPaintProperty(id, "fill-opacity", sat ? 1 : 0.08);
+    }
     // The satellite raster sits above every basemap layer, so toggling its
     // visibility alone covers/uncovers whichever basemap is active.
     map.setLayoutProperty("basemap-satellite", "visibility", sat ? "none" : "visible");
