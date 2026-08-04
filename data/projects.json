@@ -594,7 +594,7 @@
   "rep": "Olivia Joncich",
   "repCompany": "Rand Paster & Nelson, LLP",
   "phone": "(213) 557-2703",
-  "desc": "VTT map to subdivide the lot into ground lots with primary dwelling units, each with an attached ADU (Govt Code 66499.41, LAMC 13B.7.3). One of two 10-home starter-home projects on the paired Lanark St lots.",
+  "desc": "VTT map to subdivide the lot into ground lots with primary dwelling units, each with an attached ADU (Govt Code 66499.41, LAMC 13B.7.3). One of two 10-home starter-home projects on the paired Lanark St lots. Companion case VTT-85141-SH-VHCA covers the adjacent 19,148 SF parcel (filed 2026-04-02, 10 more homes; 20 total across the pair - shown here as one map entry).",
   "lng": -118.543824,
   "lat": 34.217097,
   "lotSqft": 27386,
@@ -894,41 +894,6 @@
     "title": "Northridge single-family property pitched for small-lot homes, ADUs",
     "url": "https://therealdeal.com/la/2026/08/03/northridge-lot-poised-for-small-lot-homes-adus/",
     "date": "2026-08-03"
-   }
-  ]
- },
- "2103011001": {
-  "case": "VTT-85141-SH-VHCA",
-  "status": "submitted",
-  "rawStatus": "Pending",
-  "bill": "SB 1123",
-  "filed": "2026-04-02",
-  "decided": null,
-  "address": "18838 W Lanark St",
-  "zoning": "RA-1",
-  "units": 10,
-  "owner": "Brent Ilioulian",
-  "entity": "HGC Lanark, LLC",
-  "rep": "Olivia Joncich",
-  "repCompany": "Rand Paster & Nelson, LLP",
-  "phone": "(213) 557-2703",
-  "desc": "Subdivision of the adjacent vacant parcel (Tr 8939, Lot 2) into 10 starter-home lots per SB 1123. Second of two 10-home projects on the paired Lanark St lots.",
-  "lng": -118.544369,
-  "lat": 34.217206,
-  "lotSqft": 19148,
-  "tier": "C",
-  "vacant": 1,
-  "articles": [
-   {
-    "source": "Urbanize LA",
-    "title": "Townhomes in the works at 18838 W. Lanark St. in Reseda",
-    "url": "https://la.urbanize.city/post/townhomes-works-18838-w-lanark-st-reseda"
-   },
-   {
-    "source": "The Real Deal",
-    "title": "Leo Polosadjian Plans 20 Residences on Reseda Vacant Lot",
-    "url": "https://therealdeal.com/la/2026/06/23/leo-polosadjian-plans-20-residences-on-reseda-vacant-lot/",
-    "date": "2026-06-23"
    }
   ]
  },
