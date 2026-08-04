@@ -332,9 +332,20 @@ function projectsGeojson() {
       .map(([ain, pr]) => ({
         type: "Feature",
         geometry: { type: "Point", coordinates: [pr.lng, pr.lat] },
-        properties: { ain, status: pr.status },
+        properties: { ain, status: pr.status, tier: pr.tier || "" },
       })),
   };
+}
+
+// Does this planning case pass the current Status + Tier selection?
+// (Status searches bypass the tile-attribute filters, so the tier scope
+// must be applied to the project records themselves.)
+function projInScope(pr) {
+  const statusOk =
+    state.dealStatus === "approved" ? pr.status === "approved"
+      : state.dealStatus === "submitted" ? pr.status !== "approved" : true;
+  const tierOk = state.tiers.size === 0 || state.tiers.has(pr.tier || "");
+  return statusOk && tierOk;
 }
 
 function listingsGeojson() {
@@ -436,17 +447,11 @@ function applyFilters() {
 // approved cases (green), Submitted only pending ones (yellow); any other
 // status shows every case.
 function applyProjectScope() {
-  const wantProj = (pr) =>
-    state.dealStatus === "approved" ? pr.status === "approved"
-      : state.dealStatus === "submitted" ? pr.status !== "approved" : true;
-  if (map.getLayer("projects-markers")) {
-    map.setFilter("projects-markers",
-      state.dealStatus === "approved" ? ["==", ["get", "status"], "approved"]
-        : state.dealStatus === "submitted" ? ["!=", ["get", "status"], "approved"]
-          : null);
-  }
   const ains = Object.entries(sbProjects)
-    .filter(([, pr]) => wantProj(pr)).map(([ain]) => ain);
+    .filter(([, pr]) => projInScope(pr)).map(([ain]) => ain);
+  if (map.getLayer("projects-markers")) {
+    map.setFilter("projects-markers", ["in", ["get", "ain"], ["literal", ains]]);
+  }
   for (const id of lids("parcels-projects")) {
     if (map.getLayer(id)) {
       map.setFilter(id, ["in", ["get", "ain"], ["literal", ains]]);
@@ -470,8 +475,7 @@ function zoomToOmResults() {
 function zoomToStatusResults() {
   if (state.dealStatus !== "approved" && state.dealStatus !== "submitted") return;
   const pts = Object.values(sbProjects)
-    .filter((pr) => state.dealStatus === "approved"
-      ? pr.status === "approved" : pr.status !== "approved")
+    .filter(projInScope)
     .filter((pr) => pr.lng != null);
   if (!pts.length) return;
   const b = new maplibregl.LngLatBounds();
@@ -556,8 +560,7 @@ function updateCount() {
   // viewport — the projects are scattered and the panel would look empty.
   if (state.dealStatus === "approved" || state.dealStatus === "submitted") {
     let projFeats = Object.entries(sbProjects)
-      .filter(([, pr]) => state.dealStatus === "approved"
-        ? pr.status === "approved" : pr.status !== "approved")
+      .filter(([, pr]) => projInScope(pr))
       .map(([ain, pr]) => ({
         properties: { ain, a: pr.address || "", lsf: pr.lotSqft ?? null,
           w: null, t: pr.tier || "", e: 0, v: pr.vacant ?? null },
@@ -1021,6 +1024,9 @@ function bindControls() {
       if (cb.checked) state.tiers.add(cb.value); else state.tiers.delete(cb.value);
       syncControlsFromState();
       applyFilters();
+      // During a status search the results are scattered citywide — re-fit
+      // the view to the cases that survive the new tier scope.
+      zoomToStatusResults();
     });
   });
 
