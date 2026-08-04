@@ -888,6 +888,15 @@ async function fillOwnerInfo(p) {
   }
 }
 
+// Full parcel attributes for an AIN from whatever tiles are rendered.
+function tilePropsFor(ain) {
+  const layers = [...lids("parcels-fill"), ...lids("parcels-context")]
+    .filter((id) => map.getLayer(id));
+  const f = map.queryRenderedFeatures({ layers })
+    .find((x) => x.properties.ain === ain);
+  return f ? f.properties : null;
+}
+
 function showDetail(p, lngLat) {
   selectedAin = p.ain;
   applyFilters();
@@ -896,6 +905,20 @@ function showDetail(p, lngLat) {
   panel.classList.remove("hidden");
   document.getElementById("dp-close").addEventListener("click", closeDetail);
   fillOwnerInfo(p);
+
+  // Rows opened from the citywide lists (projects, listings) carry only the
+  // record stub, not the tile attributes (zoning, units, improvements, lot).
+  // Once the flown-to parcel's tiles render, merge them in and re-paint.
+  if (p.zc == null || p.iv == null) {
+    let tries = 0;
+    const arm = () => map.once("idle", () => {
+      if (selectedAin !== p.ain) return;
+      const tp = tilePropsFor(p.ain);
+      if (tp) showDetail({ ...p, ...tp }, lngLat);
+      else if (++tries < 3) arm();
+    });
+    arm();
+  }
 }
 
 function closeDetail() {
