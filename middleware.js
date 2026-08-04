@@ -5,7 +5,17 @@
 // if it is unset the site FAILS CLOSED rather than silently going public.
 export const config = { matcher: "/:path*" };
 
+// Link-preview crawlers (iMessage, Slack, WhatsApp... — Apple sends the
+// facebookexternalhit convention) may read the page SHELL and static brand
+// assets so rich previews render. Data, tiles, and APIs stay gated for
+// everyone — the shell contains no property data.
+const BOT_UA = /facebookexternalhit|facebot|twitterbot|slackbot|linkedinbot|whatsapp|discordbot|telegrambot|applebot|imessagebot/i;
+
 export default function middleware(req) {
+  const url = new URL(req.url);
+  if (url.pathname.startsWith("/assets/")) return;
+  const isShell = url.pathname === "/" || url.pathname === "/index.html";
+  if (isShell && BOT_UA.test(req.headers.get("user-agent") || "")) return;
   const expected = process.env.SITE_PASSWORD;
   const auth = req.headers.get("authorization") || "";
   if (expected && auth.startsWith("Basic ")) {
