@@ -799,6 +799,7 @@ function listingSectionHtml(p) {
       ${kvRow("List price", "$" + fmt(l.price))}
       ${l.ppsf != null ? kvRow("$/SF land", "$" + fmt(l.ppsf)) : ""}
       ${l.type ? kvRow("Type", l.type) : ""}
+      ${l.mls ? kvRow("MLS", l.mls) : ""}
       ${l.listDate ? kvRow("Listed", l.listDate) : ""}
       ${l.broker ? kvRow("Brokerage", l.broker) : ""}
       ${l.url ? `<div class="dp-links" style="padding:8px 0 0">
