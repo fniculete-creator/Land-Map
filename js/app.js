@@ -838,9 +838,6 @@ function detailHtml(p, lngLat) {
       <button id="dp-close" title="Close">×</button>
     </div>
     <div class="dp-badges">${badges.join(" ")}</div>
-    <button id="dp-cart-btn" class="dp-cart-btn${exportChecks.has(p.ain) ? " in-cart" : ""}">
-      ${exportChecks.has(p.ain) ? "✓ In cart — remove" : "🛒 Add to cart"}
-    </button>
     ${aerialEmbed}
     <div class="dp-tiles">
       <div class="dp-tile"><b>${p.lsf != null ? fmt(p.lsf) : "–"}</b><span>Lot sf${p.lsf != null ? " · " + acres + " ac" : ""}</span></div>
@@ -865,7 +862,10 @@ function detailHtml(p, lngLat) {
       ${assessorUrl(p) ? `<a href="${assessorUrl(p)}" target="_blank" rel="noopener">Assessor ↗</a>` : ""}
       ${(!p.co || p.co === "LA") ? `<a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>` : ""}
       ${lat ? `<a href="${CONFIG.STREETVIEW_URL(lat, lng)}" target="_blank" rel="noopener">Street View ↗</a>` : ""}
-    </div>`;
+    </div>
+    <button id="dp-cart-btn" class="dp-cart-btn${exportChecks.has(p.ain) ? " in-cart" : ""}">
+      ${exportChecks.has(p.ain) ? "✓ In cart — remove" : "🛒 Add to cart"}
+    </button>`;
 }
 
 // Live listing details (any parcel in data/listings.json shows these,
