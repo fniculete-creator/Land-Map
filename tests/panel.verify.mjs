@@ -55,8 +55,8 @@ await page.waitForFunction(
   () => document.getElementById("export-btn").textContent === "Excel (2)",
   { timeout: 10000 });
 assert(true, "export button shows Excel (2) after checking two rows");
-assert(await page.$eval("#list-count", (el) => el.textContent.includes("2 checked")),
-  "list header shows '2 checked'");
+assert(await page.$eval("#list-count", (el) => el.textContent.includes("2 in cart")),
+  "list header shows '2 in cart'");
 
 // Checked rows survive a list re-render (pan the map).
 await page.evaluate(() => window.LandMap.map.panBy([120, 0], { duration: 0 }));

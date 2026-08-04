@@ -13,3 +13,5 @@ data/tiles/
 data/pipeline.log
 data/*.log
 !data/real/land-tiles-*.pmtiles
+.vercel
+.env*

@@ -102,6 +102,41 @@ const STREET_SUFFIXES = new Set([
 ]);
 const UNIT_WORDS = new Set(["APT", "UNIT", "STE", "SPC", "NO", "TRLR", "BLDG", "FL", "RM"]);
 
+// The assessor's situs city is "LOS ANGELES" for every LA-city parcel; the
+// team thinks in communities. ZIP → community for the neighborhoods we work.
+const LA_COMMUNITY_BY_ZIP = {
+  // San Fernando Valley
+  "91303": "Canoga Park", "91304": "Canoga Park", "91306": "Winnetka",
+  "91307": "West Hills", "91311": "Chatsworth", "91316": "Encino",
+  "91324": "Northridge", "91325": "Northridge", "91326": "Porter Ranch",
+  "91330": "Northridge", "91331": "Pacoima", "91335": "Reseda",
+  "91342": "Sylmar", "91343": "North Hills", "91344": "Granada Hills",
+  "91345": "Mission Hills", "91352": "Sun Valley", "91356": "Tarzana",
+  "91364": "Woodland Hills", "91367": "Woodland Hills", "91401": "Van Nuys",
+  "91402": "Panorama City", "91403": "Sherman Oaks", "91405": "Van Nuys",
+  "91406": "Lake Balboa", "91411": "Van Nuys", "91423": "Sherman Oaks",
+  "91436": "Encino", "91601": "North Hollywood", "91602": "Toluca Lake",
+  "91604": "Studio City", "91605": "North Hollywood", "91606": "North Hollywood",
+  "91607": "Valley Village", "91040": "Sunland", "91042": "Tujunga",
+  // Westside + central
+  "90024": "Westwood", "90025": "West LA", "90034": "Palms",
+  "90045": "Westchester", "90049": "Brentwood", "90064": "West LA",
+  "90066": "Mar Vista", "90077": "Bel Air", "90272": "Pacific Palisades",
+  "90291": "Venice", "90292": "Marina del Rey", "90026": "Echo Park",
+  "90027": "Los Feliz", "90028": "Hollywood", "90038": "Hollywood",
+  "90039": "Silver Lake", "90041": "Eagle Rock", "90042": "Highland Park",
+  "90046": "Hollywood", "90065": "Glassell Park", "90068": "Hollywood Hills",
+  "90016": "West Adams", "90018": "Jefferson Park", "90019": "Mid-City",
+  "90008": "Baldwin Hills", "90043": "View Park", "90731": "San Pedro",
+  "90732": "San Pedro", "90744": "Wilmington", "90247": "Harbor Gateway",
+  "90501": "Torrance", "90710": "Harbor City", "90717": "Lomita",
+};
+
+function communityFor(cityName, zip) {
+  if (cityName && cityName.toLowerCase() !== "los angeles") return cityName;
+  return LA_COMMUNITY_BY_ZIP[zip] || cityName;
+}
+
 function splitAddr(a) {
   const empty = { street: "", cityName: "", cityLine: "" };
   if (!a) return empty;
@@ -142,7 +177,7 @@ function splitAddr(a) {
   }
   end = Math.min(end, ca);
   const street = fmtAddr(toks.slice(0, end).join(" "));
-  const cityName = fmtAddr(toks.slice(end, ca).join(" "));
+  const cityName = communityFor(fmtAddr(toks.slice(end, ca).join(" ")), zip);
   const cityLine = (cityName ? cityName + ", " : "") + "CA" + (zip ? " " + zip : "");
   return { street, cityName, cityLine };
 }
@@ -499,10 +534,37 @@ function zoomToStatusResults() {
 
 let countTimer = null;
 let lastCandidates = [];
-// Checked properties for Excel export (comps-style). Session-only, keyed by
-// AIN with the row's property snapshot as the value, so a checked site
-// survives panning away from it; insertion order = export order.
+// The export cart (comps-style). Keyed by AIN with the property snapshot as
+// the value, so a carted site survives panning away; insertion order =
+// export order. Persisted in this browser so a cart built across searches
+// (or days) isn't lost on reload.
+const CART_KEY = "land-map-cart-v1";
 const exportChecks = new Map();
+try {
+  for (const [ain, p] of JSON.parse(localStorage.getItem(CART_KEY)) || []) {
+    exportChecks.set(ain, p);
+  }
+} catch (e) { /* fresh cart */ }
+
+function saveCart() {
+  try { localStorage.setItem(CART_KEY, JSON.stringify([...exportChecks.entries()])); } catch (e) { /* private mode */ }
+}
+
+function updateCartBadge() {
+  const badge = document.getElementById("cart-count");
+  if (!badge) return;
+  badge.textContent = exportChecks.size || "";
+  document.getElementById("cart-btn").classList.toggle("has-items", exportChecks.size > 0);
+}
+
+function cartToggle(p) {
+  if (exportChecks.has(p.ain)) exportChecks.delete(p.ain);
+  else exportChecks.set(p.ain, p);
+  saveCart();
+  updateCartBadge();
+  renderCartPanel();
+  scheduleCount();
+}
 function scheduleCount() {
   clearTimeout(countTimer);
   countTimer = setTimeout(updateCount, 250);
@@ -622,9 +684,10 @@ function renderList(candidates, detailed) {
   const sel = exportChecks.size;
   document.getElementById("list-count").innerHTML = [
     topline,
-    sel ? `<b>${sel} checked</b> <button id="clear-checks" title="Uncheck all">clear</button>` : "",
+    sel ? `<b>${sel} in cart</b> <button id="clear-checks" title="Empty the cart">clear</button>` : "",
   ].filter(Boolean).join(" · ");
   document.getElementById("export-btn").textContent = sel ? `Excel (${sel})` : "Excel";
+  updateCartBadge();
 
   list.innerHTML = "";
   empty.style.display = shown.length ? "none" : "block";
@@ -653,10 +716,7 @@ function renderList(candidates, detailed) {
     check.title = "Check to include in the Excel export";
     check.checked = exportChecks.has(p.ain);
     check.addEventListener("click", (e) => e.stopPropagation());
-    check.addEventListener("change", () => {
-      if (check.checked) exportChecks.set(p.ain, p); else exportChecks.delete(p.ain);
-      scheduleCount();
-    });
+    check.addEventListener("change", () => cartToggle(p));
 
     const dot = document.createElement("span");
     dot.className = "site-dot";
@@ -769,6 +829,9 @@ function detailHtml(p, lngLat) {
       <button id="dp-close" title="Close">×</button>
     </div>
     <div class="dp-badges">${badges.join(" ")}</div>
+    <button id="dp-cart-btn" class="dp-cart-btn${exportChecks.has(p.ain) ? " in-cart" : ""}">
+      ${exportChecks.has(p.ain) ? "✓ In cart — remove" : "🛒 Add to cart"}
+    </button>
     ${aerialEmbed}
     <div class="dp-tiles">
       <div class="dp-tile"><b>${p.lsf != null ? fmt(p.lsf) : "–"}</b><span>Lot sf${p.lsf != null ? " · " + acres + " ac" : ""}</span></div>
@@ -919,6 +982,32 @@ async function fillOwnerInfo(p) {
   }
 }
 
+/* ---------------- export cart panel ---------------- */
+
+function renderCartPanel() {
+  const panel = document.getElementById("cart-panel");
+  if (!panel || panel.classList.contains("hidden")) return;
+  const items = [...exportChecks.values()];
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g,
+    (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  panel.innerHTML = items.length ? `
+    <div class="cart-head">${items.length} propert${items.length === 1 ? "y" : "ies"}</div>
+    <ul class="cart-list">
+      ${items.map((p) => `
+        <li data-ain="${esc(p.ain)}">
+          <span class="cart-item-name">${esc(displayName(p))}</span>
+          <span class="cart-item-city">${esc(splitAddr(p.a).cityName)}</span>
+          <button class="cart-remove" title="Remove">×</button>
+        </li>`).join("")}
+    </ul>
+    <div class="cart-actions">
+      <button id="cart-clear">Clear</button>
+      <button id="cart-export">Export to Excel</button>
+    </div>`
+    : `<div class="cart-empty">Cart is empty. Check properties in the list,
+       or use "Add to cart" in a parcel's panel.</div>`;
+}
+
 // Full parcel attributes for an AIN from whatever tiles are rendered.
 function tilePropsFor(ain) {
   const layers = [...lids("parcels-fill"), ...lids("parcels-context")]
@@ -935,6 +1024,13 @@ function showDetail(p, lngLat) {
   panel.innerHTML = detailHtml(p, lngLat);
   panel.classList.remove("hidden");
   document.getElementById("dp-close").addEventListener("click", closeDetail);
+  document.getElementById("dp-cart-btn").addEventListener("click", () => {
+    cartToggle(p);
+    const btn = document.getElementById("dp-cart-btn");
+    const now = exportChecks.has(p.ain);
+    btn.textContent = now ? "✓ In cart — remove" : "🛒 Add to cart";
+    btn.classList.toggle("in-cart", now);
+  });
   fillOwnerInfo(p);
 
   // Rows opened from the citywide lists (projects, listings) carry only the
@@ -1165,6 +1261,41 @@ function bindControls() {
     if (e.target.id === "clear-checks") LandMap.clearChecks();
   });
 
+  // Cart button + panel (topbar).
+  document.getElementById("cart-btn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const panel = document.getElementById("cart-panel");
+    panel.classList.toggle("hidden");
+    renderCartPanel();
+  });
+  document.getElementById("cart-panel").addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (e.target.id === "cart-clear") LandMap.clearChecks();
+    else if (e.target.id === "cart-export") LandMap.exportExcel();
+    else if (e.target.classList.contains("cart-remove")) {
+      const ain = e.target.closest("li").dataset.ain;
+      exportChecks.delete(ain);
+      saveCart();
+      updateCartBadge();
+      renderCartPanel();
+      scheduleCount();
+    } else if (e.target.closest("li")) {
+      // Clicking a cart row flies to the property.
+      const ain = e.target.closest("li").dataset.ain;
+      const p = exportChecks.get(ain);
+      const l = omListings[ain] || sbProjects[ain] || {};
+      if (l.lng != null) {
+        map.easeTo({ center: [l.lng, l.lat], zoom: 16 });
+        showDetail(p, { lng: l.lng, lat: l.lat });
+      }
+    }
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#cart-panel") && !e.target.closest("#cart-btn")) {
+      document.getElementById("cart-panel").classList.add("hidden");
+    }
+  });
+
   document.getElementById("empty-sites").addEventListener("click", (e) => {
     if (e.target.id === "goto-demo" && demoBounds) {
       map.fitBounds(demoBounds, { padding: 40 });
@@ -1327,6 +1458,8 @@ const LandMap = {
     const esc = (v) => String(v ?? "").replace(/[&<>"]/g,
       (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
     const num = (v) => (v == null || v === "" ? "" : Number(v));
+    const proj = (p) => sbProjects[p.ain] || {};
+    const lst = (p) => omListings[p.ain] || {};
     const cols = [
       ["Address", (p) => splitAddr(p.a).street || "APN " + fmtApn(p)],
       ["City", (p) => splitAddr(p.a).cityName],
@@ -1335,17 +1468,24 @@ const LandMap = {
       ["Zoning", (p) => p.zc || ""],
       ["Lot SF", (p) => num(p.lsf)],
       ["Width ft", (p) => num(p.w)],
-      ["Units", (p) => (p.u >= 0 ? p.u : "")],
       ["Vacant", (p) => (p.v === 1 ? "Yes" : p.v === 0 ? "No" : "")],
       ["SB 1123", (p) => (p.e === 1 ? "Candidate" : "")],
-      ["Homes", (p) => sbProjects[p.ain]?.units ?? ""],
-      ["Case", (p) => sbProjects[p.ain]?.case ?? ""],
+      ["Case", (p) => proj(p).case ?? ""],
       ["Status", (p) => STATUS_LABELS[dealStatuses[p.ain]]
-        || (sbProjects[p.ain] ? STATUS_LABELS[sbProjects[p.ain].status] || "" : "")],
-      ["List Price", (p) => num(omListings[p.ain]?.price)],
-      ["$/SF Land", (p) => num(omListings[p.ain]?.ppsf)],
-      ["Listing", (p) => omListings[p.ain]?.url ?? ""],
+        || (proj(p).status ? STATUS_LABELS[proj(p).status] || proj(p).status : "")],
+      ["Submitted", (p) => proj(p).filed ?? ""],
+      ["Approved", (p) => (proj(p).status === "approved" ? proj(p).decided ?? "" : "")],
+      ["Homes", (p) => proj(p).units ?? ""],
+      ["Owner", (p) => proj(p).owner || lst(p).ownerName || ""],
+      ["Entity", (p) => proj(p).entity ?? ""],
+      ["Applicant", (p) => [proj(p).rep, proj(p).repCompany].filter(Boolean).join(" - ")],
+      ["Contact", (p) => proj(p).phone ?? ""],
+      ["List Price", (p) => num(lst(p).price)],
+      ["$/SF Land", (p) => num(lst(p).ppsf)],
+      ["MLS", (p) => lst(p).mls ?? ""],
+      ["Listing", (p) => lst(p).url ?? ""],
       ["Assessor", (p) => assessorUrl(p)],
+      ["Notes", (p) => proj(p).desc ?? ""],
     ];
     const th = cols.map(([h]) =>
       `<th style="background:#1B3A5C;color:#fff;font-weight:700;padding:6px 10px;
@@ -1354,7 +1494,8 @@ const LandMap = {
       const v = get(p);
       const link = (h === "Listing" || h === "Assessor") && v;
       const numeric = typeof v === "number";
-      return `<td style="padding:4px 10px;border-bottom:1px solid #e4e8ec;${numeric ? "mso-number-format:'\\#\\,\\#\\#0';" : ""}white-space:nowrap">`
+      const wrap = h === "Notes" ? "max-width:520px;white-space:normal" : "white-space:nowrap";
+      return `<td style="padding:4px 10px;border-bottom:1px solid #e4e8ec;${numeric ? "mso-number-format:'\\#\\,\\#\\#0';" : ""}${wrap}">`
         + (link ? `<a href="${esc(v)}">${esc(v)}</a>` : esc(v)) + "</td>";
     }).join("") + "</tr>").join("");
     const html = `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head>
@@ -1371,6 +1512,9 @@ const LandMap = {
   },
   clearChecks() {
     exportChecks.clear();
+    saveCart();
+    updateCartBadge();
+    renderCartPanel();
     scheduleCount();
   },
   addOverlayPoints(geojson, options = {}) {
