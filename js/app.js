@@ -380,7 +380,8 @@ function omAinsFor() {
     const okPrice = l.ppsf == null
       ? min === null && max === null
       : (min === null || l.ppsf >= min) && (max === null || l.ppsf <= max);
-    return okPrice && inSelectedAreas(l.lng, l.lat);
+    const okTier = state.tiers.size === 0 || state.tiers.has(l.tier || "");
+    return okPrice && okTier && inSelectedAreas(l.lng, l.lat);
   });
 }
 
@@ -1067,9 +1068,10 @@ function bindControls() {
       if (cb.checked) state.tiers.add(cb.value); else state.tiers.delete(cb.value);
       syncControlsFromState();
       applyFilters();
-      // During a status search the results are scattered citywide — re-fit
-      // the view to the cases that survive the new tier scope.
+      // Status searches and On Market are citywide views — re-fit the map
+      // to the results that survive the new tier scope.
       zoomToStatusResults();
+      if (state.om) zoomToOmResults();
     });
   });
 
