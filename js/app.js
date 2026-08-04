@@ -740,20 +740,29 @@ function renderList(candidates, detailed) {
       badge.textContent = proj.status === "approved" ? "Approved" : "Submitted";
       name.appendChild(badge);
     }
+    if (p.e === 1) {
+      const sb = document.createElement("span");
+      sb.className = "site-badge badge-sb";
+      sb.textContent = "SB 1123";
+      name.appendChild(sb);
+    }
     // Rows stay minimal: address + property type on the left, lot size
     // (+ proposed homes for SB cases) on the right. The rest lives in the
     // detail panel.
     info.appendChild(name);
-    if (listing) {
+    // Meta line: community · zoning · type (+ lot sf for listings, whose
+    // right column carries price instead of lot size).
+    const metaParts = [
+      splitAddr(p.a).cityName,
+      p.zc,
+      listing ? listing.type
+        : p.v === 1 ? "Vacant Lot" : p.v === 0 ? "Single Family" : null,
+      listing && p.lsf != null ? fmt(p.lsf) + " sf lot" : null,
+    ].filter(Boolean);
+    if (metaParts.length) {
       const meta = document.createElement("div");
       meta.className = "site-meta";
-      meta.textContent = [listing.type, p.lsf != null ? fmt(p.lsf) + " sf lot" : ""]
-        .filter(Boolean).join(" · ");
-      info.appendChild(meta);
-    } else if (p.v != null) {
-      const meta = document.createElement("div");
-      meta.className = "site-meta";
-      meta.textContent = p.v === 1 ? "Vacant Lot" : "Single Family";
+      meta.textContent = metaParts.join(" · ");
       info.appendChild(meta);
     }
 
@@ -1500,13 +1509,13 @@ const LandMap = {
     }).join("") + "</tr>").join("");
     const html = `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head>
       <meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>
-      <x:ExcelWorksheet><x:Name>Land Sites</x:Name><x:WorksheetOptions><x:FrozenNoSplit/>
+      <x:ExcelWorksheet><x:Name>LAAA Land Export</x:Name><x:WorksheetOptions><x:FrozenNoSplit/>
       </x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
       </head><body><table>${"<thead><tr>" + th + "</tr></thead><tbody>" + trs + "</tbody>"}</table></body></html>`;
     const blob = new Blob(["﻿" + html], { type: "application/vnd.ms-excel" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "land-sites.xls";
+    a.download = "LAAA Land Export.xls";
     a.click();
     URL.revokeObjectURL(a.href);
   },

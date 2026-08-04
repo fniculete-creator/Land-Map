@@ -545,6 +545,7 @@ html, body {
 .badge-appr { background: #10b981; color: #fff; }
 .badge-sub { background: #facc15; color: #5b4a00; }
 .badge-om { background: #d97706; color: #fff; }
+.badge-sb { background: #e6f9f1; color: #047857; border: 1px solid #10b981; }
 
 .site-meta { font-size: 0.76rem; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
 

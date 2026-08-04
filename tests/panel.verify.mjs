@@ -70,7 +70,7 @@ const [download] = await Promise.all([
   page.waitForEvent("download", { timeout: 15000 }),
   page.click("#export-btn"),
 ]);
-assert(download.suggestedFilename() === "land-sites.xls", "downloads land-sites.xls");
+assert(download.suggestedFilename() === "LAAA Land Export.xls", "downloads LAAA Land Export.xls");
 const path = await download.path();
 const fs = await import("fs");
 const xls = fs.readFileSync(path, "utf8");
