@@ -732,9 +732,10 @@ function detailHtml(p, lngLat) {
   const lat = lngLat ? lngLat.lat.toFixed(6) : null;
   const lng = lngLat ? lngLat.lng.toFixed(6) : null;
 
-  const svEmbed = CONFIG.GOOGLE_MAPS_KEY && lat
+  // Aerial (satellite) embed of the parcel; Street View stays as a link below.
+  const aerialEmbed = CONFIG.GOOGLE_MAPS_KEY && lat
     ? `<iframe class="dp-sv" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-         src="https://www.google.com/maps/embed/v1/streetview?key=${CONFIG.GOOGLE_MAPS_KEY}&location=${lat},${lng}&fov=80"
+         src="https://www.google.com/maps/embed/v1/view?key=${CONFIG.GOOGLE_MAPS_KEY}&center=${lat},${lng}&zoom=19&maptype=satellite"
          allowfullscreen></iframe>`
     : "";
 
@@ -756,7 +757,7 @@ function detailHtml(p, lngLat) {
       <button id="dp-close" title="Close">×</button>
     </div>
     <div class="dp-badges">${badges.join(" ")}</div>
-    ${svEmbed}
+    ${aerialEmbed}
     <div class="dp-tiles">
       <div class="dp-tile"><b>${p.lsf != null ? fmt(p.lsf) : "–"}</b><span>Lot sf${p.lsf != null ? " · " + acres + " ac" : ""}</span></div>
       <div class="dp-tile dp-tile-navy"><b>${p.w != null ? "≈ " + p.w + " ft" : "–"}</b><span>Width · computed</span></div>
@@ -775,14 +776,6 @@ function detailHtml(p, lngLat) {
     <section class="dp-section">
       <h4>Owner information</h4>
       <div id="dp-owner"><div class="dp-loading">Looking up owner…</div></div>
-    </section>
-    <section class="dp-section">
-      <h4>Status</h4>
-      <select id="dp-status">
-        <option value="">None</option>
-        ${Object.entries(STATUS_LABELS).map(([val, label]) =>
-          `<option value="${val}"${dealStatuses[p.ain] === val ? " selected" : ""}>${label}</option>`).join("")}
-      </select>
     </section>
     <div class="dp-links">
       ${assessorUrl(p) ? `<a href="${assessorUrl(p)}" target="_blank" rel="noopener">Assessor ↗</a>` : ""}
@@ -902,9 +895,6 @@ function showDetail(p, lngLat) {
   panel.innerHTML = detailHtml(p, lngLat);
   panel.classList.remove("hidden");
   document.getElementById("dp-close").addEventListener("click", closeDetail);
-  document.getElementById("dp-status").addEventListener("change", (e) => {
-    LandMap.setStatus(p.ain, e.target.value);
-  });
   fillOwnerInfo(p);
 }
 
