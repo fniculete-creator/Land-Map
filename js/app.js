@@ -862,9 +862,33 @@ function ownerFallbackHtml(p) {
     lookups${url ? ", or check the assessor record:" : "."}</p>${link}`;
 }
 
+// OpenCorporates entity-search link for LLC/corp/trust owner names.
+function ownerOcLink(name) {
+  return name && /\b(LLC|L\.P\.|LP|INC|CORP|TRUST)\b/i.test(name)
+    ? `<a class="dp-owner-link" href="https://opencorporates.com/companies/us_ca?q=${encodeURIComponent(name)}" target="_blank" rel="noopener">OpenCorporates ↗</a>`
+    : "";
+}
+
 async function fillOwnerInfo(p) {
   const el = document.getElementById("dp-owner");
   if (!el) return;
+  // Team-curated assessor data on the listing/project record wins: verified
+  // by an agent, and no per-view API spend.
+  const rec = omListings[p.ain] || sbProjects[p.ain] || {};
+  if (rec.ownerName || rec.lastSalePrice) {
+    const rows = [];
+    if (rec.ownerName) rows.push(kvRow("Owner (Assessor)", rec.ownerName));
+    if (rec.ownerAddress) rows.push(kvRow("Owner address", rec.ownerAddress));
+    if (rec.lastSaleDate || rec.lastSalePrice) {
+      rows.push(kvRow("Last market sale",
+        [rec.lastSaleDate, rec.lastSalePrice ? "$" + fmt(rec.lastSalePrice) : ""]
+          .filter(Boolean).join(" · ")));
+    }
+    const aUrl = assessorUrl(p);
+    el.innerHTML = rows.join("") + ownerOcLink(rec.ownerName)
+      + (aUrl ? ` <a class="dp-owner-link" href="${aUrl}" target="_blank" rel="noopener">Assessor ↗</a>` : "");
+    return;
+  }
   if (!CONFIG.OWNER_API) { el.innerHTML = ownerFallbackHtml(p); return; }
   try {
     const resp = await fetch(`${CONFIG.OWNER_API}?apn=${encodeURIComponent(p.ain)}`);
@@ -879,10 +903,7 @@ async function fillOwnerInfo(p) {
         d.lastSalePrice ? "$" + fmt(d.lastSalePrice) : "–"));
     }
     if (!rows.length) throw new Error("empty");
-    const ocLink = d.owner && /\b(LLC|L\.P\.|LP|INC|CORP|TRUST)\b/i.test(d.owner)
-      ? `<a class="dp-owner-link" href="https://opencorporates.com/companies/us_ca?q=${encodeURIComponent(d.owner)}" target="_blank" rel="noopener">OpenCorporates ↗</a>`
-      : "";
-    el.innerHTML = rows.join("") + ocLink;
+    el.innerHTML = rows.join("") + ownerOcLink(d.owner);
   } catch (e) {
     if (document.getElementById("dp-owner") === el) el.innerHTML = ownerFallbackHtml(p);
   }

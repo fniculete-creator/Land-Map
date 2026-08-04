@@ -228,7 +228,11 @@
   "lat": 34.18913,
   "mls": "26849863",
   "listDate": "2026-06-01",
-  "tier": "C"
+  "tier": "C",
+  "ownerName": "6540 SHOUP LLC",
+  "ownerAddress": "8768 YOLANDA AVE NORTHRIDGE, CA 91324",
+  "lastSaleDate": "2025-10-29",
+  "lastSalePrice": 1200000
  },
  "2042007023": {
   "address": "23142 DOLOROSA WOODLAND HILLS CA",
