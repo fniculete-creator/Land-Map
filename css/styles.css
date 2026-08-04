@@ -365,6 +365,17 @@ html, body {
   color: var(--muted);
   padding: 0 14px 4px;
 }
+#list-count b { color: var(--blue); }
+#list-count button {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+#list-count button:hover { color: var(--blue); }
 
 #list-actions { display: flex; gap: 6px; }
 
@@ -401,6 +412,15 @@ html, body {
 }
 .site-item:hover { background: #f6f8fa; }
 .site-item.selected { border-color: var(--blue); background: #f2f6ff; }
+
+.site-check {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--blue);
+}
 
 .site-dot {
   width: 10px;
@@ -640,6 +660,25 @@ html, body {
   margin-top: 4px;
 }
 .dp-owner-link:hover { text-decoration: underline; }
+
+/* Press-coverage rows in the Articles section */
+.dp-article { display: block; padding: 5px 0; text-decoration: none; }
+.dp-article-src {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dp-article-title {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--blue);
+  line-height: 1.35;
+}
+.dp-article:hover .dp-article-title { text-decoration: underline; }
 
 #dp-status {
   width: 100%;

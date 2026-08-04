@@ -107,7 +107,15 @@
   "lat": 34.200589,
   "lotSqft": 15754,
   "tier": "C",
-  "vacant": 1
+  "vacant": 1,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "10 small lot houses planned at 22112 Sherman Way in Canoga Park",
+    "url": "https://la.urbanize.city/post/10-small-lot-houses-planned-22112-sherman-way-canoga-park",
+    "date": "2025-08-03"
+   }
+  ]
  },
  "5211010016": {
   "case": "AA-2025-3784-PM-SH-HCA",

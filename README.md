@@ -69,10 +69,16 @@ code needed.
   neutral gray. Zoomed out (< z13), parcels display as dots.
 - **Left panel** — stat tiles (parcels in view, candidates, median lot size
   and width) plus a ranked candidates list; click a row to zoom to the lot.
+  Each row has a comps-style checkbox: check properties (they stay checked
+  while you pan) and **Excel** exports just those, LAAA navy/gold header
+  included; with nothing checked it exports everything listed.
 - **Parcel popup** — tier, zoning, use code, units, lot size, computed width,
   improvement value, and links to the **Assessor portal** (ownership — CA law
   keeps owner names out of bulk open data, so it's one click away per parcel)
-  and **ZIMAS**.
+  and **ZIMAS**. Projects and listings with press coverage get an
+  **Articles** section (Urbanize LA / YIMBY / The Real Deal links — an
+  `articles` array on the record in `data/projects.json` or
+  `data/listings.json`: `{source, title, url, date}`).
 - **On Market** — orange toggle showing only SFR/land deals currently listed
   for sale (team-curated `data/listings.json`, keyed by AIN). Activating it
   reveals a **$/SF Land** range filter — list price ÷ lot SF — and the side

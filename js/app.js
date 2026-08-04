@@ -483,6 +483,10 @@ function zoomToStatusResults() {
 
 let countTimer = null;
 let lastCandidates = [];
+// Checked properties for Excel export (comps-style). Session-only, keyed by
+// AIN with the row's property snapshot as the value, so a checked site
+// survives panning away from it; insertion order = export order.
+const exportChecks = new Map();
 function scheduleCount() {
   clearTimeout(countTimer);
   countTimer = setTimeout(updateCount, 250);
@@ -599,8 +603,13 @@ function renderList(candidates, detailed) {
   }
   const shown = candidates.slice(0, MAX);
 
-  document.getElementById("list-count").textContent =
-    candidates.length > MAX ? `top ${MAX} of ${fmt(candidates.length)}` : "";
+  const topline = candidates.length > MAX ? `top ${MAX} of ${fmt(candidates.length)}` : "";
+  const sel = exportChecks.size;
+  document.getElementById("list-count").innerHTML = [
+    topline,
+    sel ? `<b>${sel} checked</b> <button id="clear-checks" title="Uncheck all">clear</button>` : "",
+  ].filter(Boolean).join(" · ");
+  document.getElementById("export-btn").textContent = sel ? `Excel (${sel})` : "Excel";
 
   list.innerHTML = "";
   empty.style.display = shown.length ? "none" : "block";
@@ -621,6 +630,18 @@ function renderList(candidates, detailed) {
     const p = f.properties;
     const li = document.createElement("li");
     li.className = "site-item" + (p.ain === selectedAin ? " selected" : "");
+
+    // Comps-style export checkbox; clicks must not trigger the row's zoom.
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.className = "site-check";
+    check.title = "Check to include in the Excel export";
+    check.checked = exportChecks.has(p.ain);
+    check.addEventListener("click", (e) => e.stopPropagation());
+    check.addEventListener("change", () => {
+      if (check.checked) exportChecks.set(p.ain, p); else exportChecks.delete(p.ain);
+      scheduleCount();
+    });
 
     const dot = document.createElement("span");
     dot.className = "site-dot";
@@ -689,6 +710,7 @@ function renderList(candidates, detailed) {
       showDetail(p, { lat: center[1], lng: center[0] });
     });
 
+    li.appendChild(check);
     li.appendChild(dot);
     li.appendChild(info);
     li.appendChild(tier);
@@ -733,19 +755,20 @@ function detailHtml(p, lngLat) {
     <div class="dp-badges">${badges.join(" ")}</div>
     ${svEmbed}
     <div class="dp-tiles">
-      <div class="dp-tile"><b>${fmt(p.lsf)}</b><span>Lot sf · ${acres} ac</span></div>
-      <div class="dp-tile dp-tile-navy"><b>≈ ${p.w} ft</b><span>Width · computed</span></div>
+      <div class="dp-tile"><b>${p.lsf != null ? fmt(p.lsf) : "–"}</b><span>Lot sf${p.lsf != null ? " · " + acres + " ac" : ""}</span></div>
+      <div class="dp-tile dp-tile-navy"><b>${p.w != null ? "≈ " + p.w + " ft" : "–"}</b><span>Width · computed</span></div>
     </div>
     <section class="dp-section">
       <h4>Parcel</h4>
       ${kvRow("Zoning", `${p.z || "?"} <span class="muted">(${p.zc || "?"})</span>`)}
       ${kvRow("Use code", p.uc || "–")}
       ${kvRow("Units", p.u >= 0 ? p.u : "–")}
-      ${kvRow("Improvements", "$" + fmt(p.iv))}
+      ${kvRow("Improvements", p.iv != null ? "$" + fmt(p.iv) : "–")}
       ${p.ls ? kvRow("Last sale", p.ls) : ""}
     </section>
     ${listingSectionHtml(p)}
     ${projectSectionHtml(p)}
+    ${articlesSectionHtml(p)}
     <section class="dp-section">
       <h4>Owner information</h4>
       <div id="dp-owner"><div class="dp-loading">Looking up owner…</div></div>
@@ -780,6 +803,28 @@ function listingSectionHtml(p) {
       ${l.broker ? kvRow("Brokerage", l.broker) : ""}
       ${l.url ? `<div class="dp-links" style="padding:8px 0 0">
         <a href="${l.url}" target="_blank" rel="noopener">View listing ↗</a></div>` : ""}
+    </section>`;
+}
+
+// Press coverage (Urbanize LA / YIMBY / The Real Deal…) attached to a
+// project or listing record via its "articles" array.
+function articlesSectionHtml(p) {
+  const arts = [
+    ...((sbProjects[p.ain] || {}).articles || []),
+    ...((omListings[p.ain] || {}).articles || []),
+  ];
+  if (!arts.length) return "";
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g,
+    (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  const rows = arts.map((a) => `
+    <a class="dp-article" href="${esc(a.url)}" target="_blank" rel="noopener">
+      <span class="dp-article-src">${esc(a.source || "Press")}${a.date ? " · " + esc(a.date) : ""}</span>
+      <span class="dp-article-title">${esc(a.title || a.url)} ↗</span>
+    </a>`).join("");
+  return `
+    <section class="dp-section">
+      <h4>Articles</h4>
+      ${rows}
     </section>`;
 }
 
@@ -1061,7 +1106,12 @@ function bindControls() {
     btn.classList.toggle("active", !sat);
   });
 
-  document.getElementById("export-btn").addEventListener("click", () => LandMap.downloadCsv());
+  document.getElementById("export-btn").addEventListener("click", () => LandMap.exportExcel());
+
+  // "clear" link inside the list-count line (re-rendered on every count).
+  document.getElementById("list-count").addEventListener("click", (e) => {
+    if (e.target.id === "clear-checks") LandMap.clearChecks();
+  });
 
   document.getElementById("empty-sites").addEventListener("click", (e) => {
     if (e.target.id === "goto-demo" && demoBounds) {
@@ -1213,6 +1263,63 @@ const LandMap = {
     a.download = "land-candidates.csv";
     a.click();
     URL.revokeObjectURL(a.href);
+  },
+  // Excel export, comps-style: the checked properties (in the order they
+  // were checked), or everything currently listed when nothing is checked.
+  // Client-side — a styled HTML table with an .xls name opens in Excel with
+  // the LAAA navy/gold header intact; no backend or vendored library needed.
+  exportExcel() {
+    const rows = exportChecks.size
+      ? [...exportChecks.values()]
+      : lastCandidates.map((f) => f.properties);
+    const esc = (v) => String(v ?? "").replace(/[&<>"]/g,
+      (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+    const num = (v) => (v == null || v === "" ? "" : Number(v));
+    const cols = [
+      ["Address", (p) => splitAddr(p.a).street || "APN " + fmtApn(p)],
+      ["City", (p) => splitAddr(p.a).cityName],
+      ["APN", (p) => fmtApn(p)],
+      ["Tier", (p) => p.t || ""],
+      ["Zoning", (p) => p.zc || ""],
+      ["Lot SF", (p) => num(p.lsf)],
+      ["Width ft", (p) => num(p.w)],
+      ["Units", (p) => (p.u >= 0 ? p.u : "")],
+      ["Vacant", (p) => (p.v === 1 ? "Yes" : p.v === 0 ? "No" : "")],
+      ["SB 1123", (p) => (p.e === 1 ? "Candidate" : "")],
+      ["Homes", (p) => sbProjects[p.ain]?.units ?? ""],
+      ["Case", (p) => sbProjects[p.ain]?.case ?? ""],
+      ["Status", (p) => STATUS_LABELS[dealStatuses[p.ain]]
+        || (sbProjects[p.ain] ? STATUS_LABELS[sbProjects[p.ain].status] || "" : "")],
+      ["List Price", (p) => num(omListings[p.ain]?.price)],
+      ["$/SF Land", (p) => num(omListings[p.ain]?.ppsf)],
+      ["Listing", (p) => omListings[p.ain]?.url ?? ""],
+      ["Assessor", (p) => assessorUrl(p)],
+    ];
+    const th = cols.map(([h]) =>
+      `<th style="background:#1B3A5C;color:#fff;font-weight:700;padding:6px 10px;
+        border-bottom:2.5px solid #C9A45C;white-space:nowrap">${esc(h)}</th>`).join("");
+    const trs = rows.map((p) => "<tr>" + cols.map(([h, get]) => {
+      const v = get(p);
+      const link = (h === "Listing" || h === "Assessor") && v;
+      const numeric = typeof v === "number";
+      return `<td style="padding:4px 10px;border-bottom:1px solid #e4e8ec;${numeric ? "mso-number-format:'\\#\\,\\#\\#0';" : ""}white-space:nowrap">`
+        + (link ? `<a href="${esc(v)}">${esc(v)}</a>` : esc(v)) + "</td>";
+    }).join("") + "</tr>").join("");
+    const html = `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head>
+      <meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>
+      <x:ExcelWorksheet><x:Name>Land Sites</x:Name><x:WorksheetOptions><x:FrozenNoSplit/>
+      </x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+      </head><body><table>${"<thead><tr>" + th + "</tr></thead><tbody>" + trs + "</tbody>"}</table></body></html>`;
+    const blob = new Blob(["﻿" + html], { type: "application/vnd.ms-excel" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "land-sites.xls";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  },
+  clearChecks() {
+    exportChecks.clear();
+    scheduleCount();
   },
   addOverlayPoints(geojson, options = {}) {
     const id = options.id || "overlay-points";
