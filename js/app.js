@@ -884,9 +884,7 @@ async function fillOwnerInfo(p) {
         [rec.lastSaleDate, rec.lastSalePrice ? "$" + fmt(rec.lastSalePrice) : ""]
           .filter(Boolean).join(" · ")));
     }
-    const aUrl = assessorUrl(p);
-    el.innerHTML = rows.join("") + ownerOcLink(rec.ownerName)
-      + (aUrl ? ` <a class="dp-owner-link" href="${aUrl}" target="_blank" rel="noopener">Assessor ↗</a>` : "");
+    el.innerHTML = rows.join("") + ownerOcLink(rec.ownerName);
     return;
   }
   if (!CONFIG.OWNER_API) { el.innerHTML = ownerFallbackHtml(p); return; }
