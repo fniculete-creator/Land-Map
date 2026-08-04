@@ -19,7 +19,20 @@
   "lat": 34.082617,
   "lotSqft": 7542,
   "tier": "",
-  "vacant": 1
+  "vacant": 1,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "10 townhomes planned at 627 N. Juanita Avenue in East Hollywood",
+    "url": "https://la.urbanize.city/post/10-townhomes-planned-627-n-juanita-avenue-east-hollywood"
+   },
+   {
+    "source": "LA YIMBY",
+    "title": "Townhomes May Come to 627 North Juanita Avenue, East Hollywood",
+    "url": "https://layimby.com/2024/07/townhomes-may-come-to-627-north-juanita-avenue-east-hollywood-los-angeles.html",
+    "date": "2024-07"
+   }
+  ]
  },
  "5442011034": {
   "case": "AA-2024-8125-PM-SH-HCA",
@@ -85,7 +98,14 @@
   "lat": 34.037509,
   "lotSqft": 7615,
   "tier": "A",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Seven houses planned at 1515 S. Carmelina Ave. in Sawtelle",
+    "url": "https://la.urbanize.city/post/seven-houses-planned-1515-s-carmelina-ave-sawtelle"
+   }
+  ]
  },
  "2024012007": {
   "case": "VTT-84880-SH-SL-HCA",
@@ -159,7 +179,20 @@
   "lat": 34.255361,
   "lotSqft": 10711,
   "tier": "",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Eight small lot homes proposed at 10240 Pinewood Ave. in Tujunga",
+    "url": "https://la.urbanize.city/post/eight-small-lot-homes-proposed-10240-pinewood-ave-tujunga"
+   },
+   {
+    "source": "LA YIMBY",
+    "title": "A Quarter-Acre Site at 10240 North Pinewood Avenue Is Planned for Eight Small Lot Homes",
+    "url": "https://layimby.com/2025/08/a-quarter-acre-site-at-10240-north-pinewood-avenue-is-planned-for-eight-small-lot-homes.html",
+    "date": "2025-08"
+   }
+  ]
  },
  "4244026003": {
   "case": "AA-2025-5122-VPM-SH-HCA",
@@ -181,7 +214,20 @@
   "lat": 34.002357,
   "lotSqft": 10892,
   "tier": "A",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Four homes planned at 1209 E. Preston Way in Venice",
+    "url": "https://la.urbanize.city/post/four-homes-planned-1209-e-preston-way-venice"
+   },
+   {
+    "source": "LA YIMBY",
+    "title": "Samara Plans Modular Four-Home Infill Development at 1209 East Preston Way in Venice",
+    "url": "https://layimby.com/2025/09/samara-plans-modular-four-home-infill-development-at-1209-east-preston-way-in-venice.html",
+    "date": "2025-09"
+   }
+  ]
  },
  "2733006018": {
   "case": "VTT-85028-SH-HCA",
@@ -203,7 +249,20 @@
   "lat": 34.264054,
   "lotSqft": 10499,
   "tier": "C",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Small lot homes in the works at 17719 W. Kingsbury Street in Granada Hills",
+    "url": "https://la.urbanize.city/post/small-lot-homes-works-17719-w-kingsbury-street-granada-hills"
+   },
+   {
+    "source": "LA YIMBY",
+    "title": "State Housing Reform Spurs New Small-Lot Residences at 17719 West Kingsbury Street in Granada Hills",
+    "url": "https://layimby.com/2025/10/state-housing-reform-spurs-new-small-lot-residences-at-17719-west-kingsbury-street-in-granada-hills.html",
+    "date": "2025-10"
+   }
+  ]
  },
  "5427014007": {
   "case": "AA-2025-6006-VPM-SH-SL-HCA",
@@ -225,7 +284,14 @@
   "lat": 34.090879,
   "lotSqft": 7347,
   "tier": "",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Four small lot houses proposed at 1046 Hyperion Ave. in Silver Lake",
+    "url": "https://la.urbanize.city/post/four-small-lot-houses-proposed-1046-hyperion-ave-silver-lake"
+   }
+  ]
  },
  "4250010009": {
   "case": "VTT-84972-SH-SL-CN-VHCA",
@@ -247,7 +313,14 @@
   "lat": 34.018634,
   "lotSqft": 8234,
   "tier": "A",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Five houses proposed at 3252 S. Barrington Ave. in Mar Vista",
+    "url": "https://la.urbanize.city/post/five-houses-proposed-3252-s-barrington-ave-mar-vista"
+   }
+  ]
  },
  "5589038012": {
   "case": "AA-2025-6487-VPM-SL-SH-VHCA",
@@ -291,7 +364,20 @@
   "lat": 34.086891,
   "lotSqft": 9210,
   "tier": "A",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Small lot homes + ADUs proposed at 855 N. Orlando Ave. in Hollywood",
+    "url": "https://la.urbanize.city/post/small-lot-homes-adus-proposed-855-n-orlando-ave-hollywood"
+   },
+   {
+    "source": "The Real Deal",
+    "title": "Small-lot homes, ADUs planned for Hollywood parcel",
+    "url": "https://therealdeal.com/la/2025/12/29/hollywood-parcel-poised-for-small-lot-homes-adus/",
+    "date": "2025-12-29"
+   }
+  ]
  },
  "2266007031": {
   "case": "VTT-84941-SL-SH-HCA",
@@ -313,7 +399,20 @@
   "lat": 34.148766,
   "lotSqft": 12895,
   "tier": "B",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Small lot homes planned at 4276 Van Nuys Blvd. in Sherman Oaks",
+    "url": "https://la.urbanize.city/post/small-lot-homes-planned-4276-van-nuys-blvd-sherman-oaks"
+   },
+   {
+    "source": "LA YIMBY",
+    "title": "Former Preschool Site Slated for Eight Small Lot Homes at 4276 Van Nuys Boulevard in Sherman Oaks",
+    "url": "https://layimby.com/2026/01/former-preschool-site-slated-for-eight-small-lot-homes-at-4276-van-nuys-boulevard-in-sherman-oaks.html",
+    "date": "2026-01"
+   }
+  ]
  },
  "4248028001": {
   "case": "VTT-85133-SH-HCA",
@@ -335,7 +434,14 @@
   "lat": 34.008491,
   "lotSqft": 17300,
   "tier": "A",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Seven houses planned at 3671 Inglewood Blvd. in Mar Vista",
+    "url": "https://la.urbanize.city/post/seven-houses-planned-3671-inglewood-blvd-mar-vista"
+   }
+  ]
  },
  "2266006031": {
   "case": "VTT-84942-SL-SH-HCA",
@@ -379,7 +485,20 @@
   "lat": 34.042104,
   "lotSqft": 12606,
   "tier": "A",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Nine small lot homes proposed at 1882 S. Cochran Ave. in Mid-City",
+    "url": "https://la.urbanize.city/post/nine-small-lot-homes-proposed-1882-s-cochran-ave-mid-city"
+   },
+   {
+    "source": "The Real Deal",
+    "title": "One Mid-City house could become nearly a dozen smaller single-family homes",
+    "url": "https://therealdeal.com/la/2026/03/23/developer-seeks-to-build-nine-homes-on-single-family-lot/",
+    "date": "2026-03-23"
+   }
+  ]
  },
  "7347008004": {
   "case": "AA-2026-812-SH",
@@ -423,7 +542,20 @@
   "lat": 34.189294,
   "lotSqft": 20910,
   "tier": "C",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "10 small lot homes proposed at 6540 Shoup Ave.",
+    "url": "https://la.urbanize.city/post/10-small-lot-homes-proposed-6540-shoup-ave",
+    "date": "2026-03-01"
+   },
+   {
+    "source": "Urbanize LA",
+    "title": "Urbanize project page: 6540 Shoup Avenue",
+    "url": "https://la.urbanize.city/project/6540-shoup-avenue"
+   }
+  ]
  },
  "4312022004": {
   "case": "AA-2026-1452-PM-SH-HCA",
@@ -467,7 +599,20 @@
   "lat": 34.217097,
   "lotSqft": 27386,
   "tier": "C",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Townhomes in the works at 18838 W. Lanark St. in Reseda",
+    "url": "https://la.urbanize.city/post/townhomes-works-18838-w-lanark-st-reseda"
+   },
+   {
+    "source": "The Real Deal",
+    "title": "Leo Polosadjian Plans 20 Residences on Reseda Vacant Lot",
+    "url": "https://therealdeal.com/la/2026/06/23/leo-polosadjian-plans-20-residences-on-reseda-vacant-lot/",
+    "date": "2026-06-23"
+   }
+  ]
  },
  "2768014013": {
   "case": "VTT-85031-SH-HCA",
@@ -489,7 +634,26 @@
   "lat": 34.229195,
   "lotSqft": 102081,
   "tier": "C",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Townhomes proposed at 17545 Parthenia St. in Northridge",
+    "url": "https://la.urbanize.city/post/townhomes-proposed-17545-parthenia-st-northridge"
+   },
+   {
+    "source": "LA YIMBY",
+    "title": "16-Home Small-Lot Project Proposed At 17545 West Parthenia Street In Northridge",
+    "url": "https://layimby.com/2026/05/16-home-small-lot-project-proposed-at-17545-west-parthenia-street-in-northridge.html",
+    "date": "2026-05"
+   },
+   {
+    "source": "The Real Deal",
+    "title": "Northridge single-family home poised for townhome transformation",
+    "url": "https://therealdeal.com/la/2026/05/19/single-family-home-lot-in-northridge-proposed-for-townhomes/",
+    "date": "2026-05-19"
+   }
+  ]
  },
  "5405009027": {
   "case": "VTT-84909-SH-HCA",
@@ -511,7 +675,26 @@
   "lat": 34.072962,
   "lotSqft": 7412,
   "tier": "",
-  "vacant": 1
+  "vacant": 1,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Townhomes pitched for 1467 W. Ridge Way in Echo Park",
+    "url": "https://la.urbanize.city/post/townhomes-pitched-1467-w-ridge-way-echo-park"
+   },
+   {
+    "source": "LA YIMBY",
+    "title": "SB 684 Townhome Project Planned At 1467 West Ridge Way In Echo Park",
+    "url": "https://layimby.com/2026/05/sb-684-townhome-project-planned-at-1467-west-ridge-way-in-echo-park.html",
+    "date": "2026-05"
+   },
+   {
+    "source": "The Real Deal",
+    "title": "Echo Park hillside poised to get nearly a dozen townhomes",
+    "url": "https://therealdeal.com/la/2026/05/12/streetlamp-partners-propose-townhomes-in-echo-park/",
+    "date": "2026-05-12"
+   }
+  ]
  },
  "6120021900": {
   "case": "VTT-84320-SH-HCA",
@@ -533,7 +716,20 @@
   "lat": 33.883629,
   "lotSqft": 5693,
   "tier": "",
-  "vacant": 1
+  "vacant": 1,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Nine townhomes pitched for 16215 Bonsallo Ave. in Harbor Gateway",
+    "url": "https://la.urbanize.city/post/nine-townhomes-pitched-16215-bonsallo-ave-harbor-gateway"
+   },
+   {
+    "source": "The Real Deal",
+    "title": "Small Harbor Gateway lot poised for nine townhomes",
+    "url": "https://therealdeal.com/la/2026/05/26/luigi-schiappa-pitches-townhomes-in-harbor-gateway/",
+    "date": "2026-05-26"
+   }
+  ]
  },
  "5068006014": {
   "case": "AA-2026-2856-PM-SH-VHCA",
@@ -577,7 +773,14 @@
   "lat": 34.20785,
   "lotSqft": 28717,
   "tier": "C",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Small lot homes + ADUs slated for 19448 Saticoy St. in Reseda",
+    "url": "https://la.urbanize.city/post/small-lot-homes-adus-slated-19448-saticoy-st-reseda"
+   }
+  ]
  },
  "5685012008": {
   "case": "VTT-85203-SH-SL",
@@ -599,7 +802,14 @@
   "lat": 34.133836,
   "lotSqft": 13207,
   "tier": "",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Six small lot houses proposed at 2217 W. Laverna Ave. in Eagle Rock",
+    "url": "https://la.urbanize.city/post/six-small-lot-houses-proposed-2217-w-laverna-ave-eagle-rock"
+   }
+  ]
  },
  "2235001004": {
   "case": "VTT-85188-SH-HCA",
@@ -621,7 +831,14 @@
   "lat": 34.187875,
   "lotSqft": 19651,
   "tier": "C",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Small lot houses pitched for 6443 N. Columbus Ave. in Van Nuys",
+    "url": "https://la.urbanize.city/post/small-lot-houses-pitched-6443-n-columbus-ave-van-nuys"
+   }
+  ]
  },
  "5071021039": {
   "case": "TT-85342-SH-HCA",
@@ -665,7 +882,20 @@
   "lat": 34.246096,
   "lotSqft": 20004,
   "tier": "C",
-  "vacant": 0
+  "vacant": 0,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Small lot homes with ADUs pitched for 18220 Superior St. in Northridge",
+    "url": "https://la.urbanize.city/post/small-lot-homes-adus-pitched-18220-superior-st-northridge"
+   },
+   {
+    "source": "The Real Deal",
+    "title": "Northridge single-family property pitched for small-lot homes, ADUs",
+    "url": "https://therealdeal.com/la/2026/08/03/northridge-lot-poised-for-small-lot-homes-adus/",
+    "date": "2026-08-03"
+   }
+  ]
  },
  "2103011001": {
   "case": "VTT-85141-SH-VHCA",
@@ -687,7 +917,20 @@
   "lat": 34.217206,
   "lotSqft": 19148,
   "tier": "C",
-  "vacant": 1
+  "vacant": 1,
+  "articles": [
+   {
+    "source": "Urbanize LA",
+    "title": "Townhomes in the works at 18838 W. Lanark St. in Reseda",
+    "url": "https://la.urbanize.city/post/townhomes-works-18838-w-lanark-st-reseda"
+   },
+   {
+    "source": "The Real Deal",
+    "title": "Leo Polosadjian Plans 20 Residences on Reseda Vacant Lot",
+    "url": "https://therealdeal.com/la/2026/06/23/leo-polosadjian-plans-20-residences-on-reseda-vacant-lot/",
+    "date": "2026-06-23"
+   }
+  ]
  },
  "2734031028": {
   "case": "VTT-85021-SH",
