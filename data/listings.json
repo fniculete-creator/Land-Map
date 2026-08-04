@@ -21,17 +21,6 @@
   "listDate": "2026-06-27",
   "tier": "C"
  },
- "2314006016": {
-  "address": "11144 LORNE STREET SUN VALLEY CA",
-  "price": 850000,
-  "type": "Land",
-  "lotSqft": 14958,
-  "lng": -118.37348,
-  "lat": 34.217452,
-  "mls": "SR26150596MR",
-  "listDate": "2026-07-10",
-  "tier": "C"
- },
  "2103023012": {
   "address": "18565 INGOMAR RESEDA CA",
   "price": 915000,
@@ -65,17 +54,6 @@
   "listDate": "2026-01-08",
   "tier": "B"
  },
- "2638026006": {
-  "address": "14301 ROSCOE BLVD PANORAMA CITY CA",
-  "price": 1099990,
-  "type": "Land",
-  "lotSqft": 8697,
-  "lng": -118.445011,
-  "lat": 34.221656,
-  "mls": "BB26141054MR",
-  "listDate": "2026-07-03",
-  "tier": "C"
- },
  "2239007106": {
   "address": "6218 MATILIJA AVE VALLEY GLEN CA",
   "price": 1263000,
@@ -86,17 +64,6 @@
   "mls": "SR26081015MR",
   "listDate": "2026-04-15",
   "tier": "C"
- },
- "2350009047": {
-  "address": "5444 CAMELLIA AVE NORTH HOLLYWOOD CA",
-  "price": 1300000,
-  "type": "Land",
-  "lotSqft": 6591,
-  "lng": -118.382161,
-  "lat": 34.169874,
-  "mls": "25607381",
-  "listDate": "2025-10-22",
-  "tier": "B"
  },
  "2356010008": {
   "address": "12214 HUSTON ST VALLEY VILLAGE CA",
@@ -131,28 +98,6 @@
   "listDate": "2026-03-11",
   "tier": "C"
  },
- "2261038042": {
-  "address": "4747 ORION AVE SHERMAN OAKS CA",
-  "price": 1500000,
-  "type": "Land",
-  "lotSqft": 8755,
-  "lng": -118.469537,
-  "lat": 34.156596,
-  "mls": "26854807",
-  "listDate": "2026-07-01",
-  "tier": "B"
- },
- "2216025013": {
-  "address": "6901 WOODMAN AVE VAN NUYS CA",
-  "price": 1500000,
-  "type": "Land",
-  "lotSqft": 10005,
-  "lng": -118.431323,
-  "lat": 34.19584,
-  "mls": "26857399",
-  "listDate": "2026-07-08",
-  "tier": "C"
- },
  "2314008047": {
   "address": "11055 STAGG ST SUN VALLEY CA",
   "price": 1500000,
@@ -163,17 +108,6 @@
   "mls": "BB26093882MR",
   "listDate": "2026-05-06",
   "tier": "C"
- },
- "2416011026": {
-  "address": "5315 RIVERTON AVE NORTH HOLLYWOOD CA",
-  "price": 1598888,
-  "type": "Land",
-  "lotSqft": 10799,
-  "lng": -118.36543,
-  "lat": 34.166932,
-  "mls": "OC26154238MR",
-  "listDate": "2026-07-15",
-  "tier": "B"
  },
  "2340006031": {
   "address": "12201 CALIFA ST VALLEY VILLAGE CA",
@@ -186,17 +120,6 @@
   "listDate": "2026-07-30",
   "tier": "B"
  },
- "2414032025": {
-  "address": "6401 DENNY AVE NORTH HOLLYWOOD CA",
-  "price": 1750000,
-  "type": "Land",
-  "lotSqft": 8016,
-  "lng": -118.364929,
-  "lat": 34.18675,
-  "mls": "SR26053361MR",
-  "listDate": "2026-03-11",
-  "tier": "C"
- },
  "2238025010": {
   "address": "14005 VICTORY BLVD VAN NUYS CA",
   "price": 1850000,
@@ -208,17 +131,6 @@
   "listDate": "2026-05-13",
   "tier": "C"
  },
- "2315025044": {
-  "address": "7317 VINELAND AVE SUN VALLEY CA",
-  "price": 1950000,
-  "type": "Land",
-  "lotSqft": 10713,
-  "lng": -118.370384,
-  "lat": 34.203714,
-  "mls": "BB26108238MR",
-  "listDate": "2026-05-18",
-  "tier": "C"
- },
  "2139012035": {
   "address": "6540 SHOUP AVE WEST HILLS CA",
   "price": 2000000,
@@ -228,39 +140,6 @@
   "lat": 34.18913,
   "mls": "26849863",
   "listDate": "2026-06-01",
-  "tier": "C"
- },
- "2042007023": {
-  "address": "23142 DOLOROSA WOODLAND HILLS CA",
-  "price": 2000000,
-  "type": "Land",
-  "lotSqft": 17999,
-  "lng": -118.630777,
-  "lat": 34.170033,
-  "mls": "SR26167578MR",
-  "listDate": "2026-07-31",
-  "tier": "B"
- },
- "2338001008": {
-  "address": "11414 CALVERT ST NORTH HOLLYWOOD CA",
-  "price": 2250000,
-  "type": "Land",
-  "lotSqft": 31730,
-  "lng": -118.379627,
-  "lat": 34.181182,
-  "mls": "SR26103714MR",
-  "listDate": "2026-05-19",
-  "tier": "C"
- },
- "2214026015": {
-  "address": "7911 VENTURA CANYON PANORAMA CITY CA",
-  "price": 2499999,
-  "type": "Land",
-  "lotSqft": 19800,
-  "lng": -118.428783,
-  "lat": 34.214045,
-  "mls": "TR26098614MR",
-  "listDate": "2026-05-08",
   "tier": "C"
  },
  "2126022005": {
@@ -293,17 +172,6 @@
   "lng": -118.379086,
   "lat": 34.155253,
   "mls": "26856035",
-  "listDate": "2026-07-06",
-  "tier": "B"
- },
- "2353013022": {
-  "address": "5025 KLUMP AVE NORTH HOLLYWOOD CA",
-  "price": 3500000,
-  "type": "Land",
-  "lotSqft": 11248,
-  "lng": -118.375807,
-  "lat": 34.161376,
-  "mls": "26856043",
   "listDate": "2026-07-06",
   "tier": "B"
  },
@@ -340,28 +208,6 @@
   "listDate": "2026-06-30",
   "tier": "C"
  },
- "5071001032": {
-  "address": "1709 CRENSHAW BLVD LOS ANGELES CA",
-  "price": 999000,
-  "type": "Land",
-  "lotSqft": 7464,
-  "lng": -118.329467,
-  "lat": 34.042909,
-  "mls": "26851097",
-  "listDate": "2026-06-25",
-  "tier": "A"
- },
- "5537024021": {
-  "address": "926 N KINGSLEY DR LOS ANGELES CA",
-  "price": 1050000,
-  "type": "Land",
-  "lotSqft": 8684,
-  "lng": -118.302601,
-  "lat": 34.086737,
-  "mls": "26857349",
-  "listDate": "2026-07-07",
-  "tier": ""
- },
  "5067009032": {
   "address": "4838 SATURN LOS ANGELES CA",
   "price": 1050000,
@@ -373,50 +219,6 @@
   "listDate": "2026-07-16",
   "tier": "A"
  },
- "5082015022": {
-  "address": "4357 VICTORIA PARK DR LOS ANGELES CA",
-  "price": 1100000,
-  "type": "Land",
-  "lotSqft": 8375,
-  "lng": -118.329932,
-  "lat": 34.046923,
-  "mls": "P1-28028PF",
-  "listDate": "2026-07-15",
-  "tier": "A"
- },
- "5501017023": {
-  "address": "182 S VIRGIL AVE LOS ANGELES CA",
-  "price": 1100000,
-  "type": "Land",
-  "lotSqft": 6950,
-  "lng": -118.286686,
-  "lat": 34.070977,
-  "mls": "26645983",
-  "listDate": "2026-02-09",
-  "tier": ""
- },
- "5501017022": {
-  "address": "186 S VIRGIL AVE LOS ANGELES CA",
-  "price": 1100000,
-  "type": "Land",
-  "lotSqft": 6951,
-  "lng": -118.286685,
-  "lat": 34.070857,
-  "mls": "26645989",
-  "listDate": "2026-02-01",
-  "tier": ""
- },
- "5092022004": {
-  "address": "933 S GRAMERCY PL LOS ANGELES CA",
-  "price": 1199000,
-  "type": "Land",
-  "lotSqft": 7511,
-  "lng": -118.31327,
-  "lat": 34.0547,
-  "mls": "25589527",
-  "listDate": "2025-09-17",
-  "tier": ""
- },
  "5072007012": {
   "address": "1437 12TH AVE LOS ANGELES CA",
   "price": 1249000,
@@ -427,17 +229,6 @@
   "mls": "26838293",
   "listDate": "2026-05-24",
   "tier": "A"
- },
- "5520008012": {
-  "address": "553 N HELIOTROPE DR LOS ANGELES CA",
-  "price": 1300000,
-  "type": "Land",
-  "lotSqft": 7999,
-  "lng": -118.295369,
-  "lat": 34.080077,
-  "mls": "26861879",
-  "listDate": "2026-07-20",
-  "tier": ""
  },
  "5516019020": {
   "address": "250 N WILTON PL LOS ANGELES CA",
@@ -472,28 +263,6 @@
   "listDate": "2026-06-10",
   "tier": ""
  },
- "5076008026": {
-  "address": "1041 ELDEN AVE LOS ANGELES CA",
-  "price": 2200000,
-  "type": "Land",
-  "lotSqft": 8700,
-  "lng": -118.287789,
-  "lat": 34.051741,
-  "mls": "26859537",
-  "listDate": "2026-07-13",
-  "tier": ""
- },
- "5537018021": {
-  "address": "1020 N ARDMORE AVE LOS ANGELES CA",
-  "price": 2299999,
-  "type": "Land",
-  "lotSqft": 8914,
-  "lng": -118.301798,
-  "lat": 34.089031,
-  "mls": "26852875",
-  "listDate": "2026-06-26",
-  "tier": ""
- },
  "5539022025": {
   "address": "627 N JUANITA AVE LOS ANGELES CA",
   "price": 2300000,
@@ -503,61 +272,6 @@
   "lat": 34.08228,
   "mls": "26664283",
   "listDate": "2026-03-31",
-  "tier": ""
- },
- "5518007013": {
-  "address": "240 S NORMANDIE AVE LOS ANGELES CA",
-  "price": 2399000,
-  "type": "Land",
-  "lotSqft": 9002,
-  "lng": -118.300298,
-  "lat": 34.070181,
-  "mls": "OC25102562MR",
-  "listDate": "2025-05-29",
-  "tier": ""
- },
- "5527036004": {
-  "address": "350 N HAYWORTH AVE LOS ANGELES CA",
-  "price": 2495000,
-  "type": "Land",
-  "lotSqft": 7526,
-  "lng": -118.362566,
-  "lat": 34.07717,
-  "mls": "SB25252593MR",
-  "listDate": "2025-11-05",
-  "tier": "A"
- },
- "5046015019": {
-  "address": "3556 CHESAPEAKE AVE LOS ANGELES CA",
-  "price": 2795000,
-  "type": "Land",
-  "lotSqft": 6407,
-  "lng": -118.345113,
-  "lat": 34.022478,
-  "mls": "26857949",
-  "listDate": "2026-07-09",
-  "tier": "A"
- },
- "4303032022": {
-  "address": "8521 HORNER ST LOS ANGELES CA",
-  "price": 2995000,
-  "type": "Land",
-  "lotSqft": 9800,
-  "lng": -118.37673,
-  "lat": 34.050058,
-  "mls": "26841573",
-  "listDate": "2026-06-01",
-  "tier": "A"
- },
- "5040028021": {
-  "address": "1146 W 35TH LOS ANGELES CA",
-  "price": 3498000,
-  "type": "Land",
-  "lotSqft": 6752,
-  "lng": -118.293232,
-  "lat": 34.024083,
-  "mls": "SB26085306MR",
-  "listDate": "2026-04-20",
   "tier": ""
  },
  "4311004028": {
@@ -582,28 +296,6 @@
   "listDate": "2026-05-11",
   "tier": ""
  },
- "4267031026": {
-  "address": "1463 - 1467 WELLESLEY AVE LOS ANGELES CA",
-  "price": 3950000,
-  "type": "Land",
-  "lotSqft": 7761,
-  "lng": -118.464874,
-  "lat": 34.039011,
-  "mls": "26841031",
-  "listDate": "2026-06-01",
-  "tier": "A"
- },
- "4324016010": {
-  "address": "11061 S OHIO AVE LOS ANGELES CA",
-  "price": 4150000,
-  "type": "Land",
-  "lotSqft": 6060,
-  "lng": -118.445916,
-  "lat": 34.050897,
-  "mls": "26842767",
-  "listDate": "2026-06-09",
-  "tier": "A"
- },
  "4254026007": {
   "address": "10713 10713-25 PALMS BLVD LOS ANGELES CA",
   "price": 4195000,
@@ -614,50 +306,6 @@
   "mls": "26711141",
   "listDate": "2026-04-06",
   "tier": "A"
- },
- "5081010009": {
-  "address": "1050 S NORTON AVE LOS ANGELES CA",
-  "price": 4200000,
-  "type": "Land",
-  "lotSqft": 9232,
-  "lng": -118.32123,
-  "lat": 34.052643,
-  "mls": "26842135",
-  "listDate": "2026-06-02",
-  "tier": "A"
- },
- "4327012013": {
-  "address": "1270 S BEVERLY GLEN BLVD LOS ANGELES CA",
-  "price": 4495000,
-  "type": "Land",
-  "lotSqft": 9221,
-  "lng": -118.427482,
-  "lat": 34.064641,
-  "mls": "26655449",
-  "listDate": "2026-02-23",
-  "tier": "A"
- },
- "5534026007": {
-  "address": "6132 ROMAINE ST LOS ANGELES CA",
-  "price": 5500000,
-  "type": "Land",
-  "lotSqft": 6510,
-  "lng": -118.325173,
-  "lat": 34.088875,
-  "mls": "SR25010832MR",
-  "listDate": "2025-04-30",
-  "tier": "A"
- },
- "5536003019": {
-  "address": "5530 LA MIRADA AVE LOS ANGELES CA",
-  "price": 6250000,
-  "type": "Land",
-  "lotSqft": 19830,
-  "lng": -118.310493,
-  "lat": 34.093711,
-  "mls": "82053579ML",
-  "listDate": "2026-07-08",
-  "tier": ""
  },
  "5503013009": {
   "address": "408 S OXFORD LOS ANGELES CA",
@@ -1836,39 +1484,6 @@
   "listDate": "2026-05-17",
   "tier": "A"
  },
- "5534015007": {
-  "address": "1239 N BEACHWOOD DR LOS ANGELES CA",
-  "price": 1490000,
-  "type": "SFR",
-  "lotSqft": 6750,
-  "lng": -118.321252,
-  "lat": 34.093289,
-  "mls": "26859013",
-  "listDate": "2026-07-12",
-  "tier": "A"
- },
- "5536013027": {
-  "address": "1120 N VAN NESS AVE LOS ANGELES CA",
-  "price": 1490000,
-  "type": "SFR",
-  "lotSqft": 7335,
-  "lng": -118.315665,
-  "lat": 34.091195,
-  "mls": "26859009",
-  "listDate": "2026-07-12",
-  "tier": ""
- },
- "5521021013": {
-  "address": "4458 MAPLEWOOD AVE LOS ANGELES CA",
-  "price": 1000000,
-  "type": "SFR",
-  "lotSqft": 6521,
-  "lng": -118.301616,
-  "lat": 34.07986,
-  "mls": "CV26109310MR",
-  "listDate": "2026-05-22",
-  "tier": ""
- },
  "4323005015": {
   "address": "1947 MIDVALE AVE LOS ANGELES CA",
   "price": 1995000,
@@ -1890,17 +1505,6 @@
   "mls": "26857099",
   "listDate": "2026-07-06",
   "tier": "A"
- },
- "5517018026": {
-  "address": "173 S KINGSLEY DR LOS ANGELES CA",
-  "price": 1639000,
-  "type": "SFR",
-  "lotSqft": 7486,
-  "lng": -118.302992,
-  "lat": 34.071883,
-  "mls": "26862875",
-  "listDate": "2026-07-21",
-  "tier": ""
  },
  "5543023024": {
   "address": "1318 N ALEXANDRIA AVE LOS ANGELES CA",
@@ -1979,17 +1583,6 @@
   "listDate": "2026-07-15",
   "tier": "A"
  },
- "5073004011": {
-  "address": "1404 1/2 S WILTON PL LOS ANGELES CA",
-  "price": 755000,
-  "type": "SFR",
-  "lotSqft": 13161,
-  "lng": -118.314407,
-  "lat": 34.046228,
-  "mls": "26861087",
-  "listDate": "2026-07-20",
-  "tier": ""
- },
  "5022026009": {
   "address": "4165 2ND LOS ANGELES CA",
   "price": 770000,
@@ -2066,17 +1659,6 @@
   "mls": "SR26160523MR",
   "listDate": "2026-07-22",
   "tier": ""
- },
- "5083006017": {
-  "address": "1185 S TREMAINE AVE LOS ANGELES CA",
-  "price": 1670000,
-  "type": "SFR",
-  "lotSqft": 8393,
-  "lng": -118.33883,
-  "lat": 34.053502,
-  "mls": "26842079",
-  "listDate": "2026-06-02",
-  "tier": "A"
  },
  "5520002028": {
   "address": "638 N ARDMORE AVE LOS ANGELES CA",
@@ -2243,17 +1825,6 @@
   "listDate": "2026-01-06",
   "tier": "A"
  },
- "5072007013": {
-  "address": "1439 12TH AVE LOS ANGELES CA",
-  "price": 1249000,
-  "type": "SFR",
-  "lotSqft": 8287,
-  "lng": -118.325419,
-  "lat": 34.045963,
-  "mls": "26840657",
-  "listDate": "2026-05-29",
-  "tier": "A"
- },
  "5035002002": {
   "address": "3854 ARLINGTON AVE LOS ANGELES CA",
   "price": 1160000,
@@ -2331,17 +1902,6 @@
   "listDate": "2026-07-14",
   "tier": "A"
  },
- "5535031010": {
-  "address": "741 N HARVARD BLVD LOS ANGELES CA",
-  "price": 1350000,
-  "type": "SFR",
-  "lotSqft": 7278,
-  "lng": -118.304007,
-  "lat": 34.084118,
-  "mls": "25596443",
-  "listDate": "2025-09-26",
-  "tier": ""
- },
  "5517016037": {
   "address": "103 N HARVARD LOS ANGELES CA",
   "price": 1650000,
@@ -2385,17 +1945,6 @@
   "mls": "26647249",
   "listDate": "2026-01-05",
   "tier": ""
- },
- "5525017015": {
-  "address": "619 N SYCAMORE AVE LOS ANGELES CA",
-  "price": 869000,
-  "type": "SFR",
-  "lotSqft": 9064,
-  "lng": -118.342839,
-  "lat": 34.082194,
-  "mls": "26866101",
-  "listDate": "2026-07-30",
-  "tier": "A"
  },
  "5082024028": {
   "address": "1215 CRENSHAW BLVD LOS ANGELES CA",
@@ -2727,17 +2276,6 @@
   "listDate": "2026-03-20",
   "tier": ""
  },
- "5072004016": {
-  "address": "1522 CRENSHAW BLVD LOS ANGELES CA",
-  "price": 1200000,
-  "type": "SFR",
-  "lotSqft": 7072,
-  "lng": -118.327905,
-  "lat": 34.045485,
-  "mls": "26833947",
-  "listDate": "2026-05-19",
-  "tier": "A"
- },
  "4251024003": {
   "address": "3467 VETERAN AVE LOS ANGELES CA",
   "price": 1795000,
@@ -2760,17 +2298,6 @@
   "listDate": "2026-06-17",
   "tier": ""
  },
- "5084017033": {
-  "address": "1106 S COCHRAN AVE LOS ANGELES CA",
-  "price": 899000,
-  "type": "SFR",
-  "lotSqft": 6898,
-  "lng": -118.34986,
-  "lat": 34.055145,
-  "mls": "26849651",
-  "listDate": "2026-06-19",
-  "tier": "A"
- },
  "5074032006": {
   "address": "2052 S HOBART BLVD LOS ANGELES CA",
   "price": 1999000,
@@ -2781,17 +2308,6 @@
   "mls": "26846891",
   "listDate": "2026-06-18",
   "tier": ""
- },
- "5550011005": {
-  "address": "1636 N SIERRA BONITA AVE LOS ANGELES CA",
-  "price": 1879000,
-  "type": "SFR",
-  "lotSqft": 6999,
-  "lng": -118.353864,
-  "lat": 34.100523,
-  "mls": "IG26160056MR",
-  "listDate": "2026-07-22",
-  "tier": "A"
  },
  "5081001021": {
   "address": "1220 CRENSHAW BLVD LOS ANGELES CA",
@@ -2879,17 +2395,6 @@
   "lat": 34.057854,
   "mls": "26646861",
   "listDate": "2026-02-03",
-  "tier": "A"
- },
- "5534015006": {
-  "address": "1243 N BEACHWOOD DR LOS ANGELES CA",
-  "price": 1490000,
-  "type": "SFR",
-  "lotSqft": 6750,
-  "lng": -118.321252,
-  "lat": 34.093358,
-  "mls": "26859011",
-  "listDate": "2026-07-12",
   "tier": "A"
  },
  "5069003015": {
