@@ -199,6 +199,19 @@ html, body {
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
+/* On Market toggle: the For Sale orange, same behavior as pill-primary. */
+.pill-onmarket {
+  background: #d97706;
+  border-color: #d97706;
+  color: #fff;
+}
+.pill-onmarket:hover { background: #c2690a; border-color: #c2690a; }
+.pill-onmarket.active {
+  background: #9a3412;
+  border-color: #9a3412;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
 .pill-ghost { color: var(--muted); border-style: dashed; }
 
 /* dropdowns */
@@ -428,6 +441,7 @@ html, body {
 }
 .badge-appr { background: #10b981; color: #fff; }
 .badge-sub { background: #facc15; color: #5b4a00; }
+.badge-om { background: #d97706; color: #fff; }
 
 .site-meta { font-size: 0.76rem; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
 
@@ -489,6 +503,7 @@ html, body {
 .lg-sfr { background: rgba(59, 130, 246, 0.5); border: 1px solid #1d4ed8; }
 .lg-proj-appr { background: rgba(16, 185, 129, 0.75); border: 1px solid #047857; }
 .lg-proj-pend { background: rgba(250, 204, 21, 0.8); border: 1px solid #ca8a04; }
+.lg-onmarket { background: rgba(217, 119, 6, 0.8); border: 1px solid #b45309; border-radius: 50%; width: 10px; }
 .lg-other { background: #e4e8ec; border: 1px solid #c3cbd3; }
 
 .lg-line { width: 14px; height: 3px; border-radius: 2px; }

@@ -28,7 +28,7 @@ function hasUserFilters(s) {
   return Object.values(s.ranges).some(([a, b]) => a !== null || b !== null)
     || s.zoneClasses.length > 0 || s.zoneFamilies.size > 0
     || s.tiers.size > 0 || s.imp !== "any" || s.dealStatus !== "any"
-    || (s.areas && s.areas.length > 0);
+    || s.om || (s.areas && s.areas.length > 0);
 }
 
 const TIER_NAMES = { A: "Westside", B: "South Valley", C: "Central/North Valley" };
@@ -275,6 +275,7 @@ function baseStyle() {
   // tileset: low-zoom tiles drop most centroids to stay under the tile
   // budget, so specific project parcels would vanish from the dot view.
   sources["sb-projects"] = { type: "geojson", data: projectsGeojson() };
+  sources["om-listings"] = { type: "geojson", data: listingsGeojson() };
   return {
     version: 8,
     sources,
@@ -306,6 +307,19 @@ function baseStyle() {
           "circle-stroke-width": 1,
         },
       },
+      {
+        // On-market listing markers (data/listings.json). Hidden until the
+        // On Market filter is active; drawn at every zoom so deals never
+        // vanish from the dot view. Orange = the For Sale accent.
+        id: "om-markers", type: "circle", source: "om-listings",
+        filter: ["==", ["get", "ain"], "___none___"],
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 5, 13, 8],
+          "circle-color": "#d97706",
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 1.5,
+        },
+      },
     ],
   };
 }
@@ -321,6 +335,31 @@ function projectsGeojson() {
         properties: { ain, status: pr.status },
       })),
   };
+}
+
+function listingsGeojson() {
+  return {
+    type: "FeatureCollection",
+    features: Object.entries(omListings)
+      .filter(([, l]) => l.lng != null)
+      .map(([ain, l]) => ({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [l.lng, l.lat] },
+        properties: { ain, type: l.type || "" },
+      })),
+  };
+}
+
+// Listings whose land $/SF passes the current range. A listing without a
+// computable ppsf (no lot sf) passes only an unbounded range — it can't be
+// price-screened, but shouldn't disappear from a plain On Market view.
+function omAinsFor() {
+  const [min, max] = state.omRange;
+  return Object.keys(omListings).filter((ain) => {
+    const ppsf = omListings[ain].ppsf;
+    if (ppsf == null) return min === null && max === null;
+    return (min === null || ppsf >= min) && (max === null || ppsf <= max);
+  });
 }
 
 const FILTERED_LAYERS = [...lids("parcels-fill"), ...lids("parcels-line")];
@@ -369,18 +408,26 @@ function applyFilters() {
       else if (state.dealStatus === "submitted" && pr.status !== "approved") statusAins.push(ain);
     }
   }
-  const f = buildFilter(state, CONFIG, statusAins);
+  const omAins = state.om ? omAinsFor() : [];
+  const f = buildFilter(state, CONFIG, statusAins, omAins);
   for (const id of FILTERED_LAYERS) map.setFilter(id, f);
   const selBase = ["==", ["get", "ain"], selectedAin ?? "___none___"];
   for (const id of lids("parcels-selected")) {
     map.setFilter(id, f ? ["all", f, selBase] : selBase);
   }
-  const cf = buildCentroidFilter(state, CONFIG, statusAins);
+  const cf = buildCentroidFilter(state, CONFIG, statusAins, omAins);
   for (const id of lids("centroids")) map.setFilter(id, cf);
+
+  if (map.getLayer("om-markers")) {
+    map.setFilter("om-markers", state.om
+      ? ["in", ["get", "ain"], ["literal", omAins]]
+      : ["==", ["get", "ain"], "___none___"]);
+  }
 
   applyStatusOutlines();
   applyProjectScope();
   document.getElementById("list-title").textContent =
+    state.om ? "On-market deals" :
     state.sbPreset ? "Candidates in view" : "Matches in view";
   scheduleCount();
 }
@@ -405,6 +452,17 @@ function applyProjectScope() {
       map.setFilter(id, ["in", ["get", "ain"], ["literal", ains]]);
     }
   }
+}
+
+// Turning On Market on brings every passing listing into view.
+function zoomToOmResults() {
+  const pts = omAinsFor()
+    .map((ain) => omListings[ain])
+    .filter((l) => l.lng != null);
+  if (!pts.length) return;
+  const b = new maplibregl.LngLatBounds();
+  for (const l of pts) b.extend([l.lng, l.lat]);
+  map.fitBounds(b, { padding: 80, maxZoom: 14 });
 }
 
 // Picking Submitted/Approved brings the matching planning cases into view —
@@ -472,6 +530,24 @@ function updateCount() {
   // The list is always the current matches (rendered features pass the
   // universe + filters). With the SB preset on, matches ARE the candidates.
   let listSource = inView;
+  // On Market lists ALL passing deals citywide — like status searches, the
+  // listings are scattered and a viewport-only list would look empty. Other
+  // active filters (lot size, tier, SB preset…) still apply via the parcel
+  // record when it's rendered; the citywide rows are the deal inventory.
+  if (state.om) {
+    let omFeats = omAinsFor().map((ain) => {
+      const l = omListings[ain];
+      const rendered = byAin.get(ain);
+      return rendered || {
+        properties: { ain, a: l.address || "", lsf: l.lotSqft ?? null,
+          w: null, t: l.tier || "", e: 0, v: null },
+        geometry: l.lng != null
+          ? { type: "Point", coordinates: [l.lng, l.lat] } : null,
+      };
+    });
+    if (boxes.length) omFeats = omFeats.filter((f) => f.geometry && inBoxes(f));
+    listSource = omFeats;
+  }
   // A planning-status search lists ALL matching cases citywide, not just the
   // viewport — the projects are scattered and the panel would look empty.
   if (state.dealStatus === "approved" || state.dealStatus === "submitted") {
@@ -513,7 +589,14 @@ function renderList(candidates, detailed) {
   const empty = document.getElementById("empty-sites");
   const MAX = 80;
 
-  candidates.sort((a, b) => (b.properties.lsf || 0) - (a.properties.lsf || 0));
+  // On Market reads as a price sheet: cheapest land $/SF first.
+  if (state.om) {
+    candidates.sort((a, b) =>
+      (omListings[a.properties.ain]?.ppsf ?? Infinity)
+      - (omListings[b.properties.ain]?.ppsf ?? Infinity));
+  } else {
+    candidates.sort((a, b) => (b.properties.lsf || 0) - (a.properties.lsf || 0));
+  }
   const shown = candidates.slice(0, MAX);
 
   document.getElementById("list-count").textContent =
@@ -522,11 +605,16 @@ function renderList(candidates, detailed) {
   list.innerHTML = "";
   empty.style.display = shown.length ? "none" : "block";
   if (!shown.length) {
-    empty.innerHTML = demoMode
-      ? `Demo mode: the synthetic dataset covers only a small Venice-area test
-         grid (all Tier A) — real LA parcels aren't loaded yet.
-         <button id="goto-demo">Go to demo area</button>`
-      : "No qualifying parcels in view. Zoom or pan the map, or relax filters.";
+    empty.innerHTML = state.om && !Object.keys(omListings).length
+      ? `No on-market deals loaded yet. Deals live in
+         <code>data/listings.json</code> — add them and reload.`
+      : state.om
+        ? "No on-market deals match the $/SF range. Widen or clear it."
+        : demoMode
+          ? `Demo mode: the synthetic dataset covers only a small Venice-area test
+             grid (all Tier A) — real LA parcels aren't loaded yet.
+             <button id="goto-demo">Go to demo area</button>`
+          : "No qualifying parcels in view. Zoom or pan the map, or relax filters.";
   }
 
   for (const f of shown) {
@@ -537,8 +625,9 @@ function renderList(candidates, detailed) {
     const dot = document.createElement("span");
     dot.className = "site-dot";
     const proj = sbProjects[p.ain];
-    dot.style.background = proj
-      ? (proj.status === "approved" ? "#10b981" : "#facc15")
+    const listing = state.om ? omListings[p.ain] : null;
+    dot.style.background = listing ? "#d97706"
+      : proj ? (proj.status === "approved" ? "#10b981" : "#facc15")
       : COLORS.sfr;
 
     const info = document.createElement("div");
@@ -559,7 +648,13 @@ function renderList(candidates, detailed) {
     // (+ proposed homes for SB cases) on the right. The rest lives in the
     // detail panel.
     info.appendChild(name);
-    if (p.v != null) {
+    if (listing) {
+      const meta = document.createElement("div");
+      meta.className = "site-meta";
+      meta.textContent = [listing.type, p.lsf != null ? fmt(p.lsf) + " sf lot" : ""]
+        .filter(Boolean).join(" · ");
+      info.appendChild(meta);
+    } else if (p.v != null) {
       const meta = document.createElement("div");
       meta.className = "site-meta";
       meta.textContent = p.v === 1 ? "Vacant Lot" : "Single Family";
@@ -569,8 +664,18 @@ function renderList(candidates, detailed) {
     const tier = document.createElement("span");
     tier.className = "site-right";
     const lotB = document.createElement("b");
-    lotB.textContent = p.lsf != null ? fmt(p.lsf) + " sf" : "";
-    tier.appendChild(lotB);
+    if (listing) {
+      lotB.textContent = "$" + fmt(listing.price);
+      tier.appendChild(lotB);
+      if (listing.ppsf != null) {
+        const psf = document.createElement("span");
+        psf.textContent = "$" + fmt(listing.ppsf) + "/sf land";
+        tier.appendChild(psf);
+      }
+    } else {
+      lotB.textContent = p.lsf != null ? fmt(p.lsf) + " sf" : "";
+      tier.appendChild(lotB);
+    }
     if (proj && proj.units) {
       const homes = document.createElement("span");
       homes.textContent = proj.units + " homes";
@@ -639,6 +744,7 @@ function detailHtml(p, lngLat) {
       ${kvRow("Improvements", "$" + fmt(p.iv))}
       ${p.ls ? kvRow("Last sale", p.ls) : ""}
     </section>
+    ${listingSectionHtml(p)}
     ${projectSectionHtml(p)}
     <section class="dp-section">
       <h4>Owner information</h4>
@@ -657,6 +763,24 @@ function detailHtml(p, lngLat) {
       ${(!p.co || p.co === "LA") ? `<a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>` : ""}
       ${lat ? `<a href="${CONFIG.STREETVIEW_URL(lat, lng)}" target="_blank" rel="noopener">Street View ↗</a>` : ""}
     </div>`;
+}
+
+// Live listing details (any parcel in data/listings.json shows these,
+// whether or not the On Market filter is active).
+function listingSectionHtml(p) {
+  const l = omListings[p.ain];
+  if (!l) return "";
+  return `
+    <section class="dp-section">
+      <h4>On market <span class="badge badge-om">For Sale</span></h4>
+      ${kvRow("List price", "$" + fmt(l.price))}
+      ${l.ppsf != null ? kvRow("$/SF land", "$" + fmt(l.ppsf)) : ""}
+      ${l.type ? kvRow("Type", l.type) : ""}
+      ${l.listDate ? kvRow("Listed", l.listDate) : ""}
+      ${l.broker ? kvRow("Brokerage", l.broker) : ""}
+      ${l.url ? `<div class="dp-links" style="padding:8px 0 0">
+        <a href="${l.url}" target="_blank" rel="noopener">View listing ↗</a></div>` : ""}
+    </section>`;
 }
 
 function projectSectionHtml(p) {
@@ -790,6 +914,13 @@ function syncControlsFromState() {
   document.getElementById("sb1123-btn").classList.toggle("active", !!state.sbPreset);
   document.getElementById("sb1123-explainer").classList.toggle("hidden", !state.sbPreset);
 
+  const setValOm = (id, v) => { document.getElementById(id).value = v === null ? "" : v; };
+  setValOm("ppsf-min", state.omRange[0]);
+  setValOm("ppsf-max", state.omRange[1]);
+  setPillVal("pv-ppsf", rangeSummary(state.omRange));
+  document.getElementById("onmarket-btn").classList.toggle("active", !!state.om);
+  document.getElementById("ppsf-dd").classList.toggle("hidden", !state.om);
+
   renderAreaChips();
 }
 
@@ -851,8 +982,9 @@ function bindControls() {
     rb.addEventListener("change", () => {
       if (rb.checked) state.dealStatus = rb.value;
       // A status search shows pipeline parcels, which are rarely SB-vacant
-      // candidates — the preset would contradict it.
-      if (state.dealStatus !== "any") state.sbPreset = false;
+      // candidates — the preset would contradict it. Same for On Market
+      // (both pin to disjoint AIN lists).
+      if (state.dealStatus !== "any") { state.sbPreset = false; state.om = false; }
       syncControlsFromState();
       applyFilters();
       zoomToStatusResults();
@@ -871,12 +1003,39 @@ function bindControls() {
   });
 
   document.getElementById("sb1123-btn").addEventListener("click", () => {
-    const areas = state.areas;   // search scope survives preset toggling
+    // Search scope AND On Market survive preset toggling — narrowing the
+    // live deals to SB candidates is the whole point of combining them.
+    const { areas, om, omRange } = state;
     state = state.sbPreset ? emptyState() : sb1123State(CONFIG);
     state.areas = areas;
+    state.om = om;
+    state.omRange = omRange;
     syncControlsFromState();
     applyFilters();
   });
+
+  document.getElementById("onmarket-btn").addEventListener("click", () => {
+    state.om = !state.om;
+    // A status search and On Market both pin the map to their own AIN lists —
+    // ANDing them is almost always empty, so they're mutually exclusive.
+    if (state.om) state.dealStatus = "any";
+    syncControlsFromState();
+    applyFilters();
+    if (state.om) zoomToOmResults();
+  });
+
+  const onPpsfChange = () => {
+    const parse = (id) => {
+      const v = document.getElementById(id).value.trim();
+      return v === "" ? null : Number(v);
+    };
+    state.omRange = [parse("ppsf-min"), parse("ppsf-max")];
+    syncControlsFromState();
+    applyFilters();
+  };
+  for (const id of ["ppsf-min", "ppsf-max"]) {
+    document.getElementById(id).addEventListener("change", onPpsfChange);
+  }
 
   document.getElementById("reset-btn").addEventListener("click", () => {
     // Clear resets filters; selected search areas keep their own × chips.
@@ -1031,15 +1190,18 @@ const LandMap = {
   exportCsv() {
     const header = ["address", "apn", "tier", "zone_class", "zoning", "lot_sqft",
       "width_ft", "units", "use_code", "improvement_value", "vacant",
-      "sb1123_candidate", "status", "assessor_url"];
+      "sb1123_candidate", "status", "list_price", "list_ppsf_land",
+      "listing_url", "assessor_url"];
     const esc = (v) => {
       const s = String(v ?? "");
       return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     };
     const rows = lastCandidates.map((f) => {
       const p = f.properties;
+      const l = omListings[p.ain] || {};
       return [fmtAddr(p.a), p.ain, p.t, p.zc, p.z, p.lsf, p.w, p.u, p.uc, p.iv,
         p.v, p.e, STATUS_LABELS[dealStatuses[p.ain]] || "",
+        l.price ?? "", l.ppsf ?? "", l.url ?? "",
         assessorUrl(p)].map(esc).join(",");
     });
     return [header.join(","), ...rows].join("\n");
@@ -1119,12 +1281,13 @@ async function fetchMergedStyle(styleUrl, fallback) {
   const base = await resp.json();
   base.sources = { ...base.sources };
   for (const [k, v] of Object.entries(fallback.sources)) {
-    if (k === "satellite" || k === "sb-projects" || k.startsWith("parcels")) {
+    if (k === "satellite" || k === "sb-projects" || k === "om-listings"
+      || k.startsWith("parcels")) {
       base.sources[k] = v;
     }
   }
   const overlayIds = new Set([
-    "basemap-satellite", "projects-markers",
+    "basemap-satellite", "projects-markers", "om-markers",
     ...["centroids", "parcels-fill", "parcels-line", "parcels-projects",
       "parcels-status", "parcels-selected"].flatMap(lids),
   ]);
@@ -1200,6 +1363,21 @@ async function loadProjects() {
   } catch (e) { /* optional dataset */ }
 }
 
+// On-market SFR/Land deals, keyed by AIN (data/listings.json, team-curated).
+// $/SF of land is precomputed once here; a missing lot size leaves it null.
+let omListings = {};
+
+async function loadListings() {
+  try {
+    const resp = await fetch("data/listings.json");
+    if (!resp.ok) return;
+    omListings = await resp.json();
+    for (const l of Object.values(omListings)) {
+      l.ppsf = l.price > 0 && l.lotSqft > 0 ? Math.round(l.price / l.lotSqft) : null;
+    }
+  } catch (e) { /* optional dataset */ }
+}
+
 function applyProjectLayers() {
   const ains = Object.keys(sbProjects);
   if (!ains.length || !map.getLayer("parcels-projects")) return;
@@ -1217,7 +1395,7 @@ function applyProjectLayers() {
 async function boot() {
   initBrandLogo();
   await loadRemoteConfig();
-  await loadProjects();
+  await Promise.all([loadProjects(), loadListings()]);
   const synthetic = await isSynthetic();
   demoMode = synthetic;
   if (synthetic) {
@@ -1277,6 +1455,15 @@ async function boot() {
     map.easeTo({ center: e.lngLat, zoom: 15 });
     showDetail({ ain, a: pr.address || "", lsf: pr.lotSqft, t: pr.tier || "" }, e.lngLat);
   });
+  // Listing markers open the deal even from the low-zoom dot view.
+  map.on("click", "om-markers", (e) => {
+    const ain = e.features[0].properties.ain;
+    const l = omListings[ain] || {};
+    map.easeTo({ center: e.lngLat, zoom: 15 });
+    showDetail({ ain, a: l.address || "", lsf: l.lotSqft, t: l.tier || "" }, e.lngLat);
+  });
+  map.on("mouseenter", "om-markers", () => { map.getCanvas().style.cursor = "pointer"; });
+  map.on("mouseleave", "om-markers", () => { map.getCanvas().style.cursor = ""; });
 
   map.on("idle", scheduleCount);
   map.on("moveend", scheduleCount);

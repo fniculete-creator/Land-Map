@@ -73,6 +73,15 @@ code needed.
   improvement value, and links to the **Assessor portal** (ownership — CA law
   keeps owner names out of bulk open data, so it's one click away per parcel)
   and **ZIMAS**.
+- **On Market** — orange toggle showing only SFR/land deals currently listed
+  for sale (team-curated `data/listings.json`, keyed by AIN). Activating it
+  reveals a **$/SF Land** range filter — list price ÷ lot SF — and the side
+  panel becomes a citywide price sheet sorted cheapest land first. Combine
+  with the SB 1123 button to see which listed deals qualify for subdivision.
+  Listing parcels get orange markers at every zoom; their detail panels show
+  price, $/SF, and a link to the listing. Format: see
+  `data/listings.sample.json` (`price` + `lotSqft` drive the $/SF math;
+  `lng`/`lat` place the marker; `url`, `listDate`, `broker`, `tier` optional).
 - **Share a search** — filter state lives in the URL hash; copy the link.
 - **Satellite toggle** — top-right button.
 

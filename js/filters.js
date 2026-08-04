@@ -7,6 +7,9 @@
 //   imp: "any" | "vacant" | "sfr"                    (improvements on the lot)
 //   dealStatus: "any" | "submitted" | "approved" | "completed" | "forsale"
 //     (team-assigned statuses; the matching AIN list is passed to buildFilter)
+//   om: true = On Market mode — only parcels with a live listing
+//     (data/listings.json; the matching AIN list is passed to buildFilter)
+//   omRange: [min,max|null] $/SF of land (list price ÷ lot sf)
 export function emptyState() {
   return {
     ranges: { w: [null, null], lsf: [null, null] },
@@ -15,6 +18,8 @@ export function emptyState() {
     tiers: new Set(),
     imp: "any",
     dealStatus: "any",
+    om: false,
+    omRange: [null, null],
     areas: [],   // selected search areas (NEIGHBORHOODS names) — chips
   };
 }
@@ -57,11 +62,14 @@ export const UNIVERSE_CLAUSE = ["all",
   EXCLUSIONS_CLAUSE,
 ];
 
-export function buildFilter(state, cfg, statusAins) {
+export function buildFilter(state, cfg, statusAins, omAins) {
   // A status search is a pipeline view: it must surface those parcels even
   // when they fall outside the SFR+vacant universe (e.g. an approved project
-  // already under construction), so the universe clause is dropped.
-  const clauses = state.dealStatus === "any" ? ["all", UNIVERSE_CLAUSE] : ["all"];
+  // already under construction), so the universe clause is dropped. On Market
+  // drops it too — a listed deal in a fire zone must stay visible (its
+  // badges explain the exclusion) rather than silently vanish.
+  const clauses = state.dealStatus === "any" && !state.om
+    ? ["all", UNIVERSE_CLAUSE] : ["all"];
 
   for (const [key, [min, max]] of Object.entries(state.ranges)) {
     if (min !== null) clauses.push([">=", ["get", key], min]);
@@ -86,6 +94,12 @@ export function buildFilter(state, cfg, statusAins) {
     clauses.push(["in", ["get", "ain"], ["literal", statusAins || []]]);
   }
 
+  // On Market: only parcels with a listing whose $/SF passes the range
+  // (the AIN list arrives pre-filtered by ppsf — tiles carry no prices).
+  if (state.om) {
+    clauses.push(["in", ["get", "ain"], ["literal", omAins || []]]);
+  }
+
   if (state.sbPreset && state.dealStatus === "any") {
     clauses.push(["==", ["get", "e"], 1]);
   }
@@ -107,8 +121,8 @@ export function areaBoxes(state, cfg) {
 // chips apply here via "within" (points only — the style spec doesn't
 // support "within" for polygon features; the polygon-view list is scoped
 // in JS instead).
-export function buildCentroidFilter(state, cfg, statusAins) {
-  const clauses = buildFilter(state, cfg, statusAins);
+export function buildCentroidFilter(state, cfg, statusAins, omAins) {
+  const clauses = buildFilter(state, cfg, statusAins, omAins);
   const boxes = areaBoxes(state, cfg);
   if (boxes.length) {
     clauses.push(["within", {
@@ -130,6 +144,11 @@ export function stateToHash(state) {
   if (state.tiers.size) p.set("t", [...state.tiers].join(","));
   if (state.imp !== "any") p.set("imp", state.imp);
   if (state.dealStatus !== "any") p.set("ds", state.dealStatus);
+  if (state.om) {
+    p.set("om", "1");
+    const [min, max] = state.omRange;
+    if (min !== null || max !== null) p.set("ppsf", `${min ?? ""}..${max ?? ""}`);
+  }
   if (state.sbPreset) p.set("sb", "1");
   if (state.areas && state.areas.length) p.set("a", state.areas.join("|"));
   const s = p.toString();
@@ -153,6 +172,14 @@ export function stateFromHash(hash) {
   if (["vacant", "sfr"].includes(p.get("imp"))) state.imp = p.get("imp");
   if (["submitted", "approved", "completed", "forsale"].includes(p.get("ds"))) {
     state.dealStatus = p.get("ds");
+  }
+  if (p.get("om") === "1") {
+    state.om = true;
+    const v = p.get("ppsf");
+    if (v && v.includes("..")) {
+      const [a, b] = v.split("..");
+      state.omRange = [a === "" ? null : +a, b === "" ? null : +b];
+    }
   }
   if (p.get("sb") === "1") state.sbPreset = true;
   if (p.get("a")) state.areas = p.get("a").split("|").filter(Boolean);

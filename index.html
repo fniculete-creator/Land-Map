@@ -41,6 +41,25 @@
         SB 1123
       </button>
 
+      <button id="onmarket-btn" class="pill pill-onmarket"
+              title="Only SFR &amp; land deals currently listed for sale (team-curated)">
+        On Market
+      </button>
+
+      <div class="dropdown hidden" data-dd="ppsf" id="ppsf-dd">
+        <button class="pill" data-dd-btn>$/SF Land <span class="pill-val" id="pv-ppsf"></span> <span class="caret">▾</span></button>
+        <div class="dd-panel">
+          <label>Price per SF of land ($)</label>
+          <div class="range-row">
+            <input type="number" id="ppsf-min" placeholder="min" min="0" />
+            <span>–</span>
+            <input type="number" id="ppsf-max" placeholder="max" min="0" />
+          </div>
+          <p class="dd-hint">List price ÷ lot SF. Combine with SB&nbsp;1123 to
+          see which listed deals qualify.</p>
+        </div>
+      </div>
+
       <div class="dropdown" data-dd="tier">
         <button class="pill" data-dd-btn>Tier <span class="pill-val" id="pv-tier"></span> <span class="caret">▾</span></button>
         <div class="dd-panel">
@@ -164,6 +183,7 @@
           <div class="lg-row"><span class="lg-swatch lg-sfr"></span>SFR &amp; Vacant Lots</div>
           <div class="lg-row"><span class="lg-swatch lg-proj-appr"></span>Approved</div>
           <div class="lg-row"><span class="lg-swatch lg-proj-pend"></span>Submitted</div>
+          <div class="lg-row"><span class="lg-swatch lg-onmarket"></span>On Market</div>
           <div class="lg-row"><span class="lg-swatch lg-other"></span>Other Parcels</div>
         </div>
       </main>
