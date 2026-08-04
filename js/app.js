@@ -345,7 +345,7 @@ function projInScope(pr) {
     state.dealStatus === "approved" ? pr.status === "approved"
       : state.dealStatus === "submitted" ? pr.status !== "approved" : true;
   const tierOk = state.tiers.size === 0 || state.tiers.has(pr.tier || "");
-  return statusOk && tierOk;
+  return statusOk && tierOk && inSelectedAreas(pr.lng, pr.lat);
 }
 
 function listingsGeojson() {
@@ -361,15 +361,26 @@ function listingsGeojson() {
   };
 }
 
-// Listings whose land $/SF passes the current range. A listing without a
-// computable ppsf (no lot sf) passes only an unbounded range — it can't be
-// price-screened, but shouldn't disappear from a plain On Market view.
+// Is a lng/lat inside the selected search areas (no areas = everywhere)?
+function inSelectedAreas(lng, lat) {
+  const boxes = areaBoxes(state, CONFIG);
+  if (!boxes.length) return true;
+  if (lng == null) return false;
+  return boxes.some(([w, s, e, n]) => lng >= w && lng <= e && lat >= s && lat <= n);
+}
+
+// Listings whose land $/SF passes the current range AND sit inside the
+// selected search areas. A listing without a computable ppsf (no lot sf)
+// passes only an unbounded range — it can't be price-screened, but
+// shouldn't disappear from a plain On Market view.
 function omAinsFor() {
   const [min, max] = state.omRange;
   return Object.keys(omListings).filter((ain) => {
-    const ppsf = omListings[ain].ppsf;
-    if (ppsf == null) return min === null && max === null;
-    return (min === null || ppsf >= min) && (max === null || ppsf <= max);
+    const l = omListings[ain];
+    const okPrice = l.ppsf == null
+      ? min === null && max === null
+      : (min === null || l.ppsf >= min) && (max === null || l.ppsf <= max);
+    return okPrice && inSelectedAreas(l.lng, l.lat);
   });
 }
 
