@@ -612,22 +612,26 @@ function updateCount() {
   // The list is always the current matches (rendered features pass the
   // universe + filters). With the SB preset on, matches ARE the candidates.
   let listSource = inView;
-  // On Market lists ALL passing deals citywide — like status searches, the
-  // listings are scattered and a viewport-only list would look empty. Other
-  // active filters (lot size, tier, SB preset…) still apply via the parcel
-  // record when it's rendered; the citywide rows are the deal inventory.
+  // On Market lists the passing deals in the CURRENT VIEW — with 400+ deals
+  // across three counties, a dataset-wide sheet buries what the user is
+  // looking at (Ventura rows while panning the Valley). Pan or zoom out to
+  // see more; the activation zoom starts fitted to everything.
   if (state.om) {
-    let omFeats = omAinsFor().map((ain) => {
-      const l = omListings[ain];
-      const rendered = byAin.get(ain);
-      return rendered || {
-        properties: { ain, a: l.address || "", lsf: l.lotSqft ?? null,
-          w: null, t: l.tier || "", e: 0, v: null },
-        geometry: l.lng != null
-          ? { type: "Point", coordinates: [l.lng, l.lat] } : null,
-      };
-    });
-    if (boxes.length) omFeats = omFeats.filter((f) => f.geometry && inBoxes(f));
+    const vb = map.getBounds();
+    let omFeats = omAinsFor()
+      .filter((ain) => {
+        const l = omListings[ain];
+        return l.lng != null && vb.contains([l.lng, l.lat]);
+      })
+      .map((ain) => {
+        const l = omListings[ain];
+        return byAin.get(ain) || {
+          properties: { ain, a: l.address || "", lsf: l.lotSqft ?? null,
+            w: null, t: l.tier || "", e: 0, v: null },
+          geometry: { type: "Point", coordinates: [l.lng, l.lat] },
+        };
+      });
+    if (boxes.length) omFeats = omFeats.filter(inBoxes);
     listSource = omFeats;
   }
   // A planning-status search lists ALL matching cases citywide, not just the
