@@ -502,7 +502,7 @@
  },
  "7347008004": {
   "case": "AA-2026-812-SH",
-  "status": "submitted",
+  "status": "closed",
   "rawStatus": "Administrative Closure",
   "bill": "SB 684",
   "filed": "2026-02-19",
@@ -939,6 +939,28 @@
   "lat": 34.25096,
   "lotSqft": 12851,
   "tier": "C",
+  "vacant": 1
+ },
+ "2157002126": {
+  "case": "VTT-85344-SH-HCA",
+  "status": "submitted",
+  "rawStatus": "Pending (On Hold)",
+  "bill": "SB 1123",
+  "filed": "2026-06-12",
+  "decided": null,
+  "address": "18367 W Hatteras St",
+  "zoning": "(T)(Q)RD1.5-1",
+  "units": 10,
+  "owner": "David Haghnazarzadeh",
+  "entity": "n/a",
+  "rep": "Ben Ansari",
+  "repCompany": "Complete Package Drafting",
+  "phone": "",
+  "desc": "Subdivide vacant lot into ten lots for ten SFDs. Filed 06/12/2026, assigned 07/20/2026 (Laura Frazin Steele), on hold. Owner lives on the same street (18210 Hatteras); lot bought 2012 for $60K under Tracht Gut LLC.",
+  "lng": -118.533146,
+  "lat": 34.178141,
+  "lotSqft": 21820,
+  "tier": "B",
   "vacant": 1
  }
 }
