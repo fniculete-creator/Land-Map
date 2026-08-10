@@ -9,7 +9,7 @@ RAW_DIR = os.path.join(DATA_DIR, "raw")
 ENRICHED_DIR = os.path.join(DATA_DIR, "enriched")
 TILES_DIR = os.path.join(DATA_DIR, "tiles")
 
-OVERLAY_SOURCES = ["city_boundary", "zoning", "hillside", "coastal", "vhfhsz"]
+OVERLAY_SOURCES = ["city_boundary", "zoning", "hillside", "coastal", "vhfhsz", "vhfhsz_sra"]
 
 
 def load_sources():

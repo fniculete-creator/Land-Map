@@ -114,10 +114,15 @@ class Overlay:
     """STRtree of overlay polygons for point-in-polygon lookups."""
 
     def __init__(self, path, keep_props=None):
+        # Fire severity spans two CAL FIRE layers (LRA 2025 + SRA 2024), so a
+        # single overlay may merge several source files.
+        paths = path if isinstance(path, (list, tuple)) else [path]
         self.geoms = []
         self.props = []
-        if os.path.exists(path):
-            for feat in read_ndjson(path):
+        for p in paths:
+            if not os.path.exists(p):
+                continue
+            for feat in read_ndjson(p):
                 gj = feat.get("geometry")
                 if not gj:
                     continue  # services occasionally emit null geometries
@@ -193,7 +198,7 @@ def main():
     zoning = Overlay(raw_path("zoning"))
     hillside = Overlay(raw_path("hillside"))
     coastal = Overlay(raw_path("coastal"))
-    fire = Overlay(raw_path("vhfhsz"))
+    fire = Overlay([raw_path("vhfhsz"), raw_path("vhfhsz_sra")])
     print(f"  boundary={len(boundary.geoms)} zoning={len(zoning.geoms)} hillside={len(hillside.geoms)} "
           f"coastal={len(coastal.geoms)} fire={len(fire.geoms)}")
 
