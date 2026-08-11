@@ -144,9 +144,9 @@
     "improvement_land_ratio_max": 0.05
   },
   "sb1123": {
-    "_comment": "Thresholds in sqft. SF: 1.5 ac (SB 1123 vacant single-family lots). MF: 5 ac (SB 684 multifamily-zoned lots). Fire: High(1) and Very High(2) both disqualify.",
+    "_comment": "Thresholds in sqft. Flat 1.5 ac cap for BOTH zone families per Filip 2026-08-10 (tied double-lot assemblages are curated manual exceptions, never auto-flagged). Fire: High(1) and Very High(2) both disqualify.",
     "sf_max_lot_sqft": 65340,
-    "mf_max_lot_sqft": 217800
+    "mf_max_lot_sqft": 65340
   },
   "subsets": {
     "_comment": "A subset is one bbox [minLon,minLat,maxLon,maxLat] or a list of bboxes (downloaded sequentially; 02_enrich dedupes parcels by AIN where boxes overlap).",

@@ -57,8 +57,14 @@ const EXCLUSIONS_CLAUSE = ["all",
 // The working universe: SFR homes + vacant lots, minus the hard exclusions.
 // Everything the team hunts starts from this set; filters narrow it. Other
 // parcels (commercial, condos, apartments…) render only as faint context.
+// Lots over 1.5 ac (the SB 1123 cap) are out per Filip (2026-08-10) — a tied
+// double-lot assemblage is a curated exception, tracked via the Status
+// overlay (which bypasses this clause), never auto-matched. The cap also
+// drops park/conservancy mega-parcels whose tile records predate the fire
+// attributes and would otherwise read as giant vacant lots.
 export const UNIVERSE_CLAUSE = ["all",
   ["any", SFR_CLAUSE, ["==", ["get", "v"], 1]],
+  ["<=", ["get", "lsf"], 65340],
   EXCLUSIONS_CLAUSE,
 ];
 

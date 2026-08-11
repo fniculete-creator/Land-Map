@@ -108,7 +108,9 @@ COUNTY_BY_CITY = {
 COUNTY_BY_CITY["VC"].discard("CARPINTERIA")  # Carpinteria is Santa Barbara county
 
 SF_MAX_LOT_SQFT = 65340            # 1.5 acres, SB 1123 single-family
-MF_MAX_LOT_SQFT = 217800           # 5 acres, SB 684 multifamily
+# Filip 2026-08-10: flat 1.5 ac cap regardless of zone family. A tied
+# double-lot assemblage is a curated manual exception, not auto-imported.
+MF_MAX_LOT_SQFT = 65340
 SHARED_PARCEL_MULTIPLE = 3.0       # parcel this much larger than the MLS lot = condo trap
 SUSPECT_SFR_PPSF = 20              # SFR under $20/SF of land = likely mobile home
 NEAREST_SEARCH_M = 120             # candidate radius, only to name the nearest parcel

@@ -5,14 +5,16 @@ export const CONFIG = {
   // per-file limits. Each chunk loads as its own tile source; the map treats
   // them as one seamless dataset. First entry doubles as the demo-detection
   // archive.
+  // The ?v= tag busts browser caches when tile CONTENT changes under the same
+  // filename — bump it on every tileset rewrite (fhsz2025 = 2025 fire-map rebuild).
   PMTILES_URLS: [
-    "data/real/land-tiles-west.pmtiles",        // Valley + Westside (original region)
-    "data/real/land-tiles-eastbasin-n.pmtiles", // Silver Lake, Hollywood, Glendale, Pasadena
-    "data/real/land-tiles-eastbasin-s.pmtiles", // DTLA, Koreatown, East & South-Central LA
-    "data/real/land-tiles-sgv.pmtiles",         // San Gabriel Valley east
-    "data/real/land-tiles-south.pmtiles",       // South Bay, Long Beach, SE cities, Catalina
-    "data/real/land-tiles-north.pmtiles",       // Santa Clarita + Antelope Valley
-    "data/real/land-tiles-coast.pmtiles",       // Ventura + Santa Barbara counties
+    "data/real/land-tiles-west.pmtiles?v=fhsz2025",        // Valley + Westside (original region)
+    "data/real/land-tiles-eastbasin-n.pmtiles?v=fhsz2025", // Silver Lake, Hollywood, Glendale, Pasadena
+    "data/real/land-tiles-eastbasin-s.pmtiles?v=fhsz2025", // DTLA, Koreatown, East & South-Central LA
+    "data/real/land-tiles-sgv.pmtiles?v=fhsz2025",         // San Gabriel Valley east
+    "data/real/land-tiles-south.pmtiles?v=fhsz2025",       // South Bay, Long Beach, SE cities, Catalina
+    "data/real/land-tiles-north.pmtiles?v=fhsz2025",       // Santa Clarita + Antelope Valley
+    "data/real/land-tiles-coast.pmtiles?v=fhsz2025",       // Ventura + Santa Barbara counties
   ],
 
   // Where the map opens.
