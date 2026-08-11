@@ -3941,6 +3941,66 @@
   "mls": "CV26167487MR",
   "listDate": "2026-08-04"
  },
+ "5829016029": {
+  "address": "419 W ALTADENA DR ALTADENA CA",
+  "price": 640000,
+  "type": "Land",
+  "lotSqft": 7552,
+  "lng": -118.155404,
+  "lat": 34.197201,
+  "mls": "SR25110920MR",
+  "listDate": "2025-05-20"
+ },
+ "5829041012": {
+  "address": "2807 GLENROSE AVE ALTADENA CA",
+  "price": 599995,
+  "type": "Land",
+  "lotSqft": 7500,
+  "lng": -118.151998,
+  "lat": 34.192894,
+  "mls": "BB26168774MR",
+  "listDate": "2026-08-06"
+ },
+ "5833012015": {
+  "address": "109 E LAS FLORES DR ALTADENA CA",
+  "price": 700000,
+  "type": "Land",
+  "lotSqft": 10640,
+  "lng": -118.143007,
+  "lat": 34.198662,
+  "mls": "26869775",
+  "listDate": "2026-08-04"
+ },
+ "5833020006": {
+  "address": "2971 EMERSON WAY ALTADENA CA",
+  "price": 700000,
+  "type": "Land",
+  "lotSqft": 7751,
+  "lng": -118.1403,
+  "lat": 34.196072,
+  "mls": "OC26025738MR",
+  "listDate": "2026-02-10"
+ },
+ "5833023025": {
+  "address": "290 E PALM ST ALTADENA CA",
+  "price": 875000,
+  "type": "Land",
+  "lotSqft": 11416,
+  "lng": -118.141111,
+  "lat": 34.194891,
+  "mls": "GD26173367IT",
+  "listDate": "2026-08-07"
+ },
+ "5833028017": {
+  "address": "41 E ALTADENA ALTADENA CA",
+  "price": 980000,
+  "type": "Land",
+  "lotSqft": 13011,
+  "lng": -118.146479,
+  "lat": 34.194346,
+  "mls": "WS26154898MR",
+  "listDate": "2026-07-18"
+ },
  "5835001007": {
   "address": "36 W ALTADENA DR ALTADENA CA",
   "price": 2100000,
@@ -3951,6 +4011,56 @@
   "mls": "260015940SD",
   "listDate": "2026-08-06"
  },
+ "5835039002": {
+  "address": "16 E ALTADENA DR ALTADENA CA",
+  "price": 465000,
+  "type": "Land",
+  "lotSqft": 6607,
+  "lng": -118.147001,
+  "lat": 34.194388,
+  "mls": "SR26171835MR",
+  "listDate": "2026-08-06"
+ },
+ "5835041023": {
+  "address": "2715 SCRIPPS PL ALTADENA CA",
+  "price": 749000,
+  "type": "Land",
+  "lotSqft": 7976,
+  "lng": -118.144037,
+  "lat": 34.192082,
+  "mls": "P1-28003PF",
+  "listDate": "2026-07-14"
+ },
+ "5836002012": {
+  "address": "2100 GLENROSE AVE ALTADENA CA",
+  "price": 550000,
+  "type": "Land",
+  "lotSqft": 7978,
+  "lng": -118.155154,
+  "lat": 34.181862,
+  "mls": "26857955",
+  "listDate": "2026-07-16"
+ },
+ "5839008003": {
+  "address": "591 ALAMEDA ST ALTADENA CA",
+  "price": 795000,
+  "type": "Land",
+  "lotSqft": 8529,
+  "lng": -118.138268,
+  "lat": 34.183744,
+  "mls": "P1-28110PF",
+  "listDate": "2026-07-20"
+ },
+ "5840006012": {
+  "address": "2738 N MARENGO AVE ALTADENA CA",
+  "price": 685000,
+  "type": "Land",
+  "lotSqft": 10634,
+  "lng": -118.14161,
+  "lat": 34.191697,
+  "mls": "P1-28266PF",
+  "listDate": "2026-07-30"
+ },
  "5840017003": {
   "address": "2370 CATHERINE RD ALTADENA CA",
   "price": 1499000,
@@ -3960,6 +4070,76 @@
   "lat": 34.185857,
   "mls": "P1-28317PF",
   "listDate": "2026-08-10"
+ },
+ "5841018011": {
+  "address": "411 E MARIGOLD ST ALTADENA CA",
+  "price": 690000,
+  "type": "Land",
+  "lotSqft": 10032,
+  "lng": -118.1373,
+  "lat": 34.194798,
+  "mls": "P1-25889PF",
+  "listDate": "2026-04-06"
+ },
+ "5844014001": {
+  "address": "1085 RUBIO ALTADENA CA",
+  "price": 1535000,
+  "type": "Land",
+  "lotSqft": 24266,
+  "lng": -118.127579,
+  "lat": 34.191817,
+  "mls": "AR26146258MR",
+  "listDate": "2026-07-07"
+ },
+ "5845002016": {
+  "address": "912 E ALTADENA DR ALTADENA CA",
+  "price": 1495000,
+  "type": "Land",
+  "lotSqft": 13144,
+  "lng": -118.131044,
+  "lat": 34.19022,
+  "mls": "25609059",
+  "listDate": "2025-10-23"
+ },
+ "5845018012": {
+  "address": "2427 LAKE ALTADENA CA",
+  "price": 1500000,
+  "type": "Land",
+  "lotSqft": 6050,
+  "lng": -118.131453,
+  "lat": 34.188101,
+  "mls": "CV26069796MR",
+  "listDate": "2026-04-01"
+ },
+ "5846005024": {
+  "address": "1137 E MARIPOSA ST ALTADENA CA",
+  "price": 749000,
+  "type": "Land",
+  "lotSqft": 8040,
+  "lng": -118.127161,
+  "lat": 34.188647,
+  "mls": "P1-28002PF",
+  "listDate": "2026-07-14"
+ },
+ "5846010023": {
+  "address": "2469 HOLLISTON ALTADENA CA",
+  "price": 1399000,
+  "type": "Land",
+  "lotSqft": 12852,
+  "lng": -118.123311,
+  "lat": 34.188162,
+  "mls": "AR26112304MR",
+  "listDate": "2026-05-23"
+ },
+ "5846019018": {
+  "address": "1541 HOMEWOOD DR ALTADENA CA",
+  "price": 1795000,
+  "type": "Land",
+  "lotSqft": 27175,
+  "lng": -118.118236,
+  "lat": 34.189112,
+  "mls": "P1-27997PF",
+  "listDate": "2026-07-13"
  },
  "5847027024": {
   "address": "1501 NEW YORK DR ALTADENA CA",
