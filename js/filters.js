@@ -20,8 +20,16 @@ export function emptyState() {
     dealStatus: "any",
     om: false,
     omRange: [null, null],
+    oz: false,   // Opportunity Zone 2.0: only parcels in a Recommended tract
     areas: [],   // selected search areas (NEIGHBORHOODS names) — chips
   };
+}
+
+// Recommended OZ 2.0 tracts as one MultiPolygon (set once by app.js after
+// data/oz2.json loads; null until then, so the clause degrades to a no-op).
+let OZ_GEOMETRY = null;
+export function setOzGeometry(geom) {
+  OZ_GEOMETRY = geom;
 }
 
 export function sb1123State(cfg) {
@@ -136,6 +144,9 @@ export function buildCentroidFilter(state, cfg, statusAins, omAins) {
       coordinates: boxes.map(([w, s, e, n]) => [[[w, s], [e, s], [e, n], [w, n], [w, s]]]),
     }]);
   }
+  if (state.oz && OZ_GEOMETRY) {
+    clauses.push(["within", OZ_GEOMETRY]);
+  }
   return clauses;
 }
 
@@ -156,6 +167,7 @@ export function stateToHash(state) {
     if (min !== null || max !== null) p.set("ppsf", `${min ?? ""}..${max ?? ""}`);
   }
   if (state.sbPreset) p.set("sb", "1");
+  if (state.oz) p.set("oz", "1");
   if (state.areas && state.areas.length) p.set("a", state.areas.join("|"));
   const s = p.toString();
   return s ? "#" + s : "";
@@ -188,6 +200,7 @@ export function stateFromHash(hash) {
     }
   }
   if (p.get("sb") === "1") state.sbPreset = true;
+  if (p.get("oz") === "1") state.oz = true;
   if (p.get("a")) state.areas = p.get("a").split("|").filter(Boolean);
   return state;
 }

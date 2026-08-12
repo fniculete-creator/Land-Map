@@ -2,7 +2,7 @@ import * as maplibregl from "../vendor/maplibre-gl/maplibre-gl.mjs";
 import { CONFIG } from "./config.js";
 import {
   emptyState, sb1123State, buildFilter, buildCentroidFilter, areaBoxes,
-  stateToHash, stateFromHash,
+  stateToHash, stateFromHash, setOzGeometry,
 } from "./filters.js";
 
 /* global pmtiles */
@@ -311,6 +311,10 @@ function baseStyle() {
   // budget, so specific project parcels would vanish from the dot view.
   sources["sb-projects"] = { type: "geojson", data: projectsGeojson() };
   sources["om-listings"] = { type: "geojson", data: listingsGeojson() };
+  // OZ 2.0 tracts start empty; ensureOzLoaded() fills the source on first
+  // toggle. Registered at style time — a geojson source added mid-session
+  // can wedge isStyleLoaded() at false, starving the count/list refresh.
+  sources["oz2"] = { type: "geojson", data: { type: "FeatureCollection", features: [] } };
   return {
     version: 8,
     sources,
@@ -331,6 +335,17 @@ function baseStyle() {
         },
       },
       ...tilesUrls.flatMap((_, i) => parcelLayers(i)),
+      {
+        id: "oz2-tint", type: "fill", source: "oz2",
+        layout: { visibility: "none" },
+        paint: { "fill-color": "#7c5cbf", "fill-opacity": 0.10 },
+      },
+      {
+        id: "oz2-line", type: "line", source: "oz2",
+        layout: { visibility: "none" },
+        paint: { "line-color": "#7c5cbf", "line-opacity": 0.55, "line-width": 1.2,
+          "line-dasharray": [3, 2] },
+      },
       {
         id: "projects-markers", type: "circle", source: "sb-projects",
         maxzoom: 14,
@@ -402,6 +417,66 @@ function inSelectedAreas(lng, lat) {
   if (!boxes.length) return true;
   if (lng == null) return false;
   return boxes.some(([w, s, e, n]) => lng >= w && lng <= e && lat >= s && lat <= n);
+}
+
+// ---- Opportunity Zone 2.0 (Recommended tracts, data/oz2.json) ----
+// Loaded lazily on first toggle. ozTracts is an array of
+// { props, bbox, rings } where rings = each polygon's ring list (outer +
+// holes) for the even-odd point-in-polygon test the polygon views need
+// ("within" covers only the centroid dot layers).
+let ozTracts = null;
+let ozLoadPromise = null;
+
+function ensureOzLoaded() {
+  if (ozLoadPromise) return ozLoadPromise;
+  ozLoadPromise = fetch("data/oz2.json")
+    .then((r) => r.json())
+    .then((fc) => {
+      const tracts = [];
+      const multi = [];   // MultiPolygon coordinates for the "within" clause
+      for (const f of fc.features) {
+        const polys = f.geometry.type === "Polygon"
+          ? [f.geometry.coordinates] : f.geometry.coordinates;
+        for (const rings of polys) {
+          multi.push(rings);
+          let w = 180, s = 90, e = -180, n = -90;
+          for (const [x, y] of rings[0]) {
+            if (x < w) w = x; if (x > e) e = x;
+            if (y < s) s = y; if (y > n) n = y;
+          }
+          tracts.push({ props: f.properties, bbox: [w, s, e, n], rings });
+        }
+      }
+      ozTracts = tracts;
+      setOzGeometry({ type: "MultiPolygon", coordinates: multi });
+      map.getSource("oz2").setData(fc);
+    });
+  return ozLoadPromise;
+}
+
+function ringContains(ring, x, y) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+// The Recommended tract containing lng/lat, or null. Even-odd across the
+// polygon's rings, so holes subtract.
+function ozTractAt(lng, lat) {
+  if (!ozTracts || lng == null) return null;
+  for (const t of ozTracts) {
+    const [w, s, e, n] = t.bbox;
+    if (lng < w || lng > e || lat < s || lat > n) continue;
+    let hits = 0;
+    for (const ring of t.rings) if (ringContains(ring, lng, lat)) hits++;
+    if (hits % 2 === 1) return t.props;
+  }
+  return null;
 }
 
 // Listings whose land $/SF passes the current range AND sit inside the
@@ -601,6 +676,15 @@ function updateCount() {
   };
   let inView = [...byAin.values()];
   if (boxes.length) inView = inView.filter(inBoxes);
+  // OZ 2.0 scopes the polygon views in JS the same way area chips do
+  // (the centroid layers already filter via "within" on the map).
+  if (state.oz && ozTracts) {
+    inView = inView.filter((f) => {
+      if (!f.geometry) return false;
+      const [x, y] = featureCenter(f);
+      return ozTractAt(x, y) !== null;
+    });
+  }
 
   document.getElementById("result-count").textContent = inView.length.toLocaleString();
   document.getElementById("result-label").textContent =
@@ -854,6 +938,10 @@ function detailHtml(p, lngLat) {
       ${kvRow("Units", p.u >= 0 ? p.u : "–")}
       ${kvRow("Improvements", p.iv != null ? "$" + fmt(p.iv) : "–")}
       ${p.ls ? kvRow("Last sale", p.ls) : ""}
+      ${(() => {
+        const t = lngLat && ozTracts ? ozTractAt(lngLat.lng, lngLat.lat) : null;
+        return t ? kvRow("Opportunity Zone 2.0", `Recommended tract ${t.Geoid || ""}`) : "";
+      })()}
     </section>
     ${listingSectionHtml(p)}
     ${projectSectionHtml(p)}
@@ -1123,6 +1211,13 @@ function syncControlsFromState() {
   document.getElementById("onmarket-btn").classList.toggle("active", !!state.om);
   document.getElementById("ppsf-dd").classList.toggle("hidden", !state.om);
 
+  document.getElementById("oz-btn").classList.toggle("active", !!state.oz);
+  for (const id of ["oz2-tint", "oz2-line"]) {
+    if (map.getLayer(id)) {
+      map.setLayoutProperty(id, "visibility", state.oz ? "visible" : "none");
+    }
+  }
+
   renderAreaChips();
 }
 
@@ -1209,13 +1304,22 @@ function bindControls() {
   });
 
   document.getElementById("sb1123-btn").addEventListener("click", () => {
-    // Search scope AND On Market survive preset toggling — narrowing the
-    // live deals to SB candidates is the whole point of combining them.
-    const { areas, om, omRange } = state;
+    // Search scope, On Market AND the OZ scope survive preset toggling —
+    // narrowing the live deals to SB candidates is the whole point of
+    // combining them.
+    const { areas, om, omRange, oz } = state;
     state = state.sbPreset ? emptyState() : sb1123State(CONFIG);
     state.areas = areas;
     state.om = om;
     state.omRange = omRange;
+    state.oz = oz;
+    syncControlsFromState();
+    applyFilters();
+  });
+
+  document.getElementById("oz-btn").addEventListener("click", async () => {
+    state.oz = !state.oz;
+    if (state.oz) await ensureOzLoaded();
     syncControlsFromState();
     applyFilters();
   });
@@ -1544,6 +1648,10 @@ const LandMap = {
   },
   get map() { return map; },
   get state() { return state; },
+  // OZ 2.0 internals (used by tests/tools).
+  ozTractAt,
+  get ozLoaded() { return ozTracts !== null; },
+  updateCount,
   // Layer-instance lists across all tile sources (used by tests/tools).
   lids,
 };
@@ -1598,12 +1706,12 @@ async function fetchMergedStyle(styleUrl, fallback) {
   base.sources = { ...base.sources };
   for (const [k, v] of Object.entries(fallback.sources)) {
     if (k === "satellite" || k === "sb-projects" || k === "om-listings"
-      || k.startsWith("parcels")) {
+      || k === "oz2" || k.startsWith("parcels")) {
       base.sources[k] = v;
     }
   }
   const overlayIds = new Set([
-    "basemap-satellite", "projects-markers", "om-markers",
+    "basemap-satellite", "projects-markers", "om-markers", "oz2-tint", "oz2-line",
     ...["centroids", "parcels-fill", "parcels-line", "parcels-projects",
       "parcels-status", "parcels-selected"].flatMap(lids),
   ]);
@@ -1754,6 +1862,10 @@ async function boot() {
   function init() {
     if (inited) return;
     inited = true;
+    // A shared #oz=1 link needs the tract data before the first filter pass.
+    if (state.oz) {
+      ensureOzLoaded().then(() => { syncControlsFromState(); applyFilters(); });
+    }
     syncControlsFromState();
     applyFilters();
   }
