@@ -658,7 +658,7 @@
  "5405009027": {
   "case": "VTT-84909-SH-HCA",
   "status": "submitted",
-  "rawStatus": "Pending",
+  "rawStatus": "Pending (On Hold)",
   "bill": "SB 1123",
   "filed": "2026-04-30",
   "decided": null,
@@ -670,7 +670,7 @@
   "rep": "Colin Logan",
   "repCompany": "LTM Development",
   "phone": "(415) 640-2498",
-  "desc": "11-parcel residential development of three-story townhome units.",
+  "desc": "11-parcel residential development of three-story townhome units. Placed on hold at the city by 8/17/2026.",
   "lng": -118.255539,
   "lat": 34.072962,
   "lotSqft": 7412,
