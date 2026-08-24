@@ -980,7 +980,9 @@
   "phone": "",
   "desc": "SB 684/1123 tentative tract map subdividing one RA lot into 10 ground lots. No situs address (vacant 010V lot, assessed land $835K); ZIMAS PIN 225B149 469. Filed 07/06/2026, not on hold.",
   "lng": -118.449814,
-  "lat": 34.309482
+  "lat": 34.309482,
+  "lotSqft": 54647,
+  "vacant": 1
  },
  "4311022012": {
   "case": "VTT-85175-SH-VHCA",
@@ -999,7 +1001,8 @@
   "phone": "",
   "desc": "SB 1123 subdivision of one R1V2 lot into 5 small lots for 5 small-lot SFDs (Govt Code 65852.28, 65913.4.5, 66499.41). South Robertson, CD 5. Filed 07/28/2026, not on hold.",
   "lng": -118.393817,
-  "lat": 34.034267
+  "lat": 34.034267,
+  "lotSqft": 7664
  },
  "2364011022": {
   "case": "VTT-85335-SH",
@@ -1018,6 +1021,7 @@
   "phone": "",
   "desc": "SB 684/1123 filing, scope not yet stated in PDIS. Valley Village/Studio City, CD 2. Filed 08/07/2026, on hold.",
   "lng": -118.391356,
-  "lat": 34.150674
+  "lat": 34.150674,
+  "lotSqft": 18841
  }
 }

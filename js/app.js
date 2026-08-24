@@ -763,6 +763,16 @@ function renderList(candidates, detailed) {
     candidates.sort((a, b) =>
       (omListings[a.properties.ain]?.ppsf ?? Infinity)
       - (omListings[b.properties.ain]?.ppsf ?? Infinity));
+  } else if (state.dealStatus === "approved" || state.dealStatus === "submitted") {
+    // Status views read as a filings ledger: newest case first, with any
+    // non-project rows after them sorted by lot size as usual.
+    candidates.sort((a, b) => {
+      const pa = sbProjects[a.properties.ain], pb = sbProjects[b.properties.ain];
+      if (!pa && !pb) return (b.properties.lsf || 0) - (a.properties.lsf || 0);
+      if (!pa || !pb) return pa ? -1 : 1;
+      return (pb.filed || "").localeCompare(pa.filed || "")
+        || (b.properties.lsf || 0) - (a.properties.lsf || 0);
+    });
   } else {
     candidates.sort((a, b) => (b.properties.lsf || 0) - (a.properties.lsf || 0));
   }
