@@ -15,3 +15,7 @@ data/*.log
 !data/real/land-tiles-*.pmtiles
 .vercel
 .env*
+
+# listings importer working files
+scripts/listings/.geocache.json
+scripts/listings/dry-run-audit-*.csv
