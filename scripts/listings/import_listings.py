@@ -415,6 +415,35 @@ def situs_query(cfg, num, street, lng, lat, pad=ENVELOPE_PAD_DEG):
             if street_key((f.get("attributes") or {}).get(cfg["situs"])) == (num, street)]
 
 
+def situs_lookup_nogeocode(address, city):
+    """Resolve a listing straight from the assessor situs index when the Census
+    geocoder returns nothing. Unbounded by geography, so the match must be
+    unique within the county and the house number + street must agree
+    exactly; the parcel centroid then stands in for the geocode."""
+    num, street = street_key(address)
+    if not num or not street:
+        return None, None, None, "no house number or street to look up"
+    up = (city or "").upper()
+    first = next((c for c in ("SB", "VC") if up in COUNTY_BY_CITY[c]), "LA")
+    order = [first] + [c for c in ("LA", "VC", "SB") if c != first]
+    ambiguous = None
+    for county in order:
+        cfg = PARCEL_LAYERS[county]
+        where = (f"UPPER({cfg['situs']}) LIKE '{num} {street}%' OR "
+                 f"UPPER({cfg['situs']}) LIKE '{num} % {street}%'")
+        feats = arcgis_query(cfg["url"], {
+            "where": where, "outFields": cfg["fields"], "returnGeometry": "false",
+            "returnCentroid": "true", "outSR": 4326, "f": "json"})
+        hits = [with_centroid(f) for f in feats
+                if street_key((f.get("attributes") or {}).get(cfg["situs"])) == (num, street)
+                and (f.get("centroid") or {}).get("x") is not None]
+        if len(hits) == 1:
+            return hits[0], county, "situs-nogeocode", ""
+        if len(hits) > 1:
+            ambiguous = f"{len(hits)} {county} parcels share situs {num} {street} (no geocode to disambiguate)"
+    return None, None, None, ambiguous or "address did not geocode and no assessor situs match"
+
+
 def la_use_code(ain):
     feats = arcgis_query(USECODE_LAYER, {
         "where": f"AIN='{ain}'", "outFields": "AIN,UseCode",
@@ -546,23 +575,35 @@ def process(row, tiers):
         return out
 
     pt = geocode(row["address"], row["city"])
+    parcel = how = None
+    county = None
     if not pt:
-        out.update(result="NOT LOCATED",
-                   detail="address did not geocode (no house number or outside coverage)")
-        return out
-    lng, lat = pt
+        # The Census geocoder misses a large share of Valley addresses that the
+        # MLS labels "Los Angeles" with no ZIP (9/18 export: 251 of 1,114 rows).
+        # The assessor's own situs index resolves them directly, so ask each
+        # county for the exact house number + street before giving up.
+        parcel, county, how, why = situs_lookup_nogeocode(row["address"], row["city"])
+        if not parcel:
+            out.update(result="NOT LOCATED",
+                       detail=why or "address did not geocode (no house number or outside coverage)")
+            return out
+        lng, lat = parcel["_cx"], parcel["_cy"]
+        with _lock:
+            _geocache[f"{row['address']}|{row['city']}".upper()] = (round(lng, 6), round(lat, 6))
+    else:
+        lng, lat = pt
 
     # County bboxes overlap along the LA/Ventura line (West Hills is LA City but
     # sits inside the Ventura box), so a miss falls through to the neighbours
     # rather than being reported as unlocatable.
-    county = county_for(row["city"], lng, lat)
-    order = [county] + [c for c in ("LA", "VC", "SB") if c != county]
-    parcel = how = None
-    for cand in order:
-        parcel, how, why = match_parcel(cand, lng, lat, row["address"])
-        if parcel:
-            county = cand
-            break
+    if not parcel:
+        county = county_for(row["city"], lng, lat)
+        order = [county] + [c for c in ("LA", "VC", "SB") if c != county]
+        for cand in order:
+            parcel, how, why = match_parcel(cand, lng, lat, row["address"])
+            if parcel:
+                county = cand
+                break
     if not parcel:
         out.update(result="NOT LOCATED",
                    detail=why or f"no parcel at {lat:.5f},{lng:.5f}")
