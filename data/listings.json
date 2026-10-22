@@ -4336,6 +4336,17 @@
   "listDate": "2026-09-21",
   "tier": "A"
  },
+ "4264017014": {
+  "address": "931 WELLESLEY AVE LOS ANGELES CA",
+  "price": 2395000,
+  "type": "SFR",
+  "lotSqft": 7295,
+  "lng": -118.473958,
+  "lat": 34.045237,
+  "mls": "26102502",
+  "listDate": "2026-10-15",
+  "tier": "A"
+ },
  "4265021002": {
   "address": "922 S BUNDY DR LOS ANGELES CA",
   "price": 2950000,
@@ -4455,6 +4466,17 @@
   "lat": 34.03675,
   "mls": "26847441",
   "listDate": "2026-06-15",
+  "tier": "A"
+ },
+ "4283014020": {
+  "address": "1753 EUCLID ST SANTA MONICA CA",
+  "price": 2100000,
+  "type": "SFR",
+  "lotSqft": 7511,
+  "lng": -118.480251,
+  "lat": 34.017953,
+  "mls": "26986911",
+  "listDate": "2026-10-15",
   "tier": "A"
  },
  "4284016018": {
@@ -6163,6 +6185,26 @@
   "mls": "26871299",
   "listDate": "2026-08-13"
  },
+ "5073030016": {
+  "address": "2020 S GRAMERCY LOS ANGELES CA",
+  "price": 1099999,
+  "type": "SFR",
+  "lotSqft": 7802,
+  "lng": -118.313274,
+  "lat": 34.038641,
+  "mls": "DW26226263MR",
+  "listDate": "2026-10-19"
+ },
+ "5080005008": {
+  "address": "1254 S MANHATTAN LOS ANGELES CA",
+  "price": 1590000,
+  "type": "SFR",
+  "lotSqft": 8439,
+  "lng": -118.310089,
+  "lat": 34.04819,
+  "mls": "WS26117009MR",
+  "listDate": "2026-05-29"
+ },
  "5081001021": {
   "address": "1220 CRENSHAW BLVD LOS ANGELES CA",
   "price": 1390000,
@@ -6256,6 +6298,17 @@
   "lat": 34.052013,
   "mls": "26988117",
   "listDate": "2026-09-14",
+  "tier": "A"
+ },
+ "5082016042": {
+  "address": "1283 S WINDSOR LOS ANGELES CA",
+  "price": 1575000,
+  "type": "SFR",
+  "lotSqft": 8843,
+  "lng": -118.329311,
+  "lat": 34.048559,
+  "mls": "26102721",
+  "listDate": "2026-10-20",
   "tier": "A"
  },
  "5082018026": {
@@ -6421,6 +6474,28 @@
   "lat": 34.055709,
   "mls": "26871479",
   "listDate": "2026-08-12",
+  "tier": "A"
+ },
+ "5088010014": {
+  "address": "742 SCHUMACHER DR LOS ANGELES CA",
+  "price": 2999999,
+  "type": "SFR",
+  "lotSqft": 12973,
+  "lng": -118.371443,
+  "lat": 34.063197,
+  "mls": "25625061",
+  "listDate": "2025-12-04",
+  "tier": "A"
+ },
+ "5089017024": {
+  "address": "817 MASSELIN AVE LOS ANGELES CA",
+  "price": 2850000,
+  "type": "SFR",
+  "lotSqft": 7006,
+  "lng": -118.35357,
+  "lat": 34.060264,
+  "mls": "26101817",
+  "listDate": "2026-10-14",
   "tier": "A"
  },
  "5089018027": {
@@ -6722,6 +6797,16 @@
   "lat": 34.078545,
   "mls": "PW26135512MR",
   "listDate": "2026-06-23"
+ },
+ "5534019023": {
+  "address": "5836 LA MIRADA AVE LOS ANGELES CA",
+  "price": 1195000,
+  "type": "SFR",
+  "lotSqft": 7499,
+  "lng": -118.316568,
+  "lat": 34.093703,
+  "mls": "26839633",
+  "listDate": "2026-09-10"
  },
  "5539022025": {
   "address": "627 N JUANITA AVE LOS ANGELES CA",
