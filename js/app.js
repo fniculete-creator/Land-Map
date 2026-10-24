@@ -1111,7 +1111,7 @@ function renderCompsView() {
   list.innerHTML = "";
   empty.style.display = shown.length ? "none" : "block";
   if (!shown.length) empty.textContent = compSales.length
-    ? "No small lot sales in view. Zoom out, pan the map, or widen the filters (Date Sold)."
+    ? "No small lot sales in view. Zoom out, pan the map, or widen the filters (Sold Since)."
     : "Loading small lot sales…";
   for (const c of shown) {
     const li = document.createElement("li");
@@ -1835,7 +1835,7 @@ function syncControlsFromState() {
   document.querySelectorAll("#slo-status-seg button").forEach((b) => b.classList.toggle("on", b.dataset.sloStatus === state.sloStatus));
   const cf = state.comp;
   document.querySelectorAll('input[name="csince"]').forEach((rb) => { rb.checked = Number(rb.value) === cf.since; });
-  setPillVal("pv-csince", cf.since ? `since 01/01/${cf.since}` : "any");
+  setPillVal("pv-csince", cf.since ? `01/01/${cf.since}` : "any date");
   for (const k of ["price", "ppsf", "sf", "yb"]) {
     const r = cf[k === "price" ? "p" : k];
     setVal(`c${k}-min`, r[0]); setVal(`c${k}-max`, r[1]);

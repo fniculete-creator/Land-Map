@@ -109,7 +109,7 @@ code needed.
 - **Finished Comps (Small Lot)** — sale comps of finished small lot homes in the City
   of LA (`data/comps_small_lot.json`: 01S* small lot use codes built 2005+
   plus the homes in built SLO cases, priced from the Assessor's sale
-  records). Filters: Sold since (default 01/01/2025), price, $/SF, home size,
+  records). Filters: Sold Since (default 01/01/2025), price, $/SF, home size,
   year built (list badges still mark the builder's first sale as New). Dots are colored
   by $/SF; the side panel shows median price, $/SF and home size in view, and
   Excel exports the checked or listed sales. Rebuild with
