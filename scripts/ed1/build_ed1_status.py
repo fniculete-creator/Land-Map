@@ -236,6 +236,10 @@ for k, m in (json.load(open(MANUAL, encoding="utf-8")) if os.path.exists(MANUAL)
         ed1[k]["sold"] = {"d": m.get("d"), "p": m.get("p"), "parcels": 1, "type": "Completed building",
                           "source": m.get("source", "LAAA team"), "note": m.get("note"), "buyer": m.get("buyer"),
                           "seller": m.get("seller"), "doc": m.get("doc")}
+# Building photos and an outside photo link, added by hand (data/ed1_media.json, keyed by case).
+MEDIA = os.path.join(REPO, "data", "ed1_media.json")
+for k, m in (json.load(open(MEDIA, encoding="utf-8")) if os.path.exists(MEDIA) else {}).items():
+    if k in ed1: ed1[k].update({f: m[f] for f in ("photo", "photos", "photosLabel") if m.get(f)})
 print(sum(1 for c in ed1.values() if c.get("units") is None), "cases still without units")
 json.dump(ed1, open(OUT, "w", encoding="utf-8"), indent=1, ensure_ascii=True)
 print(sum(1 for c in ed1.values() if c.get("cofo")), "cases completed (CofO);", sum(1 for c in ed1.values() if c.get("sales")), "cases with a sale after filing;", n_s, "sold after the CofO")

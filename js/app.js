@@ -701,6 +701,7 @@ function ed1DetailHtml(c) {
       <button id="dp-close" title="Close">×</button>
     </div>
     <div class="dp-badges">${badges.join(" ")}</div>
+    ${c.photo ? `<img class="dp-photo" src="${c.photo}" alt="${c.address || c.case}" loading="lazy">` : ""}
     ${aerialEmbedHtml(c.lat, c.lng)}
     <div class="dp-tiles">
       <div class="dp-tile"><b>${c.units != null ? fmt(c.units) : "–"}</b><span>Units</span></div>
@@ -737,6 +738,7 @@ function ed1DetailHtml(c) {
     </section>
     <div class="dp-links">
       ${projectLinksHtml(ain, c.cofo && c.cofo.permit)}
+      ${c.photos ? `<a href="${c.photos}" target="_blank" rel="noopener">${c.photosLabel || "Photos"} ↗</a>` : ""}
       <a href="${c.source || "https://planning.lacity.gov/pdiscaseinfo/search/casenumber/" + encodeURIComponent(c.case)}" target="_blank" rel="noopener">Planning Case ↗</a>
       ${ain ? `<a href="https://portal.assessor.lacounty.gov/parceldetail/${ain}" target="_blank" rel="noopener">Assessor ↗</a>` : ""}
       <a href="${CONFIG.STREETVIEW_URL(c.lat, c.lng)}" target="_blank" rel="noopener">Street View ↗</a>
