@@ -488,7 +488,7 @@ function ensureCompsLoaded() {
           features: compSales.map((c) => ({
             type: "Feature",
             geometry: { type: "Point", coordinates: [c.lng, c.lat] },
-            properties: { id: c.id, d: c.d, p: c.p, ppsf: c.ppsf, sf: c.sf, n: c.n },
+            properties: { id: c.id, d: c.d, p: c.p, ppsf: c.ppsf, sf: c.sf, yb: c.yb, n: c.n },
           })),
         });
         scheduleCount();
@@ -499,15 +499,14 @@ function ensureCompsLoaded() {
 function compPasses(c) {
   const f = state.comp;
   const inR = (v, [lo, hi]) => (lo === null || (v != null && v >= lo)) && (hi === null || (v != null && v <= hi));
-  return (!f.since || c.d >= `${f.since}-01-01`) && (!f.first || c.n === 1)
-    && inR(c.p, f.p) && inR(c.ppsf, f.ppsf) && inR(c.sf, f.sf);
+  return (!f.since || c.d >= `${f.since}-01-01`) 
+    && inR(c.p, f.p) && inR(c.ppsf, f.ppsf) && inR(c.sf, f.sf) && inR(c.yb, f.yb);
 }
 function compFilterExpr() {
   const f = state.comp;
   const out = ["all"];
   if (f.since) out.push([">=", ["get", "d"], `${f.since}-01-01`]);
-  if (f.first) out.push(["==", ["get", "n"], 1]);
-  for (const k of ["p", "ppsf", "sf"]) {
+  for (const k of ["p", "ppsf", "sf", "yb"]) {
     if (f[k][0] !== null) out.push([">=", ["coalesce", ["get", k], -1], f[k][0]]);
     if (f[k][1] !== null) out.push(["<=", ["coalesce", ["get", k], 1e12], f[k][1]]);
   }
@@ -517,40 +516,53 @@ function fmtDate(iso) { const [y, m, d] = iso.split("-"); return `${m}/${d}/${y}
 function compCommunity(c) { return communityFor("", c.z) || (c.z ? "ZIP " + c.z : ""); }
 function compApn(c) { return `${c.ain.slice(0, 4)}-${c.ain.slice(4, 7)}-${c.ain.slice(7)}`; }
 
+function aerialEmbedHtml(lat, lng) {
+  return CONFIG.GOOGLE_MAPS_KEY && lat != null
+    ? `<iframe class="dp-sv" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+         src="https://www.google.com/maps/embed/v1/view?key=${CONFIG.GOOGLE_MAPS_KEY}&center=${lat},${lng}&zoom=19&maptype=satellite"
+         allowfullscreen></iframe>`
+    : "";
+}
+
+// Comp and SLO panels use the parcel panel's layout: head, badges, aerial,
+// two tiles, titled sections, links row.
 function compDetailHtml(c) {
   const others = compSales.filter((o) => o.ain === c.ain && o.id !== c.id)
     .sort((a, b) => b.d.localeCompare(a.d));
   const sc = c.c && sloCases[c.c];
-  const rows = [
-    kvRow("Sale price", "$" + fmt(c.p)),
-    kvRow("Sale date", fmtDate(c.d)),
-    c.ppsf ? kvRow("Price per SF", "$" + fmt(c.ppsf)) : "",
-    c.sf ? kvRow("Home size", fmt(c.sf) + " SF") : "",
-    c.bd || c.ba ? kvRow("Beds / baths", `${c.bd ?? "?"} / ${c.ba ?? "?"}`) : "",
-    c.yb ? kvRow("Year built", String(c.yb)) : "",
-    kvRow("Sale type", c.n === 1 ? "New construction (first sale after the build)" : "Resale"),
-    c.c ? kvRow("SLO case", sc ? `<a href="#" id="dp-comp-case">${c.c}</a>` : c.c) : "",
-    kvRow("APN", compApn(c)),
-  ].join("");
-  const hist = others.length ? `<h4>Other recorded sales</h4><ul class="dp-comp-sales">${others.map((o) =>
-    `<li><span>${fmtDate(o.d)}</span><b>$${fmt(o.p)}</b><span>${o.ppsf ? "$" + fmt(o.ppsf) + "/sf" : ""}</span></li>`).join("")}</ul>` : "";
   return `
     <div class="dp-head">
       <div>
         <div class="dp-addr">${c.a}</div>
-        <div class="dp-city">${compCommunity(c)}${c.z ? " " + c.z : ""}</div>
-        <div class="dp-sub">Small lot home sale</div>
+        <div class="dp-city">${[compCommunity(c), c.z].filter(Boolean).join(" ")}</div>
+        <div class="dp-sub">APN ${compApn(c)} · Small lot home</div>
       </div>
       <button id="dp-close" title="Close">×</button>
     </div>
-    <div class="dp-badges"><span class="badge ${c.n === 1 ? "badge-ok" : "badge-vacant"}">${c.n === 1 ? "New construction" : "Resale"}</span></div>
-    <div class="dp-slo">${rows}${hist}</div>
-    <div class="dp-slo dp-slo-links">
-      <a href="https://portal.assessor.lacounty.gov/parceldetail/${c.ain}" target="_blank" rel="noopener">Assessor sale record</a>
-      &nbsp;·&nbsp;
-      <a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${c.lat},${c.lng}" target="_blank" rel="noopener">Street View</a>
+    <div class="dp-badges"><span class="badge ${c.n === 1 ? "badge-ok" : "badge-vacant"}">${c.n === 1 ? "New construction sale" : "Resale"}</span></div>
+    ${aerialEmbedHtml(c.lat, c.lng)}
+    <div class="dp-tiles">
+      <div class="dp-tile"><b>$${fmt(c.p)}</b><span>Sold ${fmtDate(c.d)}</span></div>
+      <div class="dp-tile dp-tile-navy"><b>${c.ppsf ? "$" + fmt(c.ppsf) : "–"}</b><span>Per SF of home</span></div>
     </div>
-    <p class="dd-hint dp-comp-note">Price is the County's transfer-tax figure for a full sale; confirm it against the MLS before relying on it.</p>`;
+    <section class="dp-section">
+      <h4>Home</h4>
+      ${kvRow("Home Size", c.sf ? fmt(c.sf) + " SF" : "–")}
+      ${kvRow("Beds / Baths", c.bd || c.ba ? `${c.bd ?? "?"} / ${c.ba ?? "?"}` : "–")}
+      ${kvRow("Year Built", c.yb ? String(c.yb) : "–")}
+      ${c.c ? kvRow("SLO Case", sc ? `<a href="#" id="dp-comp-case">${c.c}</a>` : c.c) : ""}
+    </section>
+    <section class="dp-section">
+      <h4>Sales</h4>
+      ${kvRow(fmtDate(c.d), `$${fmt(c.p)}${c.ppsf ? ` <span class="muted">($${fmt(c.ppsf)}/sf)</span>` : ""}`)}
+      ${others.map((o) => kvRow(fmtDate(o.d), `$${fmt(o.p)}${o.ppsf ? ` <span class="muted">($${fmt(o.ppsf)}/sf)</span>` : ""}`)).join("")}
+      <p class="dd-hint">County transfer-tax price for a full sale; confirm it against the MLS before relying on it.</p>
+    </section>
+    <div class="dp-links">
+      <a href="https://portal.assessor.lacounty.gov/parceldetail/${c.ain}" target="_blank" rel="noopener">Assessor ↗</a>
+      <a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>
+      <a href="${CONFIG.STREETVIEW_URL(c.lat, c.lng)}" target="_blank" rel="noopener">Street View ↗</a>
+    </div>`;
 }
 
 function showCompDetail(c) {
@@ -579,30 +591,44 @@ function sloGeojson() {
 function sloDetailHtml(c) {
   const sizes = c.avgSf
     ? `${fmt(c.avgSf)} SF avg${c.minSf !== c.maxSf ? ` (${fmt(c.minSf)} to ${fmt(c.maxSf)})` : ""}` : "";
-  const rows = [
-    kvRow("Case", c.case),
-    kvRow("Map type", c.kind + (c.filed ? `, filed ${c.filed}` : "")),
-    kvRow("Status", c.status === "built" ? "Built" : "Not built (approved, pending or never built)"),
-    c.homes ? kvRow("Homes built", String(c.homes)) : kvRow("Lots on the case", String(c.lots)),
-    sizes ? kvRow("Home size", sizes) : "",
-    c.completed ? kvRow("Completed", c.completed) : "",
-    kvRow("Community", c.community || ""),
-  ].join("");
+  // Recorded sales of the project's homes (Comps data; loads on first open).
+  const sales = compSales.filter((o) => o.c === c.case).sort((a, b) => b.d.localeCompare(a.d));
+  const salesHtml = sales.length ? `
+    <section class="dp-section">
+      <h4>Home Sales <span class="muted">(${sales.length})</span></h4>
+      ${sales.slice(0, 12).map((o) => kvRow(`${fmtDate(o.d)} · ${o.a.replace(/^.*?, (Lot \w+)$/, "$1")}`,
+        `$${fmt(o.p)}${o.ppsf ? ` <span class="muted">($${fmt(o.ppsf)}/sf)</span>` : ""}`)).join("")}
+      ${sales.length > 12 ? `<p class="dd-hint">${sales.length - 12} more in the Comps program.</p>` : ""}
+    </section>` : "";
   return `
     <div class="dp-head">
       <div>
         <div class="dp-addr">${c.address || c.case}</div>
-        <div class="dp-city">${c.community || ""}${c.zip ? " " + c.zip : ""}</div>
-        <div class="dp-sub">Small Lot Ordinance subdivision</div>
+        <div class="dp-city">${[c.community, c.zip].filter(Boolean).join(" ")}</div>
+        <div class="dp-sub">${c.case} · Small Lot Ordinance subdivision</div>
       </div>
       <button id="dp-close" title="Close">×</button>
     </div>
     <div class="dp-badges"><span class="badge ${c.status === "built" ? "badge-ok" : "badge-vacant"}">SLO ${c.status === "built" ? "built" : "not built"}</span></div>
-    <div class="dp-slo">${rows}</div>
-    <div class="dp-slo dp-slo-links">
-      <a href="https://planning.lacity.gov/pdiscaseinfo/search/casenumber/${encodeURIComponent(c.case)}" target="_blank" rel="noopener">Planning case file (PDIS)</a>
-      &nbsp;·&nbsp;
-      <a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${c.lat},${c.lng}" target="_blank" rel="noopener">Street View</a>
+    ${aerialEmbedHtml(c.lat, c.lng)}
+    <div class="dp-tiles">
+      <div class="dp-tile"><b>${c.homes ? fmt(c.homes) : fmt(c.lots || 0)}</b><span>${c.homes ? "Homes Built" : "Lots on the Case"}</span></div>
+      <div class="dp-tile dp-tile-navy"><b>${c.avgSf ? fmt(c.avgSf) : "–"}</b><span>Avg home sf</span></div>
+    </div>
+    <section class="dp-section">
+      <h4>Subdivision</h4>
+      ${kvRow("Case", c.case)}
+      ${kvRow("Map Type", c.kind + (c.filed ? `, Filed ${c.filed}` : ""))}
+      ${kvRow("Status", c.status === "built" ? "Built" : "Not Built (Approved, Pending or Never Built)")}
+      ${kvRow("Lots on the Case", String(c.lots || "–"))}
+      ${sizes ? kvRow("Home Size", sizes) : ""}
+      ${c.completed ? kvRow("Completed", c.completed) : ""}
+    </section>
+    ${salesHtml}
+    <div class="dp-links">
+      <a href="https://planning.lacity.gov/pdiscaseinfo/search/casenumber/${encodeURIComponent(c.case)}" target="_blank" rel="noopener">Planning case ↗</a>
+      <a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>
+      <a href="${CONFIG.STREETVIEW_URL(c.lat, c.lng)}" target="_blank" rel="noopener">Street View ↗</a>
     </div>`;
 }
 
@@ -612,6 +638,12 @@ function showSloDetail(c) {
   panel.innerHTML = sloDetailHtml(c);
   panel.classList.remove("hidden");
   document.getElementById("dp-close").addEventListener("click", closeDetail);
+  // First open: fetch the sales, then redraw if this case is still showing.
+  if (!compSales.length) {
+    ensureCompsLoaded().then(() => {
+      if (!panel.classList.contains("hidden") && panel.innerHTML.includes(c.case)) showSloDetail(c);
+    });
+  }
 }
 
 function listingsGeojson() {
@@ -761,7 +793,9 @@ function omAinsFor() {
       ? min === null && max === null
       : (min === null || l.ppsf >= min) && (max === null || l.ppsf <= max);
     const okTier = state.tiers.size === 0 || state.tiers.has(l.tier || "");
-    return okPrice && okTier && inSelectedAreas(l.lng, l.lat);
+    // Checked overlays scope the deals too: a listing must sit inside every one.
+    const okOvl = activeOverlays(state).every((k) => !ovlParts[k] || (l.lng != null && overlayAt(k, l.lng, l.lat) !== null));
+    return okPrice && okTier && okOvl && inSelectedAreas(l.lng, l.lat);
   });
 }
 
@@ -1077,7 +1111,7 @@ function renderCompsView() {
   list.innerHTML = "";
   empty.style.display = shown.length ? "none" : "block";
   if (!shown.length) empty.textContent = compSales.length
-    ? "No small lot sales in view. Zoom out, pan the map, or widen the filters (Sold since)."
+    ? "No small lot sales in view. Zoom out, pan the map, or widen the filters (Date Sold)."
     : "Loading small lot sales…";
   for (const c of shown) {
     const li = document.createElement("li");
@@ -1170,7 +1204,7 @@ function exportSloExcel() {
     (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   const cols = [
     ["Address", (c) => c.address], ["Community", (c) => c.community], ["ZIP", (c) => c.zip],
-    ["Case", (c) => c.case], ["Map type", (c) => c.kind], ["Filed", (c) => c.filed ?? ""],
+    ["Case", (c) => c.case], ["Map Type", (c) => c.kind], ["Filed", (c) => c.filed ?? ""],
     ["Lots", (c) => c.lots ?? ""], ["Status", (c) => (c.status === "built" ? "Built" : "Not built")],
     ["Homes built", (c) => c.homes ?? ""], ["Avg home SF", (c) => c.avgSf ?? ""],
     ["Min SF", (c) => c.minSf ?? ""], ["Max SF", (c) => c.maxSf ?? ""], ["Completed", (c) => c.completed ?? ""],
@@ -1245,7 +1279,7 @@ function renderSloView() {
     const meta = document.createElement("div");
     meta.className = "site-meta";
     meta.className = "site-meta site-meta-1";
-    meta.textContent = [(c.community || "").split(" - ")[0], c.address ? c.case : "",
+    meta.textContent = [(c.community || "").split(" - ")[0], c.address ? "" : c.kind,
       c.status === "built" ? c.completed : (c.filed ? "filed " + c.filed : "")].filter(Boolean).join(" · ");
     info.append(name, meta);
     const right = document.createElement("span");
@@ -1801,12 +1835,13 @@ function syncControlsFromState() {
   document.querySelectorAll("#slo-status-seg button").forEach((b) => b.classList.toggle("on", b.dataset.sloStatus === state.sloStatus));
   const cf = state.comp;
   document.querySelectorAll('input[name="csince"]').forEach((rb) => { rb.checked = Number(rb.value) === cf.since; });
-  setPillVal("pv-csince", cf.since ? String(cf.since) : "Any");
-  document.getElementById("comp-new-btn").classList.toggle("active", !!cf.first);
-  for (const k of ["price", "ppsf", "sf"]) {
+  setPillVal("pv-csince", cf.since ? `since 01/01/${cf.since}` : "any");
+  for (const k of ["price", "ppsf", "sf", "yb"]) {
     const r = cf[k === "price" ? "p" : k];
     setVal(`c${k}-min`, r[0]); setVal(`c${k}-max`, r[1]);
-    setPillVal(`pv-c${k}`, rangeSummary(r));
+    setPillVal(`pv-c${k}`, k === "yb"
+      ? (r[0] !== null && r[1] !== null ? `${r[0]}–${r[1]}` : r[0] !== null ? `${r[0]}+` : r[1] !== null ? `≤${r[1]}` : "")
+      : rangeSummary(r));
   }
 
   renderAreaChips();
@@ -1943,11 +1978,7 @@ function bindControls() {
     if (rb.checked) state.comp.since = Number(rb.value);
     compChanged();
   }));
-  document.getElementById("comp-new-btn").addEventListener("click", () => {
-    state.comp.first = !state.comp.first;
-    compChanged();
-  });
-  for (const k of ["price", "ppsf", "sf"]) {
+  for (const k of ["price", "ppsf", "sf", "yb"]) {
     for (const end of ["min", "max"]) {
       document.getElementById(`c${k}-${end}`).addEventListener("change", () => {
         const v = (id) => { const t = document.getElementById(id).value.trim(); return t === "" ? null : Number(t); };

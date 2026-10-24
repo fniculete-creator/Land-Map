@@ -895,3 +895,16 @@ html, body {
 .seg-market button#sold-btn.on { background: #b91c1c; }
 [data-dd="overlay"] .dd-panel { min-width: 400px; }
 [data-dd="overlay"] .check-label { white-space: nowrap; }
+
+/* Active program fills with its color (soon tabs carry theirs for later). */
+.prog-tab { border-radius: 8px 8px 0 0; }
+.prog-tab.active { color: #fff; border-bottom-color: transparent; }
+.prog-tab.active[data-prog="sb1123"] { background: #10b981; }
+.prog-tab.active[data-prog="slo"] { background: #0e7490; }
+.prog-tab.active[data-prog="comps"] { background: #2563eb; }
+.prog-tab.active[data-prog="apartments"] { background: #7c3aed; }
+.prog-tab.active[data-prog="sb9"] { background: #db2777; }
+.prog-tab.active[data-prog="duplex"] { background: #ca8a04; }
+.prog-tab.active[data-prog="ed1"] { background: #dc2626; }
+.prog-tab.active[data-prog="lihtc"] { background: #0891b2; }
+.prog-tab.active:hover { color: #fff; filter: brightness(0.95); }

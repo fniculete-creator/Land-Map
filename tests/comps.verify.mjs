@@ -45,7 +45,7 @@ assert(n1 >= n0, `Any date widens the list (${n0} -> ${n1})`);
 await page.click("#site-list .site-item");
 await page.waitForTimeout(600);
 const panel = await page.$eval("#detail-panel", (el) => (el.classList.contains("hidden") ? "" : el.innerText));
-assert(/Sale price/.test(panel) && /Sale date/.test(panel), "comp detail panel shows the sale");
+assert(/Sold \d\d\/\d\d\/\d{4}/i.test(panel) && /Per SF of home/i.test(panel) && /Sales/i.test(panel), "comp detail panel shows the sale");
 
 await page.click("#prog-sb1123");
 assert(await page.evaluate(() => window.LandMap.map.getLayoutProperty("comps-markers", "visibility")) === "none", "comp markers hide on SB 1123");

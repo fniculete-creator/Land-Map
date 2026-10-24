@@ -27,7 +27,7 @@ export function emptyState() {
     slo: false,  // Small Lot Ordinance cases view (data/slo.json)
     sloStatus: "any",   // "any" | "built" | "not built"
     comps: false,       // sale comps view (data/comps_small_lot.json)
-    comp: { since: 2025, first: false, p: [null, null], ppsf: [null, null], sf: [null, null] },
+    comp: { since: 2025, p: [null, null], ppsf: [null, null], sf: [null, null], yb: [null, null] },
     areas: [],   // selected search areas (NEIGHBORHOODS names) — chips
   };
 }
@@ -193,8 +193,7 @@ export function stateToHash(state) {
     const c = state.comp;
     p.set("comps", "1");
     if (c.since !== 2025) p.set("cy", String(c.since));
-    if (c.first) p.set("cn", "1");
-    for (const k of ["p", "ppsf", "sf"]) {
+    for (const k of ["p", "ppsf", "sf", "yb"]) {
       if (c[k][0] !== null || c[k][1] !== null) p.set("c" + k, `${c[k][0] ?? ""}..${c[k][1] ?? ""}`);
     }
   }
@@ -239,8 +238,7 @@ export function stateFromHash(hash) {
     state.comps = true;
     state.slo = false;
     if (p.get("cy") && Number.isFinite(+p.get("cy"))) state.comp.since = +p.get("cy");
-    if (p.get("cn") === "1") state.comp.first = true;
-    for (const k of ["p", "ppsf", "sf"]) {
+    for (const k of ["p", "ppsf", "sf", "yb"]) {
       const v = p.get("c" + k);
       if (v && v.includes("..")) {
         const [a, b] = v.split("..");

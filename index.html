@@ -50,13 +50,13 @@
               title="SB 1123 / SB 684 site targeting: vacant lots and SFR homes, candidates colored">SB 1123</button>
       <button class="prog-tab" id="slo-btn" data-prog="slo"
               title="Small Lot Ordinance subdivisions (2005 to date): every AA, TT and VTT case with SL in ZIMAS">SLO</button>
-      <button class="prog-tab soon" disabled title="Coming soon">Apartments <span class="soon-tag">Soon</span></button>
-      <button class="prog-tab soon" disabled title="Coming soon">SB 9 <span class="soon-tag">Soon</span></button>
-      <button class="prog-tab soon" disabled title="Coming soon">Duplex <span class="soon-tag">Soon</span></button>
-      <button class="prog-tab soon" disabled title="Coming soon">ED 1 <span class="soon-tag">Soon</span></button>
-      <button class="prog-tab soon" disabled title="Coming soon">LIHTC <span class="soon-tag">Soon</span></button>
+      <button class="prog-tab soon" data-prog="ed1" disabled title="Coming soon">ED 1 <span class="soon-tag">Soon</span></button>
+      <button class="prog-tab soon" data-prog="apartments" disabled title="Coming soon">Apartments <span class="soon-tag">Soon</span></button>
+      <button class="prog-tab soon" data-prog="sb9" disabled title="Coming soon">SB 9 <span class="soon-tag">Soon</span></button>
+      <button class="prog-tab soon" data-prog="duplex" disabled title="Coming soon">Duplex <span class="soon-tag">Soon</span></button>
+      <button class="prog-tab soon" data-prog="lihtc" disabled title="Coming soon">LIHTC <span class="soon-tag">Soon</span></button>
       <button class="prog-tab" id="comps-btn" data-prog="comps"
-              title="Sale comps of finished homes for underwriting">Comps</button>
+              title="Sale comps of finished homes for underwriting">Finished Comps</button>
     </nav>
 
     <nav id="filterbar">
@@ -79,17 +79,15 @@
           <button disabled title="Coming soon">SFR <span class="soon-tag">Soon</span></button>
         </div>
         <div class="dropdown" data-dd="csince">
-          <button class="pill" data-dd-btn>Sold since <span class="pill-val" id="pv-csince"></span> <span class="caret">▾</span></button>
+          <button class="pill" data-dd-btn>Date Sold <span class="pill-val" id="pv-csince"></span> <span class="caret">▾</span></button>
           <div class="dd-panel">
-            <label class="check-label"><input type="radio" name="csince" value="2025" /> 01/01/2025</label>
-            <label class="check-label"><input type="radio" name="csince" value="2024" /> 01/01/2024</label>
-            <label class="check-label"><input type="radio" name="csince" value="2023" /> 01/01/2023</label>
-            <label class="check-label"><input type="radio" name="csince" value="2020" /> 01/01/2020</label>
+            <label class="check-label"><input type="radio" name="csince" value="2025" /> Since 01/01/2025</label>
+            <label class="check-label"><input type="radio" name="csince" value="2024" /> Since 01/01/2024</label>
+            <label class="check-label"><input type="radio" name="csince" value="2023" /> Since 01/01/2023</label>
+            <label class="check-label"><input type="radio" name="csince" value="2020" /> Since 01/01/2020</label>
             <label class="check-label"><input type="radio" name="csince" value="0" /> Any date</label>
           </div>
         </div>
-        <button id="comp-new-btn" class="pill pill-toggle"
-                title="Only the first sale after construction (the builder's sale)">New construction</button>
         <div class="dropdown" data-dd="cprice">
           <button class="pill" data-dd-btn>Price <span class="pill-val" id="pv-cprice"></span> <span class="caret">▾</span></button>
           <div class="dd-panel">
@@ -113,13 +111,24 @@
           </div>
         </div>
         <div class="dropdown" data-dd="csf">
-          <button class="pill" data-dd-btn>Home size <span class="pill-val" id="pv-csf"></span> <span class="caret">▾</span></button>
+          <button class="pill" data-dd-btn>Home Size <span class="pill-val" id="pv-csf"></span> <span class="caret">▾</span></button>
           <div class="dd-panel">
             <label>Home size (sqft)</label>
             <div class="range-row">
               <input type="number" id="csf-min" placeholder="min" min="0" />
               <span>–</span>
               <input type="number" id="csf-max" placeholder="max" min="0" />
+            </div>
+          </div>
+        </div>
+        <div class="dropdown" data-dd="cyb">
+          <button class="pill" data-dd-btn>Year Built <span class="pill-val" id="pv-cyb"></span> <span class="caret">▾</span></button>
+          <div class="dd-panel">
+            <label>Year built</label>
+            <div class="range-row">
+              <input type="number" id="cyb-min" placeholder="from" min="2005" />
+              <span>–</span>
+              <input type="number" id="cyb-max" placeholder="to" min="2005" />
             </div>
           </div>
         </div>

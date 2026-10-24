@@ -98,19 +98,19 @@ code needed.
   **Excel** exports the checked cases (or all in view). Rebuild with
   `python scripts/slo/build_slo.py`.
 - **Program bar** — the top row picks one program at a time (SB 1123, SLO,
-  Comps; Apartments, SB 9, Duplex, ED 1 and LIHTC are placeholders marked
-  Soon). The filter row below shows only that program's filters. SB 1123
+  Finished Comps; ED 1, Apartments, SB 9, Duplex and LIHTC are placeholders
+  marked Soon). The filter row below shows only that program's filters. SB 1123
   leads with the **On Market / Sold** switch (click the lit side again to
   turn it off; Sold reads `data/sold_land.json`, built by
   `python scripts/comps/build_land_sales.py`), and its **Overlay** dropdown
   stacks OZ 2.0, OZ (2018), High Resource (CTCAC/HCD 2026) and QCT/DDA
   (HUD 2026): checked overlays shade the map and keep only parcels inside
   every one. Rebuild the overlays with `python scripts/overlays/build_overlays.py`.
-- **Comps (Small Lot)** — sale comps of finished small lot homes in the City
+- **Finished Comps (Small Lot)** — sale comps of finished small lot homes in the City
   of LA (`data/comps_small_lot.json`: 01S* small lot use codes built 2005+
   plus the homes in built SLO cases, priced from the Assessor's sale
-  records). Filters: Sold since (default 01/01/2025), New construction (first
-  sale within 2 years of the build), price, $/SF, home size. Dots are colored
+  records). Filters: Sold since (default 01/01/2025), price, $/SF, home size,
+  year built (list badges still mark the builder's first sale as New). Dots are colored
   by $/SF; the side panel shows median price, $/SF and home size in view, and
   Excel exports the checked or listed sales. Rebuild with
   `python scripts/comps/build_small_lot_comps.py` (after the SLO build).

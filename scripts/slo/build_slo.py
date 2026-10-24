@@ -119,7 +119,7 @@ for cn, rs in cases.items():
     rr = [roll[a] for a in ains if a in roll]
     m = re.match(r"^(AA|TT|VTT|PMLA|PM)-(\d{4})-", cn)
     filed = int(m.group(2)) if m and m.group(1) == "AA" else None
-    kind = "Parcel map" if cn.startswith("AA") else "Tract map"
+    kind = "Parcel Map" if cn.startswith("AA") else "Tract Map"
     new = [x for x in rr if x["UseType"] in ("SFR", "CND") and str(x.get("YearBuilt") or "0").isdigit() and int(x["YearBuilt"] or 0) >= max(2005, filed or 2005)]
     sfs = [int(x["SQFTmain"]) for x in new if x.get("SQFTmain")]
     yrs = sorted(int(x["YearBuilt"]) for x in new)
