@@ -524,6 +524,15 @@ function aerialEmbedHtml(lat, lng) {
     : "";
 }
 
+// Street View of the home (Maps Embed API; same key as the aerial). Comps open on it.
+function streetViewEmbedHtml(lat, lng) {
+  return CONFIG.GOOGLE_MAPS_KEY && lat != null
+    ? `<iframe class="dp-sv" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+         src="https://www.google.com/maps/embed/v1/streetview?key=${CONFIG.GOOGLE_MAPS_KEY}&location=${lat},${lng}&fov=80"
+         allowfullscreen></iframe>`
+    : "";
+}
+
 // Comp and SLO panels use the parcel panel's layout: head, badges, aerial,
 // two tiles, titled sections, links row.
 function compDetailHtml(c) {
@@ -540,7 +549,7 @@ function compDetailHtml(c) {
       <button id="dp-close" title="Close">×</button>
     </div>
     <div class="dp-badges"><span class="badge ${c.n === 1 ? "badge-ok" : "badge-vacant"}">${c.n === 1 ? "New construction sale" : "Resale"}</span></div>
-    ${aerialEmbedHtml(c.lat, c.lng)}
+    ${streetViewEmbedHtml(c.lat, c.lng)}
     <div class="dp-tiles">
       <div class="dp-tile"><b>$${fmt(c.p)}</b><span>Sold ${fmtDate(c.d)}</span></div>
       <div class="dp-tile dp-tile-navy"><b>${c.ppsf ? "$" + fmt(c.ppsf) : "–"}</b><span>Per SF of home</span></div>
