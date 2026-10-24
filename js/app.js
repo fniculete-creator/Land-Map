@@ -874,7 +874,7 @@ function applyFilters() {
   applyStatusOutlines();
   applyProjectScope();
   document.getElementById("list-title").textContent =
-    state.om ? "On-market deals" : state.sold ? "Sold since 01/01/2024" :
+    state.om ? "On-market deals" : state.sold ? "Sold Since 01/01/2024" :
     state.sbPreset ? "Candidates in view" : "Matches in view";
   scheduleCount();
 }
@@ -1087,7 +1087,7 @@ function setViewLabels(prog) {
   const t = document.getElementById("list-title");
   if (v) t.textContent = v.title;
   else if (labelsFor !== "sb1123") {
-    t.textContent = state.om ? "On-market deals" : state.sold ? "Sold since 01/01/2024" : state.sbPreset ? "Candidates in view" : "Matches in view";
+    t.textContent = state.om ? "On-market deals" : state.sold ? "Sold Since 01/01/2024" : state.sbPreset ? "Candidates in view" : "Matches in view";
   }
   labelsFor = prog;
 }
@@ -1844,7 +1844,7 @@ function syncControlsFromState() {
   document.querySelectorAll("#slo-status-seg button").forEach((b) => b.classList.toggle("on", b.dataset.sloStatus === state.sloStatus));
   const cf = state.comp;
   document.querySelectorAll('input[name="csince"]').forEach((rb) => { rb.checked = Number(rb.value) === cf.since; });
-  setPillVal("pv-csince", cf.since ? `01/01/${cf.since}` : "any date");
+  setPillVal("pv-csince", cf.since ? `01/01/${cf.since}` : "Any Date");
   for (const k of ["price", "ppsf", "sf", "yb"]) {
     const r = cf[k === "price" ? "p" : k];
     setVal(`c${k}-min`, r[0]); setVal(`c${k}-max`, r[1]);
