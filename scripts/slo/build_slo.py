@@ -6,6 +6,7 @@ Steps: (1) ZIMAS case table zim4s.search_case, CASE_NUM like -SL (not -SLD desig
 City landbase, then the assessor roll for each AIN; (3) per case: address range, lots, built = 2+ new SFR/condo homes on the roll
 (year built at or after 2005 and the filing year), home count, size range, completion years, location (roll centroids, else the
 landbase parcel). Modification cases (-M1, -1A, -A2) fold into the original case. Cases with no location are dropped.
+(4) each case's lots merged into one site outline -> data/slo_lots.geojson.
 Built 10/23/2026 (797 cases: 365 built with 3,501 homes, 432 not built)."""
 import argparse, collections, json, os, re, statistics, time, urllib.parse, urllib.request
 ap = argparse.ArgumentParser(); ap.add_argument("--work", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "_work"))
@@ -124,6 +125,8 @@ for cn, rs in cases.items():
     yrs = sorted(int(x["YearBuilt"]) for x in new)
     built = len(new) >= 2
     addrs = [r["ADDRESS"] for r in rs if r.get("ADDRESS")]
+    if not addrs:                                    # no address on the case: use the roll situs addresses
+        addrs = [f"{x['SitusHouseNo']} {x['SitusStreet']}".strip() for x in rr if str(x.get("SitusHouseNo") or "").strip() not in ("", "0") and x.get("SitusStreet")]
     lat = statistics.mean(x["CENTER_LAT"] for x in rr if x.get("CENTER_LAT")) if any(x.get("CENTER_LAT") for x in rr) else None
     lng = statistics.mean(x["CENTER_LON"] for x in rr if x.get("CENTER_LON")) if any(x.get("CENTER_LON") for x in rr) else None
     rec = {"case": cn, "kind": kind, "filed": filed, "address": addr_range(addrs) if addrs else "", "community": title(rs[0].get("COMMUNITY") or ""),
@@ -149,3 +152,32 @@ n_loc = sum(1 for v in out.values() if v["lat"])
 st = collections.Counter(v["status"] for v in out.values())
 print(len(out), "cases;", n_loc, "located;", dict(st), "; built homes:", sum(v["homes"] or 0 for v in out.values()))
 json.dump(out, open(os.path.join(REPO, "data", "slo.json"), "w"), indent=1, ensure_ascii=True)
+
+# ---- 4. project footprints: each case's whole site, its lots (City landbase parcels by PIN) merged into one outline ----
+from shapely.geometry import Polygon, mapping
+from shapely.ops import unary_union
+allpins = sorted({r["PIN"] for cn in out for r in cases[cn] if r.get("PIN")})
+geom = {}
+for i in range(0, len(allpins), 100):
+    chunk = allpins[i:i + 100]
+    r = post(LB, {"where": "PIN IN (" + ",".join("'" + p.replace("'", "''") + "'" for p in chunk) + ")", "outFields": "PIN",
+                  "returnGeometry": "true", "outSR": 4326, "f": "json"})
+    for f in r.get("features", []):
+        rings = [g for g in f.get("geometry", {}).get("rings", []) if len(g) >= 4]
+        if rings:
+            polys = [Polygon(g).buffer(0) for g in rings]
+            geom.setdefault(f["attributes"]["PIN"], []).extend(polys)
+feats = []
+for cn, v in out.items():
+    polys = [g for r in {r["PIN"] for r in cases[cn] if r.get("PIN")} for g in geom.get(r, [])]
+    if not polys: continue
+    u = unary_union(polys).buffer(0.000003).buffer(-0.000003).simplify(0.000003)   # close slivers between lots
+    if u.is_empty or u.area > 2e-5: continue                                          # skip bogus sites over ~50 acres
+    feats.append({"type": "Feature", "properties": {"case": cn, "status": v["status"]},
+                  "geometry": json.loads(json.dumps(mapping(u), default=list))})
+for f in feats:                                                                        # 6 decimals is about 10 cm
+    def rnd(c): return [round(c[0], 6), round(c[1], 6)] if isinstance(c[0], float) else [rnd(x) for x in c]
+    f["geometry"]["coordinates"] = rnd(f["geometry"]["coordinates"])
+print(len(feats), "project footprints")
+json.dump({"type": "FeatureCollection", "features": feats}, open(os.path.join(REPO, "data", "slo_lots.geojson"), "w"), separators=(",", ":"))
+

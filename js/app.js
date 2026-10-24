@@ -317,6 +317,8 @@ function baseStyle() {
   sources["oz2"] = { type: "geojson", data: { type: "FeatureCollection", features: [] } };
   // Small Lot Ordinance cases (data/slo.json), loaded before the style is built.
   sources["slo"] = { type: "geojson", data: sloGeojson() };
+  // Each SLO case's whole site: its lots merged into one outline (data/slo_lots.geojson).
+  sources["slo-lots"] = { type: "geojson", data: "data/slo_lots.geojson" };
   return {
     version: 8,
     sources,
@@ -360,11 +362,22 @@ function baseStyle() {
         },
       },
       {
+        id: "slo-lots-fill", type: "fill", source: "slo-lots", minzoom: 13,
+        layout: { visibility: "none" },
+        paint: { "fill-color": ["match", ["get", "status"], "built", "#0e7490", "#94a3b8"], "fill-opacity": 0.22 },
+      },
+      {
+        id: "slo-lots-line", type: "line", source: "slo-lots", minzoom: 13,
+        layout: { visibility: "none" },
+        paint: { "line-color": ["match", ["get", "status"], "built", "#0e7490", "#64748b"],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 13, 1, 17, 2.5] },
+      },
+      {
         // Small Lot Ordinance cases: hidden until the SLO pill is on; every zoom.
         id: "slo-markers", type: "circle", source: "slo",
         layout: { visibility: "none" },
         paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 3, 12, 6, 15, 9],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 3, 12, 6, 14, 6, 16, 4],
           "circle-color": ["match", ["get", "status"], "built", "#0e7490", "#94a3b8"],
           "circle-stroke-color": "#fff",
           "circle-stroke-width": 1.2,
@@ -920,13 +933,13 @@ function renderSloView() {
     const meta = document.createElement("div");
     meta.className = "site-meta";
     meta.className = "site-meta site-meta-1";
-    meta.textContent = [(c.community || "").split(" - ")[0], c.case,
+    meta.textContent = [(c.community || "").split(" - ")[0], c.address ? c.case : "",
       c.status === "built" ? c.completed : (c.filed ? "filed " + c.filed : "")].filter(Boolean).join(" · ");
     info.append(name, meta);
     const right = document.createElement("span");
     right.className = "site-right";
     const b = document.createElement("b");
-    b.textContent = c.status === "built" ? `${c.homes} homes` : (c.lots ? `${c.lots} lots` : "");
+    b.textContent = c.status === "built" ? `${c.homes} homes` : (c.lots ? `${c.lots} lot${c.lots === 1 ? "" : "s"}` : "");
     right.appendChild(b);
     const sub = document.createElement("span");
     sub.textContent = c.status === "built" && c.avgSf ? fmt(c.avgSf) + " sf avg" : "";
@@ -1410,8 +1423,8 @@ function syncControlsFromState() {
 
   document.getElementById("oz-btn").classList.toggle("active", !!state.oz);
   document.getElementById("slo-btn").classList.toggle("active", !!state.slo);
-  if (map && map.getLayer("slo-markers")) {
-    map.setLayoutProperty("slo-markers", "visibility", state.slo ? "visible" : "none");
+  for (const id of ["slo-markers", "slo-lots-fill", "slo-lots-line"]) {
+    if (map && map.getLayer(id)) map.setLayoutProperty(id, "visibility", state.slo ? "visible" : "none");
   }
   // SLO is its own view: the blue SB 1123 universe steps aside while it is on.
   for (const id of ["centroids", "parcels-fill", "parcels-line"].flatMap(lids)) {
@@ -1920,12 +1933,12 @@ async function fetchMergedStyle(styleUrl, fallback) {
   base.sources = { ...base.sources };
   for (const [k, v] of Object.entries(fallback.sources)) {
     if (k === "satellite" || k === "sb-projects" || k === "om-listings"
-      || k === "oz2" || k === "slo" || k.startsWith("parcels")) {
+      || k === "oz2" || k === "slo" || k === "slo-lots" || k.startsWith("parcels")) {
       base.sources[k] = v;
     }
   }
   const overlayIds = new Set([
-    "basemap-satellite", "projects-markers", "om-markers", "slo-markers", "oz2-tint", "oz2-line",
+    "basemap-satellite", "projects-markers", "om-markers", "slo-lots-fill", "slo-lots-line", "slo-markers", "oz2-tint", "oz2-line",
     ...["centroids", "parcels-fill", "parcels-line", "parcels-projects",
       "parcels-status", "parcels-selected"].flatMap(lids),
   ]);
@@ -2115,10 +2128,14 @@ async function boot() {
     map.easeTo({ center: e.lngLat, zoom: 15 });
     showDetail({ ain, a: l.address || "", lsf: l.lotSqft, t: l.tier || "" }, e.lngLat);
   });
-  map.on("click", "slo-markers", (e) => {
-    const c = sloCases[e.features[0].properties.case];
-    if (c) showSloDetail(c);
-  });
+  for (const id of ["slo-markers", "slo-lots-fill"]) {
+    map.on("click", id, (e) => {
+      const c = sloCases[e.features[0].properties.case];
+      if (c) showSloDetail(c);
+    });
+  }
+  map.on("mouseenter", "slo-lots-fill", () => { map.getCanvas().style.cursor = "pointer"; });
+  map.on("mouseleave", "slo-lots-fill", () => { map.getCanvas().style.cursor = ""; });
   map.on("mouseenter", "slo-markers", () => { map.getCanvas().style.cursor = "pointer"; });
   map.on("mouseleave", "slo-markers", () => { map.getCanvas().style.cursor = ""; });
   map.on("mouseenter", "om-markers", () => { map.getCanvas().style.cursor = "pointer"; });
