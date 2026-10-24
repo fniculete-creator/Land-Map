@@ -908,3 +908,4 @@ html, body {
 .prog-tab.active[data-prog="ed1"] { background: #dc2626; }
 .prog-tab.active[data-prog="lihtc"] { background: #0891b2; }
 .prog-tab.active:hover { color: #fff; filter: brightness(0.95); }
+.soon-opt { color: #a3adb8; }

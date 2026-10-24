@@ -73,10 +73,15 @@
 
       <!-- Comps filters -->
       <div class="fgroup hidden" data-prog="comps">
-        <div class="seg" id="comp-type-seg">
-          <button data-comp-type="smalllot" class="on">Small Lot</button>
-          <button disabled title="Coming soon">Condo <span class="soon-tag">Soon</span></button>
-          <button disabled title="Coming soon">SFR <span class="soon-tag">Soon</span></button>
+        <div class="dropdown" data-dd="cprog">
+          <button class="pill" data-dd-btn>Program <span class="pill-val" id="pv-cprog">Small Lot</span> <span class="caret">▾</span></button>
+          <div class="dd-panel">
+            <label class="check-label"><input type="radio" name="cprog" value="smalllot" checked /> Small Lot</label>
+            <label class="check-label soon-opt"><input type="radio" name="cprog" value="sb1123" disabled /> SB 1123 <span class="soon-tag">Soon</span></label>
+            <label class="check-label soon-opt"><input type="radio" name="cprog" value="ed1" disabled /> ED 1 <span class="soon-tag">Soon</span></label>
+            <label class="check-label soon-opt"><input type="radio" name="cprog" value="sb9" disabled /> SB 9 <span class="soon-tag">Soon</span></label>
+            <p class="dd-hint">Finished homes that sold, by the program they were built under.</p>
+          </div>
         </div>
         <div class="dropdown" data-dd="csince">
           <button class="pill" data-dd-btn>Sold Since <span class="pill-val" id="pv-csince"></span> <span class="caret">▾</span></button>

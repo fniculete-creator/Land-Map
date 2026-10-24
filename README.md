@@ -106,8 +106,9 @@ code needed.
   stacks OZ 2.0, OZ (2018), High Resource (CTCAC/HCD 2026) and QCT/DDA
   (HUD 2026): checked overlays shade the map and keep only parcels inside
   every one. Rebuild the overlays with `python scripts/overlays/build_overlays.py`.
-- **Finished Comps (Small Lot)** — sale comps of finished small lot homes in the City
-  of LA (`data/comps_small_lot.json`: 01S* small lot use codes built 2005+
+- **Finished Comps** — the Program filter picks the comp set: Small Lot
+  today (SB 1123, ED 1 and SB 9 marked Soon). Small Lot = sale comps of
+  finished small lot homes in the City of LA (`data/comps_small_lot.json`: 01S* small lot use codes built 2005+
   plus the homes in built SLO cases, priced from the Assessor's sale
   records). Filters: Sold Since (default 01/01/2025), price, $/SF, home size,
   year built (list badges still mark the builder's first sale as New). Dots are colored
