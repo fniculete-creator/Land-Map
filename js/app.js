@@ -2,7 +2,7 @@ import * as maplibregl from "../vendor/maplibre-gl/maplibre-gl.mjs";
 import { CONFIG } from "./config.js";
 import {
   emptyState, sb1123State, buildFilter, buildCentroidFilter, areaBoxes,
-  stateToHash, stateFromHash, setOzGeometry,
+  stateToHash, stateFromHash, setOverlayGeometry, activeOverlays,
 } from "./filters.js";
 
 /* global pmtiles */
@@ -315,10 +315,13 @@ function baseStyle() {
   // toggle. Registered at style time — a geojson source added mid-session
   // can wedge isStyleLoaded() at false, starving the count/list refresh.
   sources["oz2"] = { type: "geojson", data: { type: "FeatureCollection", features: [] } };
+  for (const k of ["oz", "hr", "qct"]) sources["ovl-" + k] = { type: "geojson", data: { type: "FeatureCollection", features: [] } };
   // Small Lot Ordinance cases (data/slo.json), loaded before the style is built.
   sources["slo"] = { type: "geojson", data: sloGeojson() };
   // Each SLO case's whole site: its lots merged into one outline (data/slo_lots.geojson).
   sources["slo-lots"] = { type: "geojson", data: "data/slo_lots.geojson" };
+  // Sale comps start empty; ensureCompsLoaded() fills them on first visit to Comps.
+  sources["comps"] = { type: "geojson", data: { type: "FeatureCollection", features: [] } };
   return {
     version: 8,
     sources,
@@ -351,6 +354,36 @@ function baseStyle() {
           "line-dasharray": [3, 2] },
       },
       {
+        id: "ovl-oz-tint", type: "fill", source: "ovl-oz",
+        layout: { visibility: "none" },
+        paint: { "fill-color": "#b45309", "fill-opacity": 0.12 },
+      },
+      {
+        id: "ovl-oz-line", type: "line", source: "ovl-oz",
+        layout: { visibility: "none" },
+        paint: { "line-color": "#b45309", "line-opacity": 0.6, "line-width": 1.1, "line-dasharray": [3, 2] },
+      },
+      {
+        id: "ovl-hr-tint", type: "fill", source: "ovl-hr",
+        layout: { visibility: "none" },
+        paint: { "fill-color": ["match", ["get", "cat"], "Highest Resource", "#047857", "#34d399"], "fill-opacity": 0.12 },
+      },
+      {
+        id: "ovl-hr-line", type: "line", source: "ovl-hr",
+        layout: { visibility: "none" },
+        paint: { "line-color": ["match", ["get", "cat"], "Highest Resource", "#047857", "#34d399"], "line-opacity": 0.6, "line-width": 1.1, "line-dasharray": [3, 2] },
+      },
+      {
+        id: "ovl-qct-tint", type: "fill", source: "ovl-qct",
+        layout: { visibility: "none" },
+        paint: { "fill-color": ["match", ["get", "cat"], "QCT", "#dc2626", "#f97316"], "fill-opacity": 0.12 },
+      },
+      {
+        id: "ovl-qct-line", type: "line", source: "ovl-qct",
+        layout: { visibility: "none" },
+        paint: { "line-color": ["match", ["get", "cat"], "QCT", "#dc2626", "#f97316"], "line-opacity": 0.6, "line-width": 1.1, "line-dasharray": [3, 2] },
+      },
+      {
         id: "projects-markers", type: "circle", source: "sb-projects",
         maxzoom: 14,
         paint: {
@@ -381,6 +414,17 @@ function baseStyle() {
           "circle-color": ["match", ["get", "status"], "built", "#0e7490", "#94a3b8"],
           "circle-stroke-color": "#fff",
           "circle-stroke-width": 1.2,
+        },
+      },
+      {
+        // Sale comps, colored by $/SF of home. Hidden until the Comps program is on.
+        id: "comps-markers", type: "circle", source: "comps",
+        layout: { visibility: "none" },
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 2.5, 12, 5, 16, 7],
+          "circle-color": COMP_COLOR_EXPR,
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 1,
         },
       },
       {
@@ -422,6 +466,101 @@ function projInScope(pr) {
       : state.dealStatus === "submitted" ? pr.status !== "approved" : true;
   const tierOk = state.tiers.size === 0 || state.tiers.has(pr.tier || "");
   return statusOk && tierOk && inSelectedAreas(pr.lng, pr.lat);
+}
+
+// ---- Comps program: sale comps of finished homes (data/comps_small_lot.json) ----
+const COMP_BREAKS = [[500, "#94a3b8"], [750, "#60a5fa"], [1000, "#2563eb"], [1250, "#7c3aed"], [Infinity, "#db2777"]];
+const COMP_COLOR_EXPR = ["step", ["coalesce", ["get", "ppsf"], 0],
+  "#94a3b8", 500, "#60a5fa", 750, "#2563eb", 1000, "#7c3aed", 1250, "#db2777"];
+function compColor(ppsf) { return (COMP_BREAKS.find(([b]) => (ppsf || 0) < b) || COMP_BREAKS[4])[1]; }
+let compSales = [];
+let compsLoadPromise = null;
+function ensureCompsLoaded() {
+  if (!compsLoadPromise) {
+    compsLoadPromise = fetch("data/comps_small_lot.json")
+      .then((r) => (r.ok ? r.json() : []))
+      .catch(() => [])
+      .then((rows) => {
+        compSales = rows.map((c, i) => ({ ...c, id: i }));
+        const src = map && map.getSource("comps");
+        if (src) src.setData({
+          type: "FeatureCollection",
+          features: compSales.map((c) => ({
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [c.lng, c.lat] },
+            properties: { id: c.id, d: c.d, p: c.p, ppsf: c.ppsf, sf: c.sf, n: c.n },
+          })),
+        });
+        scheduleCount();
+      });
+  }
+  return compsLoadPromise;
+}
+function compPasses(c) {
+  const f = state.comp;
+  const inR = (v, [lo, hi]) => (lo === null || (v != null && v >= lo)) && (hi === null || (v != null && v <= hi));
+  return (!f.since || c.d >= `${f.since}-01-01`) && (!f.first || c.n === 1)
+    && inR(c.p, f.p) && inR(c.ppsf, f.ppsf) && inR(c.sf, f.sf);
+}
+function compFilterExpr() {
+  const f = state.comp;
+  const out = ["all"];
+  if (f.since) out.push([">=", ["get", "d"], `${f.since}-01-01`]);
+  if (f.first) out.push(["==", ["get", "n"], 1]);
+  for (const k of ["p", "ppsf", "sf"]) {
+    if (f[k][0] !== null) out.push([">=", ["coalesce", ["get", k], -1], f[k][0]]);
+    if (f[k][1] !== null) out.push(["<=", ["coalesce", ["get", k], 1e12], f[k][1]]);
+  }
+  return out;
+}
+function fmtDate(iso) { const [y, m, d] = iso.split("-"); return `${m}/${d}/${y}`; }
+function compCommunity(c) { return communityFor("", c.z) || (c.z ? "ZIP " + c.z : ""); }
+function compApn(c) { return `${c.ain.slice(0, 4)}-${c.ain.slice(4, 7)}-${c.ain.slice(7)}`; }
+
+function compDetailHtml(c) {
+  const others = compSales.filter((o) => o.ain === c.ain && o.id !== c.id)
+    .sort((a, b) => b.d.localeCompare(a.d));
+  const sc = c.c && sloCases[c.c];
+  const rows = [
+    kvRow("Sale price", "$" + fmt(c.p)),
+    kvRow("Sale date", fmtDate(c.d)),
+    c.ppsf ? kvRow("Price per SF", "$" + fmt(c.ppsf)) : "",
+    c.sf ? kvRow("Home size", fmt(c.sf) + " SF") : "",
+    c.bd || c.ba ? kvRow("Beds / baths", `${c.bd ?? "?"} / ${c.ba ?? "?"}`) : "",
+    c.yb ? kvRow("Year built", String(c.yb)) : "",
+    kvRow("Sale type", c.n === 1 ? "New construction (first sale after the build)" : "Resale"),
+    c.c ? kvRow("SLO case", sc ? `<a href="#" id="dp-comp-case">${c.c}</a>` : c.c) : "",
+    kvRow("APN", compApn(c)),
+  ].join("");
+  const hist = others.length ? `<h4>Other recorded sales</h4><ul class="dp-comp-sales">${others.map((o) =>
+    `<li><span>${fmtDate(o.d)}</span><b>$${fmt(o.p)}</b><span>${o.ppsf ? "$" + fmt(o.ppsf) + "/sf" : ""}</span></li>`).join("")}</ul>` : "";
+  return `
+    <div class="dp-head">
+      <div>
+        <div class="dp-addr">${c.a}</div>
+        <div class="dp-city">${compCommunity(c)}${c.z ? " " + c.z : ""}</div>
+        <div class="dp-sub">Small lot home sale</div>
+      </div>
+      <button id="dp-close" title="Close">×</button>
+    </div>
+    <div class="dp-badges"><span class="badge ${c.n === 1 ? "badge-ok" : "badge-vacant"}">${c.n === 1 ? "New construction" : "Resale"}</span></div>
+    <div class="dp-slo">${rows}${hist}</div>
+    <div class="dp-slo dp-slo-links">
+      <a href="https://portal.assessor.lacounty.gov/parceldetail/${c.ain}" target="_blank" rel="noopener">Assessor sale record</a>
+      &nbsp;·&nbsp;
+      <a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${c.lat},${c.lng}" target="_blank" rel="noopener">Street View</a>
+    </div>
+    <p class="dd-hint dp-comp-note">Price is the County's transfer-tax figure for a full sale; confirm it against the MLS before relying on it.</p>`;
+}
+
+function showCompDetail(c) {
+  selectedAin = null;
+  const panel = document.getElementById("detail-panel");
+  panel.innerHTML = compDetailHtml(c);
+  panel.classList.remove("hidden");
+  document.getElementById("dp-close").addEventListener("click", closeDetail);
+  const link = document.getElementById("dp-comp-case");
+  if (link) link.addEventListener("click", (e) => { e.preventDefault(); showSloDetail(sloCases[c.c]); });
 }
 
 function sloGeojson() {
@@ -501,10 +640,64 @@ function inSelectedAreas(lng, lat) {
 // { props, bbox, rings } where rings = each polygon's ring list (outer +
 // holes) for the even-odd point-in-polygon test the polygon views need
 // ("within" covers only the centroid dot layers).
+// Overlay dropdown layers. Each loads on first check: its parts feed JS
+// point-in-polygon (polygon-zoom lists, the parcel panel) and its MultiPolygon
+// feeds the map's "within" clause. oz2 keeps its original source and layers.
+const OVERLAYS = {
+  oz2: { file: "data/oz2.json", label: "Opportunity Zone 2.0", src: "oz2" },
+  oz: { file: "data/overlay_oz.json", label: "Opportunity Zone (2018)", src: "ovl-oz" },
+  hr: { file: "data/overlay_hr.json", label: "High Resource (TCAC/HCD 2026)", src: "ovl-hr" },
+  qct: { file: "data/overlay_qct.json", label: "QCT / DDA (HUD 2026)", src: "ovl-qct" },
+};
+const ovlParts = {};
+const ovlPromises = {};
+function ensureOverlayLoaded(key) {
+  if (ovlPromises[key]) return ovlPromises[key];
+  ovlPromises[key] = fetch(OVERLAYS[key].file)
+    .then((r) => r.json())
+    .then((fc) => {
+      const parts = [];
+      const multi = [];
+      for (const f of fc.features) {
+        const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+        for (const rings of polys) {
+          multi.push(rings);
+          let w = 180, s = 90, e = -180, n = -90;
+          for (const [x, y] of rings[0]) {
+            if (x < w) w = x; if (x > e) e = x;
+            if (y < s) s = y; if (y > n) n = y;
+          }
+          parts.push({ props: f.properties, bbox: [w, s, e, n], rings });
+        }
+      }
+      ovlParts[key] = parts;
+      setOverlayGeometry(key, { type: "MultiPolygon", coordinates: multi });
+      if (key === "oz2") ozTracts = parts;
+      const src = map.getSource(OVERLAYS[key].src);
+      if (src) src.setData(fc);
+    });
+  return ovlPromises[key];
+}
+function overlayAt(key, lng, lat) {
+  const parts = ovlParts[key];
+  if (!parts || lng == null) return null;
+  for (const t of parts) {
+    const [w, s, e, n] = t.bbox;
+    if (lng < w || lng > e || lat < s || lat > n) continue;
+    let hits = 0;
+    for (const ring of t.rings) if (ringContains(ring, lng, lat)) hits++;
+    if (hits % 2 === 1) return t.props;
+  }
+  return null;
+}
+
 let ozTracts = null;
 let ozLoadPromise = null;
 
 function ensureOzLoaded() {
+  return ensureOverlayLoaded("oz2");
+}
+function ensureOzLoadedLegacy() {
   if (ozLoadPromise) return ozLoadPromise;
   ozLoadPromise = fetch("data/oz2.json")
     .then((r) => r.json())
@@ -619,13 +812,14 @@ function applyFilters() {
     }
   }
   const omAins = state.om ? omAinsFor() : [];
-  const f = buildFilter(state, CONFIG, statusAins, omAins);
+  const soldAins = state.sold ? soldAinsFor() : [];
+  const f = buildFilter(state, CONFIG, statusAins, omAins, soldAins);
   for (const id of FILTERED_LAYERS) map.setFilter(id, f);
   const selBase = ["==", ["get", "ain"], selectedAin ?? "___none___"];
   for (const id of lids("parcels-selected")) {
     map.setFilter(id, f ? ["all", f, selBase] : selBase);
   }
-  const cf = buildCentroidFilter(state, CONFIG, statusAins, omAins);
+  const cf = buildCentroidFilter(state, CONFIG, statusAins, omAins, soldAins);
   for (const id of lids("centroids")) map.setFilter(id, cf);
 
   if (map.getLayer("om-markers")) {
@@ -637,7 +831,7 @@ function applyFilters() {
   applyStatusOutlines();
   applyProjectScope();
   document.getElementById("list-title").textContent =
-    state.om ? "On-market deals" :
+    state.om ? "On-market deals" : state.sold ? "Sold since 01/01/2024" :
     state.sbPreset ? "Candidates in view" : "Matches in view";
   scheduleCount();
 }
@@ -733,7 +927,8 @@ function updateCount() {
   // A filter change briefly marks the style dirty; dropping the update here
   // would freeze the list on stale results, so re-arm instead.
   if (!map.isStyleLoaded()) { scheduleCount(); return; }
-  setSloLabels(!!state.slo);
+  setViewLabels(program());
+  if (state.comps) { renderCompsView(); return; }
   if (state.slo) { renderSloView(); return; }
   const zoom = map.getZoom();
   const layers = zoom >= 14 ? lids("parcels-fill") : lids("centroids");
@@ -757,11 +952,12 @@ function updateCount() {
   if (boxes.length) inView = inView.filter(inBoxes);
   // OZ 2.0 scopes the polygon views in JS the same way area chips do
   // (the centroid layers already filter via "within" on the map).
-  if (state.oz && ozTracts) {
+  for (const k of activeOverlays(state)) {
+    if (!ovlParts[k]) continue;
     inView = inView.filter((f) => {
       if (!f.geometry) return false;
       const [x, y] = featureCenter(f);
-      return ozTractAt(x, y) !== null;
+      return overlayAt(k, x, y) !== null;
     });
   }
 
@@ -834,17 +1030,132 @@ function featureCenter(f) {
 
 // SLO view: the stat tiles and the list switch to the Small Lot Ordinance
 // cases in the current view (newest completed first, then not built).
-const SLO_LABELS = ["SLO cases in view", "built", "homes built", "avg home sf"];
+const VIEW_LABELS = {
+  slo: { tiles: ["SLO cases in view", "built", "homes built", "avg home sf"], title: "SLO cases in view" },
+  comps: { tiles: ["sales in view", "median price", "median $/sf", "median home sf"], title: "Small lot sales in view" },
+};
 let baseLabels = null;
-function setSloLabels(on) {
+let labelsFor = "sb1123";
+function setViewLabels(prog) {
   const els = [...document.querySelectorAll("#stat-tiles .stat-label")];
   if (!baseLabels) baseLabels = els.map((e) => e.textContent);
-  els.forEach((e, i) => { e.textContent = on ? SLO_LABELS[i] : baseLabels[i]; });
+  const v = VIEW_LABELS[prog];
+  els.forEach((e, i) => { e.textContent = v ? v.tiles[i] : baseLabels[i]; });
   const t = document.getElementById("list-title");
-  if (on) t.textContent = "SLO cases in view";
-  else if (t.textContent === "SLO cases in view") {
-    t.textContent = state.om ? "On-market deals" : state.sbPreset ? "Candidates in view" : "Matches in view";
+  if (v) t.textContent = v.title;
+  else if (labelsFor !== "sb1123") {
+    t.textContent = state.om ? "On-market deals" : state.sold ? "Sold since 01/01/2024" : state.sbPreset ? "Candidates in view" : "Matches in view";
   }
+  labelsFor = prog;
+}
+function program() { return state.comps ? "comps" : state.slo ? "slo" : "sb1123"; }
+
+const compChecks = new Set();
+let lastComps = [];
+function renderCompsView() {
+  const vb = map.getBounds();
+  const sales = compSales.filter((c) => vb.contains([c.lng, c.lat]) && compPasses(c));
+  const med = (arr) => { const a = arr.filter((v) => v != null).sort((x, y) => x - y); return a.length ? median(a) : null; };
+  const mp = med(sales.map((c) => c.p)), mpsf = med(sales.map((c) => c.ppsf)), msf = med(sales.map((c) => c.sf));
+  document.getElementById("result-count").textContent = fmt(sales.length);
+  document.getElementById("stat-candidates").textContent = mp
+    ? (mp >= 1e6 ? "$" + (mp / 1e6).toFixed(2) + "M" : "$" + fmt(Math.round(mp / 1000) * 1000)) : "–";
+  document.getElementById("stat-medlot").textContent = mpsf ? "$" + fmt(Math.round(mpsf)) : "–";
+  document.getElementById("stat-medwidth").textContent = msf ? fmt(Math.round(msf)) : "–";
+  sales.sort((a, b) => b.d.localeCompare(a.d) || b.p - a.p);
+  lastComps = sales;
+  const MAX = 150;
+  const shown = sales.slice(0, MAX);
+  const sel = compChecks.size;
+  document.getElementById("list-count").innerHTML = [
+    sales.length > MAX ? `newest ${MAX} of ${fmt(sales.length)}` : "",
+    sel ? `<b>${sel} checked</b> <button id="clear-comp-checks" title="Uncheck all">clear</button>` : "",
+  ].filter(Boolean).join(" · ");
+  document.getElementById("export-btn").textContent = sel ? `Excel (${sel})` : "Excel";
+  const list = document.getElementById("site-list");
+  const empty = document.getElementById("empty-sites");
+  list.innerHTML = "";
+  empty.style.display = shown.length ? "none" : "block";
+  if (!shown.length) empty.textContent = compSales.length
+    ? "No small lot sales in view. Zoom out, pan the map, or widen the filters (Sold since)."
+    : "Loading small lot sales…";
+  for (const c of shown) {
+    const li = document.createElement("li");
+    li.className = "site-item";
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.className = "site-check";
+    check.title = "Check to include in the Excel export";
+    check.checked = compChecks.has(c.id);
+    check.addEventListener("click", (e) => e.stopPropagation());
+    check.addEventListener("change", () => {
+      if (compChecks.has(c.id)) compChecks.delete(c.id); else compChecks.add(c.id);
+      scheduleCount();
+    });
+    const dot = document.createElement("span");
+    dot.className = "site-dot";
+    dot.style.background = compColor(c.ppsf);
+    const info = document.createElement("div");
+    info.className = "site-info";
+    const name = document.createElement("div");
+    name.className = "site-name";
+    const nameText = document.createElement("span");
+    nameText.className = "site-name-text";
+    nameText.textContent = c.a;
+    const badge = document.createElement("span");
+    badge.className = "site-badge " + (c.n === 1 ? "badge-new" : "badge-resale");
+    badge.textContent = c.n === 1 ? "New" : "Resale";
+    name.append(nameText, badge);
+    const meta = document.createElement("div");
+    meta.className = "site-meta site-meta-1";
+    meta.textContent = [compCommunity(c), "sold " + fmtDate(c.d), c.sf ? fmt(c.sf) + " sf" : "",
+      c.bd ? `${c.bd} bd` : ""].filter(Boolean).join(" · ");
+    info.append(name, meta);
+    const right = document.createElement("span");
+    right.className = "site-right";
+    const b = document.createElement("b");
+    b.textContent = "$" + fmt(c.p);
+    right.appendChild(b);
+    if (c.ppsf) {
+      const sub = document.createElement("span");
+      sub.textContent = "$" + fmt(c.ppsf) + "/sf";
+      right.appendChild(sub);
+    }
+    li.append(check, dot, info, right);
+    li.addEventListener("click", () => {
+      map.easeTo({ center: [c.lng, c.lat], zoom: Math.max(map.getZoom(), 16) });
+      showCompDetail(c);
+    });
+    list.appendChild(li);
+  }
+}
+
+function exportCompsExcel() {
+  const rows = compChecks.size ? compSales.filter((c) => compChecks.has(c.id)) : lastComps;
+  const esc = (v) => String(v ?? "").replace(/[&<>"]/g,
+    (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  const cols = [
+    ["Address", (c) => c.a], ["Community", (c) => compCommunity(c)], ["ZIP", (c) => c.z], ["APN", compApn],
+    ["Sale date", (c) => fmtDate(c.d)], ["Sale price", (c) => c.p], ["$/SF", (c) => c.ppsf ?? ""],
+    ["Home SF", (c) => c.sf ?? ""], ["Beds", (c) => c.bd ?? ""], ["Baths", (c) => c.ba ?? ""],
+    ["Year built", (c) => c.yb ?? ""], ["Sale type", (c) => (c.n === 1 ? "New construction" : "Resale")],
+    ["SLO case", (c) => c.c ?? ""],
+  ];
+  const th = cols.map(([h]) =>
+    `<th style="background:#1B3A5C;color:#fff;font-weight:700;padding:6px 10px;
+      border-bottom:2.5px solid #C9A45C;white-space:nowrap">${esc(h)}</th>`).join("");
+  const trs = rows.map((c) => "<tr>" + cols.map(([, get]) => {
+    const v = get(c);
+    const numeric = typeof v === "number";
+    return `<td style="padding:4px 10px;border-bottom:1px solid #e4e8ec;white-space:nowrap;${numeric ? "mso-number-format:'\\#\\,\\#\\#0';" : ""}">${esc(v)}</td>`;
+  }).join("") + "</tr>").join("");
+  const html = `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head>
+    <body><table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></body></html>`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff" + html], { type: "application/vnd.ms-excel" }));
+  a.download = "LAAA Small Lot Sale Comps.xls";
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 const sloChecks = new Set();
@@ -879,7 +1190,8 @@ function exportSloExcel() {
 }
 function renderSloView() {
   const vb = map.getBounds();
-  const cases = Object.values(sloCases).filter((c) => c.lng != null && vb.contains([c.lng, c.lat]));
+  const cases = Object.values(sloCases).filter((c) => c.lng != null && vb.contains([c.lng, c.lat])
+    && (state.sloStatus === "any" || c.status === state.sloStatus));
   const built = cases.filter((c) => c.status === "built");
   const homes = built.reduce((n, c) => n + (c.homes || 0), 0);
   const sfW = built.reduce((n, c) => n + (c.avgSf || 0) * (c.homes || 0), 0);
@@ -963,6 +1275,9 @@ function renderList(candidates, detailed) {
     candidates.sort((a, b) =>
       (omListings[a.properties.ain]?.ppsf ?? Infinity)
       - (omListings[b.properties.ain]?.ppsf ?? Infinity));
+  } else if (state.sold) {
+    candidates.sort((a, b) =>
+      (soldLand[b.properties.ain]?.d || "").localeCompare(soldLand[a.properties.ain]?.d || ""));
   } else if (state.dealStatus === "approved" || state.dealStatus === "submitted") {
     // Status views read as a filings ledger: newest case first, with any
     // non-project rows after them sorted by lot size as usual.
@@ -1020,6 +1335,7 @@ function renderList(candidates, detailed) {
     dot.className = "site-dot";
     const proj = sbProjects[p.ain];
     const listing = state.om ? omListings[p.ain] : null;
+    const sold = state.sold ? soldLand[p.ain] : null;
     dot.style.background = listing ? "#d97706"
       : proj ? (proj.status === "approved" ? "#10b981" : "#facc15")
       : COLORS.sfr;
@@ -1055,7 +1371,8 @@ function renderList(candidates, detailed) {
       p.zc,
       listing ? listing.type
         : p.v === 1 ? "Vacant Lot" : p.v === 0 ? "Single Family" : null,
-      listing && p.lsf != null ? fmt(p.lsf) + " sf lot" : null,
+      (listing || sold) && p.lsf != null ? fmt(p.lsf) + " sf lot" : null,
+      sold ? "sold " + fmtDate(sold.d) : null,
     ].filter(Boolean);
     if (metaParts.length) {
       const meta = document.createElement("div");
@@ -1067,7 +1384,15 @@ function renderList(candidates, detailed) {
     const tier = document.createElement("span");
     tier.className = "site-right";
     const lotB = document.createElement("b");
-    if (listing) {
+    if (sold) {
+      lotB.textContent = "$" + fmt(sold.p);
+      tier.appendChild(lotB);
+      if (p.lsf > 0) {
+        const psf = document.createElement("span");
+        psf.textContent = "$" + fmt(Math.round(sold.p / p.lsf)) + "/sf land";
+        tier.appendChild(psf);
+      }
+    } else if (listing) {
       lotB.textContent = "$" + fmt(listing.price);
       tier.appendChild(lotB);
       if (listing.ppsf != null) {
@@ -1152,8 +1477,13 @@ function detailHtml(p, lngLat) {
         const t = lngLat && ozTracts ? ozTractAt(lngLat.lng, lngLat.lat) : null;
         return t ? kvRow("Opportunity Zone 2.0", `Recommended tract ${t.Geoid || ""}`) : "";
       })()}
+      ${lngLat ? ["oz", "hr", "qct"].map((k) => {
+        const t = overlayAt(k, lngLat.lng, lngLat.lat);
+        return t ? kvRow(OVERLAYS[k].label.replace(/ \(.*/, ""), t.cat || "Yes") : "";
+      }).join("") : ""}
     </section>
     ${listingSectionHtml(p)}
+    ${soldSectionHtml(p)}
     ${projectSectionHtml(p)}
     ${articlesSectionHtml(p)}
     <section class="dp-section">
@@ -1172,6 +1502,20 @@ function detailHtml(p, lngLat) {
 
 // Live listing details (any parcel in data/listings.json shows these,
 // whether or not the On Market filter is active).
+function soldSectionHtml(p) {
+  const s = soldLand[p.ain];
+  if (!s) return "";
+  return `
+    <section class="dp-section">
+      <h4>Sold <span class="badge" style="background:#b91c1c">Closed</span></h4>
+      ${kvRow("Sale price", "$" + fmt(s.p))}
+      ${kvRow("Sale date", fmtDate(s.d))}
+      ${p.lsf > 0 ? kvRow("$/SF land", "$" + fmt(Math.round(s.p / p.lsf))) : ""}
+      ${(s.prior || []).map((o) => kvRow("Earlier sale", `$${fmt(o.p)} on ${fmtDate(o.d)}`)).join("")}
+      <p class="dd-hint">County transfer-tax price for a single-parcel sale; confirm against the MLS.</p>
+    </section>`;
+}
+
 function listingSectionHtml(p) {
   const l = omListings[p.ain];
   if (!l) return "";
@@ -1419,22 +1763,50 @@ function syncControlsFromState() {
   setValOm("ppsf-max", state.omRange[1]);
   setPillVal("pv-ppsf", rangeSummary(state.omRange));
   document.getElementById("onmarket-btn").classList.toggle("active", !!state.om);
+  document.getElementById("onmarket-btn").classList.toggle("on", !!state.om);
+  document.getElementById("sold-btn").classList.toggle("active", !!state.sold);
+  document.getElementById("sold-btn").classList.toggle("on", !!state.sold);
   document.getElementById("ppsf-dd").classList.toggle("hidden", !state.om);
 
+  document.querySelectorAll(".ovl-cb").forEach((cb) => {
+    cb.checked = cb.value === "oz2" ? !!state.oz : state.ovl.has(cb.value);
+  });
   document.getElementById("oz-btn").classList.toggle("active", !!state.oz);
-  document.getElementById("slo-btn").classList.toggle("active", !!state.slo);
+  const nOvl = activeOverlays(state).length;
+  setPillVal("pv-ovl", nOvl ? String(nOvl) : "");
+  // Program bar: one program at a time; each has its own filter group, map
+  // layers and legend rows. SLO and Comps step the SB 1123 parcel universe aside.
+  const prog = program();
+  document.querySelectorAll(".prog-tab[data-prog]").forEach((b) => b.classList.toggle("active", b.dataset.prog === prog));
+  document.querySelectorAll(".fgroup").forEach((g) => g.classList.toggle("hidden", g.dataset.prog !== prog));
+  const vis = (id, on) => { if (map && map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none"); };
+  for (const id of ["slo-markers", "slo-lots-fill", "slo-lots-line"]) vis(id, prog === "slo");
+  vis("comps-markers", prog === "comps");
+  for (const id of ["centroids", "parcels-fill", "parcels-line", "parcels-projects", "parcels-status", "parcels-selected"].flatMap(lids)) {
+    vis(id, prog === "sb1123");
+  }
+  for (const id of ["projects-markers", "om-markers"]) vis(id, prog === "sb1123");
+  for (const id of ["oz2-tint", "oz2-line"]) vis(id, prog === "sb1123" && state.oz);
+  for (const k of ["oz", "hr", "qct"]) {
+    for (const id of [`ovl-${k}-tint`, `ovl-${k}-line`]) vis(id, prog === "sb1123" && state.ovl.has(k));
+  }
+  const sloFilter = state.sloStatus === "any" ? null : ["==", ["get", "status"], state.sloStatus];
   for (const id of ["slo-markers", "slo-lots-fill", "slo-lots-line"]) {
-    if (map && map.getLayer(id)) map.setLayoutProperty(id, "visibility", state.slo ? "visible" : "none");
+    if (map && map.getLayer(id)) map.setFilter(id, sloFilter);
   }
-  // SLO is its own view: the blue SB 1123 universe steps aside while it is on.
-  for (const id of ["centroids", "parcels-fill", "parcels-line"].flatMap(lids)) {
-    if (map && map.getLayer(id)) map.setLayoutProperty(id, "visibility", state.slo ? "none" : "visible");
-  }
-  for (const el of document.querySelectorAll(".lg-slo-row")) el.classList.toggle("hidden", !state.slo);
-  for (const id of ["oz2-tint", "oz2-line"]) {
-    if (map.getLayer(id)) {
-      map.setLayoutProperty(id, "visibility", state.oz ? "visible" : "none");
-    }
+  if (map && map.getLayer("comps-markers")) map.setFilter("comps-markers", compFilterExpr());
+  for (const el of document.querySelectorAll(".lg-sb-row")) el.classList.toggle("hidden", prog !== "sb1123");
+  for (const el of document.querySelectorAll(".lg-slo-row")) el.classList.toggle("hidden", prog !== "slo");
+  for (const el of document.querySelectorAll(".lg-comp-row")) el.classList.toggle("hidden", prog !== "comps");
+  document.querySelectorAll("#slo-status-seg button").forEach((b) => b.classList.toggle("on", b.dataset.sloStatus === state.sloStatus));
+  const cf = state.comp;
+  document.querySelectorAll('input[name="csince"]').forEach((rb) => { rb.checked = Number(rb.value) === cf.since; });
+  setPillVal("pv-csince", cf.since ? String(cf.since) : "Any");
+  document.getElementById("comp-new-btn").classList.toggle("active", !!cf.first);
+  for (const k of ["price", "ppsf", "sf"]) {
+    const r = cf[k === "price" ? "p" : k];
+    setVal(`c${k}-min`, r[0]); setVal(`c${k}-max`, r[1]);
+    setPillVal(`pv-c${k}`, rangeSummary(r));
   }
 
   renderAreaChips();
@@ -1504,7 +1876,7 @@ function bindControls() {
       // A status search shows pipeline parcels, which are rarely SB-vacant
       // candidates — the preset would contradict it. Same for On Market
       // (both pin to disjoint AIN lists).
-      if (state.dealStatus !== "any") { state.sbPreset = false; state.om = false; }
+      if (state.dealStatus !== "any") { state.sbPreset = false; state.om = false; state.sold = false; }
       syncControlsFromState();
       applyFilters();
       zoomToStatusResults();
@@ -1526,31 +1898,79 @@ function bindControls() {
     // Search scope, On Market AND the OZ scope survive preset toggling —
     // narrowing the live deals to SB candidates is the whole point of
     // combining them.
-    const { areas, om, omRange, oz } = state;
+    const { areas, om, omRange, oz, ovl } = state;
     state = state.sbPreset ? emptyState() : sb1123State(CONFIG);
     state.areas = areas;
     state.om = om;
     state.omRange = omRange;
     state.oz = oz;
+    state.ovl = ovl;
     syncControlsFromState();
     applyFilters();
   });
 
-  document.getElementById("oz-btn").addEventListener("click", async () => {
-    state.oz = !state.oz;
-    if (state.oz) await ensureOzLoaded();
+  document.querySelectorAll(".ovl-cb").forEach((cb) => cb.addEventListener("change", async () => {
+    const k = cb.value;
+    if (k === "oz2") state.oz = cb.checked;
+    else if (cb.checked) state.ovl.add(k); else state.ovl.delete(k);
+    if (cb.checked) await ensureOverlayLoaded(k);
     syncControlsFromState();
     applyFilters();
-  });
+  }));
 
-  document.getElementById("slo-btn").addEventListener("click", () => {
-    state.slo = !state.slo;
+  // Program tabs: exactly one program is on.
+  document.querySelectorAll(".prog-tab[data-prog]").forEach((b) => b.addEventListener("click", () => {
+    const prog = b.dataset.prog;
+    if (prog === program()) return;
+    state.slo = prog === "slo";
+    state.comps = prog === "comps";
+    if (state.comps) ensureCompsLoaded();
+    if (state.ovl.size) {
+      Promise.all([...state.ovl].map(ensureOverlayLoaded)).then(() => { syncControlsFromState(); applyFilters(); });
+    }
+    closeDetail();
+    syncControlsFromState();
+    if (prog === "sb1123") applyFilters();
+    scheduleCount();
+  }));
+  document.querySelectorAll("#slo-status-seg button").forEach((b) => b.addEventListener("click", () => {
+    state.sloStatus = b.dataset.sloStatus;
     syncControlsFromState();
     scheduleCount();
+  }));
+  const compChanged = () => { syncControlsFromState(); scheduleCount(); };
+  document.querySelectorAll('input[name="csince"]').forEach((rb) => rb.addEventListener("change", () => {
+    if (rb.checked) state.comp.since = Number(rb.value);
+    compChanged();
+  }));
+  document.getElementById("comp-new-btn").addEventListener("click", () => {
+    state.comp.first = !state.comp.first;
+    compChanged();
+  });
+  for (const k of ["price", "ppsf", "sf"]) {
+    for (const end of ["min", "max"]) {
+      document.getElementById(`c${k}-${end}`).addEventListener("change", () => {
+        const v = (id) => { const t = document.getElementById(id).value.trim(); return t === "" ? null : Number(t); };
+        state.comp[k === "price" ? "p" : k] = [v(`c${k}-min`), v(`c${k}-max`)];
+        compChanged();
+      });
+    }
+  }
+  document.getElementById("comps-clear").addEventListener("click", () => {
+    state.comp = emptyState().comp;
+    compChanged();
+  });
+
+  document.getElementById("sold-btn").addEventListener("click", () => {
+    state.sold = !state.sold;
+    if (state.sold) { state.om = false; state.dealStatus = "any"; }
+    syncControlsFromState();
+    applyFilters();
   });
 
   document.getElementById("onmarket-btn").addEventListener("click", () => {
     state.om = !state.om;
+    if (state.om) state.sold = false;
     // A status search and On Market both pin the map to their own AIN lists —
     // ANDing them is almost always empty, so they're mutually exclusive.
     if (state.om) state.dealStatus = "any";
@@ -1602,6 +2022,7 @@ function bindControls() {
   document.getElementById("list-count").addEventListener("click", (e) => {
     if (e.target.id === "clear-checks") LandMap.clearChecks();
     else if (e.target.id === "clear-slo-checks") { sloChecks.clear(); scheduleCount(); }
+    else if (e.target.id === "clear-comp-checks") { compChecks.clear(); scheduleCount(); }
   });
 
   // Cart button + panel (topbar).
@@ -1795,6 +2216,7 @@ const LandMap = {
   // Client-side — a styled HTML table with an .xls name opens in Excel with
   // the LAAA navy/gold header intact; no backend or vendored library needed.
   exportExcel() {
+    if (state.comps) return exportCompsExcel();
     if (state.slo) return exportSloExcel();
     const rows = exportChecks.size
       ? [...exportChecks.values()]
@@ -1824,6 +2246,8 @@ const LandMap = {
       ["Entity", (p) => proj(p).entity ?? ""],
       ["Applicant", (p) => [proj(p).rep, proj(p).repCompany].filter(Boolean).join(" - ")],
       ["Contact", (p) => proj(p).phone ?? ""],
+      ["Sold Price", (p) => num(soldLand[p.ain]?.p)],
+      ["Sold Date", (p) => (soldLand[p.ain] ? fmtDate(soldLand[p.ain].d) : "")],
       ["List Price", (p) => num(lst(p).price)],
       ["$/SF Land", (p) => num(lst(p).ppsf)],
       ["MLS", (p) => lst(p).mls ?? ""],
@@ -1933,12 +2357,13 @@ async function fetchMergedStyle(styleUrl, fallback) {
   base.sources = { ...base.sources };
   for (const [k, v] of Object.entries(fallback.sources)) {
     if (k === "satellite" || k === "sb-projects" || k === "om-listings"
-      || k === "oz2" || k === "slo" || k === "slo-lots" || k.startsWith("parcels")) {
+      || k === "oz2" || k.startsWith("ovl-") || k === "slo" || k === "slo-lots" || k === "comps" || k.startsWith("parcels")) {
       base.sources[k] = v;
     }
   }
   const overlayIds = new Set([
-    "basemap-satellite", "projects-markers", "om-markers", "slo-lots-fill", "slo-lots-line", "slo-markers", "oz2-tint", "oz2-line",
+    "basemap-satellite", "projects-markers", "om-markers", "slo-lots-fill", "slo-lots-line", "slo-markers", "comps-markers", "oz2-tint", "oz2-line",
+    ...["oz", "hr", "qct"].flatMap((k) => [`ovl-${k}-tint`, `ovl-${k}-line`]),
     ...["centroids", "parcels-fill", "parcels-line", "parcels-projects",
       "parcels-status", "parcels-selected"].flatMap(lids),
   ]);
@@ -2025,6 +2450,16 @@ async function loadSlo() {
   } catch (e) { /* optional dataset */ }
 }
 
+// Closed vacant-land sales since 01/01/2024, keyed by AIN (data/sold_land.json, County sale records).
+let soldLand = {};
+async function loadSold() {
+  try {
+    const resp = await fetch("data/sold_land.json");
+    if (resp.ok) soldLand = await resp.json();
+  } catch (e) { /* optional dataset */ }
+}
+function soldAinsFor() { return Object.keys(soldLand); }
+
 // On-market SFR/Land deals, keyed by AIN (data/listings.json, team-curated).
 // $/SF of land is precomputed once here; a missing lot size leaves it null.
 let omListings = {};
@@ -2057,7 +2492,7 @@ function applyProjectLayers() {
 async function boot() {
   initBrandLogo();
   await loadRemoteConfig();
-  await Promise.all([loadProjects(), loadListings(), loadSlo()]);
+  await Promise.all([loadProjects(), loadListings(), loadSlo(), loadSold()]);
   const synthetic = await isSynthetic();
   demoMode = synthetic;
   if (synthetic) {
@@ -2104,6 +2539,7 @@ async function boot() {
     if (state.oz) {
       ensureOzLoaded().then(() => { syncControlsFromState(); applyFilters(); });
     }
+    if (state.comps) ensureCompsLoaded();
     syncControlsFromState();
     applyFilters();
   }
@@ -2134,6 +2570,12 @@ async function boot() {
       if (c) showSloDetail(c);
     });
   }
+  map.on("click", "comps-markers", (e) => {
+    const c = compSales[e.features[0].properties.id];
+    if (c) showCompDetail(c);
+  });
+  map.on("mouseenter", "comps-markers", () => { map.getCanvas().style.cursor = "pointer"; });
+  map.on("mouseleave", "comps-markers", () => { map.getCanvas().style.cursor = ""; });
   map.on("mouseenter", "slo-lots-fill", () => { map.getCanvas().style.cursor = "pointer"; });
   map.on("mouseleave", "slo-lots-fill", () => { map.getCanvas().style.cursor = ""; });
   map.on("mouseenter", "slo-markers", () => { map.getCanvas().style.cursor = "pointer"; });

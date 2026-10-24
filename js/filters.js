@@ -20,17 +20,27 @@ export function emptyState() {
     dealStatus: "any",
     om: false,
     omRange: [null, null],
+    sold: false,  // Sold: vacant lots with a closed sale since 01/01/2024 (data/sold_land.json)
     oz: false,   // Opportunity Zone 2.0: only parcels in a Recommended tract
-    slo: false,  // Small Lot Ordinance cases overlay (data/slo.json)
+    ovl: new Set(),  // other overlays (Overlay dropdown): "oz" 2018 OZ, "hr" High Resource, "qct" QCT/DDA
+    // Program (one at a time): SB 1123 parcels by default; slo / comps switch views.
+    slo: false,  // Small Lot Ordinance cases view (data/slo.json)
+    sloStatus: "any",   // "any" | "built" | "not built"
+    comps: false,       // sale comps view (data/comps_small_lot.json)
+    comp: { since: 2025, first: false, p: [null, null], ppsf: [null, null], sf: [null, null] },
     areas: [],   // selected search areas (NEIGHBORHOODS names) — chips
   };
 }
 
-// Recommended OZ 2.0 tracts as one MultiPolygon (set once by app.js after
-// data/oz2.json loads; null until then, so the clause degrades to a no-op).
-let OZ_GEOMETRY = null;
-export function setOzGeometry(geom) {
-  OZ_GEOMETRY = geom;
+// Overlay areas as one MultiPolygon each (set by app.js once a layer's file
+// loads; absent until then, so its clause degrades to a no-op). Keys: oz2
+// (Recommended OZ 2.0 tracts), oz, hr, qct.
+const OVERLAY_GEOMS = {};
+export function setOverlayGeometry(key, geom) {
+  OVERLAY_GEOMS[key] = geom;
+}
+export function activeOverlays(state) {
+  return [...(state.oz ? ["oz2"] : []), ...(state.ovl ? [...state.ovl] : [])];
 }
 
 export function sb1123State(cfg) {
@@ -77,7 +87,7 @@ export const UNIVERSE_CLAUSE = ["all",
   EXCLUSIONS_CLAUSE,
 ];
 
-export function buildFilter(state, cfg, statusAins, omAins) {
+export function buildFilter(state, cfg, statusAins, omAins, soldAins) {
   // A status search is a pipeline view: it must surface those parcels even
   // when they fall outside the SFR+vacant universe (e.g. an approved project
   // already under construction), so the universe clause is dropped. On Market
@@ -115,6 +125,11 @@ export function buildFilter(state, cfg, statusAins, omAins) {
     clauses.push(["in", ["get", "ain"], ["literal", omAins || []]]);
   }
 
+  // Sold: only parcels with a closed sale (AIN list from data/sold_land.json).
+  if (state.sold) {
+    clauses.push(["in", ["get", "ain"], ["literal", soldAins || []]]);
+  }
+
   if (state.sbPreset && state.dealStatus === "any") {
     clauses.push(["==", ["get", "e"], 1]);
   }
@@ -136,8 +151,8 @@ export function areaBoxes(state, cfg) {
 // chips apply here via "within" (points only — the style spec doesn't
 // support "within" for polygon features; the polygon-view list is scoped
 // in JS instead).
-export function buildCentroidFilter(state, cfg, statusAins, omAins) {
-  const clauses = buildFilter(state, cfg, statusAins, omAins);
+export function buildCentroidFilter(state, cfg, statusAins, omAins, soldAins) {
+  const clauses = buildFilter(state, cfg, statusAins, omAins, soldAins);
   const boxes = areaBoxes(state, cfg);
   if (boxes.length) {
     clauses.push(["within", {
@@ -145,8 +160,9 @@ export function buildCentroidFilter(state, cfg, statusAins, omAins) {
       coordinates: boxes.map(([w, s, e, n]) => [[[w, s], [e, s], [e, n], [w, n], [w, s]]]),
     }]);
   }
-  if (state.oz && OZ_GEOMETRY) {
-    clauses.push(["within", OZ_GEOMETRY]);
+  // Checked overlays stack: a parcel must sit inside every one.
+  for (const k of activeOverlays(state)) {
+    if (OVERLAY_GEOMS[k]) clauses.push(["within", OVERLAY_GEOMS[k]]);
   }
   return clauses;
 }
@@ -167,9 +183,21 @@ export function stateToHash(state) {
     const [min, max] = state.omRange;
     if (min !== null || max !== null) p.set("ppsf", `${min ?? ""}..${max ?? ""}`);
   }
+  if (state.sold) p.set("sd", "1");
   if (state.sbPreset) p.set("sb", "1");
   if (state.oz) p.set("oz", "1");
+  if (state.ovl && state.ovl.size) p.set("ov", [...state.ovl].join(","));
   if (state.slo) p.set("slo", "1");
+  if (state.slo && state.sloStatus !== "any") p.set("sls", state.sloStatus);
+  if (state.comps) {
+    const c = state.comp;
+    p.set("comps", "1");
+    if (c.since !== 2025) p.set("cy", String(c.since));
+    if (c.first) p.set("cn", "1");
+    for (const k of ["p", "ppsf", "sf"]) {
+      if (c[k][0] !== null || c[k][1] !== null) p.set("c" + k, `${c[k][0] ?? ""}..${c[k][1] ?? ""}`);
+    }
+  }
   if (state.areas && state.areas.length) p.set("a", state.areas.join("|"));
   const s = p.toString();
   return s ? "#" + s : "";
@@ -201,9 +229,25 @@ export function stateFromHash(hash) {
       state.omRange = [a === "" ? null : +a, b === "" ? null : +b];
     }
   }
+  if (p.get("sd") === "1" && !state.om) state.sold = true;
   if (p.get("sb") === "1") state.sbPreset = true;
   if (p.get("oz") === "1") state.oz = true;
+  if (p.get("ov")) state.ovl = new Set(p.get("ov").split(",").filter((k) => ["oz", "hr", "qct"].includes(k)));
   if (p.get("slo") === "1") state.slo = true;
+  if (["built", "not built"].includes(p.get("sls"))) state.sloStatus = p.get("sls");
+  if (p.get("comps") === "1") {
+    state.comps = true;
+    state.slo = false;
+    if (p.get("cy") && Number.isFinite(+p.get("cy"))) state.comp.since = +p.get("cy");
+    if (p.get("cn") === "1") state.comp.first = true;
+    for (const k of ["p", "ppsf", "sf"]) {
+      const v = p.get("c" + k);
+      if (v && v.includes("..")) {
+        const [a, b] = v.split("..");
+        state.comp[k] = [a === "" ? null : +a, b === "" ? null : +b];
+      }
+    }
+  }
   if (p.get("a")) state.areas = p.get("a").split("|").filter(Boolean);
   return state;
 }

@@ -815,3 +815,83 @@ html, body {
 /* SLO case panel */
 .dp-slo { padding: 10px 16px; }
 .dp-slo-links { font-size: 13px; }
+
+/* ---------- program bar (one program at a time) ---------- */
+#programbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 18px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.bar-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 10px;
+}
+.prog-tab {
+  position: relative;
+  padding: 13px 14px 11px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.prog-tab:hover:not(:disabled) { color: var(--navy); background: #f6f8fa; }
+.prog-tab.active { color: var(--navy); border-bottom-color: #C9A45C; }
+.prog-tab.soon { color: #a3adb8; cursor: default; font-weight: 600; }
+.soon-tag {
+  margin-left: 3px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #eef1f4;
+  color: #8592a0;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+.fgroup { display: contents; }
+.fgroup.hidden { display: none; }
+
+/* segmented control (SLO status, comp type) */
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+.seg button {
+  padding: 8px 14px;
+  border: 0;
+  border-right: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.seg button:last-child { border-right: 0; }
+.seg button:hover:not(:disabled) { background: #fafbfc; }
+.seg button.on { background: var(--navy); color: #fff; }
+.seg button:disabled { color: #a3adb8; cursor: default; }
+.pill-toggle.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+.lg-dot { width: 10px; height: 10px; border-radius: 50%; margin: 0 2px; }
+.badge-new { background: #e0f2f7; color: #0e7490; border: 1px solid #0e7490; }
+.badge-resale { background: #f1f5f9; color: #64748b; border: 1px solid #94a3b8; }
+.dp-comp-sales { margin: 6px 0 0; padding: 0; list-style: none; font-size: 0.82rem; }
+.dp-comp-sales li { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eef1f4; }
+.ovl-sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; opacity: 0.8; }
+.dd-panel .muted { color: var(--muted); font-weight: 400; font-size: 0.78rem; }
+.dp-comp-note { padding: 0 16px; }
+.seg-market button#onmarket-btn.on { background: #d97706; }
+.seg-market button#sold-btn.on { background: #b91c1c; }
+[data-dd="overlay"] .dd-panel { min-width: 400px; }
+[data-dd="overlay"] .check-label { white-space: nowrap; }

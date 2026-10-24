@@ -43,27 +43,100 @@
       <div id="cart-panel" class="hidden"></div>
     </header>
 
+    <!-- Program bar: one program at a time; the filter bar below shows that program's filters. -->
+    <nav id="programbar">
+      <span class="bar-label">Program</span>
+      <button class="prog-tab" id="prog-sb1123" data-prog="sb1123"
+              title="SB 1123 / SB 684 site targeting: vacant lots and SFR homes, candidates colored">SB 1123</button>
+      <button class="prog-tab" id="slo-btn" data-prog="slo"
+              title="Small Lot Ordinance subdivisions (2005 to date): every AA, TT and VTT case with SL in ZIMAS">SLO</button>
+      <button class="prog-tab soon" disabled title="Coming soon">Apartments <span class="soon-tag">Soon</span></button>
+      <button class="prog-tab soon" disabled title="Coming soon">SB 9 <span class="soon-tag">Soon</span></button>
+      <button class="prog-tab soon" disabled title="Coming soon">Duplex <span class="soon-tag">Soon</span></button>
+      <button class="prog-tab soon" disabled title="Coming soon">ED 1 <span class="soon-tag">Soon</span></button>
+      <button class="prog-tab soon" disabled title="Coming soon">LIHTC <span class="soon-tag">Soon</span></button>
+      <button class="prog-tab" id="comps-btn" data-prog="comps"
+              title="Sale comps of finished homes for underwriting">Comps</button>
+    </nav>
+
     <nav id="filterbar">
       <span id="filter-label">Filter</span>
 
+      <!-- SLO filters -->
+      <div class="fgroup hidden" data-prog="slo">
+        <div class="seg" id="slo-status-seg">
+          <button data-slo-status="any">All cases</button>
+          <button data-slo-status="built">Built</button>
+          <button data-slo-status="not built">Not built</button>
+        </div>
+      </div>
+
+      <!-- Comps filters -->
+      <div class="fgroup hidden" data-prog="comps">
+        <div class="seg" id="comp-type-seg">
+          <button data-comp-type="smalllot" class="on">Small Lot</button>
+          <button disabled title="Coming soon">Condo <span class="soon-tag">Soon</span></button>
+          <button disabled title="Coming soon">SFR <span class="soon-tag">Soon</span></button>
+        </div>
+        <div class="dropdown" data-dd="csince">
+          <button class="pill" data-dd-btn>Sold since <span class="pill-val" id="pv-csince"></span> <span class="caret">▾</span></button>
+          <div class="dd-panel">
+            <label class="check-label"><input type="radio" name="csince" value="2025" /> 01/01/2025</label>
+            <label class="check-label"><input type="radio" name="csince" value="2024" /> 01/01/2024</label>
+            <label class="check-label"><input type="radio" name="csince" value="2023" /> 01/01/2023</label>
+            <label class="check-label"><input type="radio" name="csince" value="2020" /> 01/01/2020</label>
+            <label class="check-label"><input type="radio" name="csince" value="0" /> Any date</label>
+          </div>
+        </div>
+        <button id="comp-new-btn" class="pill pill-toggle"
+                title="Only the first sale after construction (the builder's sale)">New construction</button>
+        <div class="dropdown" data-dd="cprice">
+          <button class="pill" data-dd-btn>Price <span class="pill-val" id="pv-cprice"></span> <span class="caret">▾</span></button>
+          <div class="dd-panel">
+            <label>Sale price ($)</label>
+            <div class="range-row">
+              <input type="number" id="cprice-min" placeholder="min" min="0" />
+              <span>–</span>
+              <input type="number" id="cprice-max" placeholder="max" min="0" />
+            </div>
+          </div>
+        </div>
+        <div class="dropdown" data-dd="cppsf">
+          <button class="pill" data-dd-btn>$/SF <span class="pill-val" id="pv-cppsf"></span> <span class="caret">▾</span></button>
+          <div class="dd-panel">
+            <label>Price per SF of home ($)</label>
+            <div class="range-row">
+              <input type="number" id="cppsf-min" placeholder="min" min="0" />
+              <span>–</span>
+              <input type="number" id="cppsf-max" placeholder="max" min="0" />
+            </div>
+          </div>
+        </div>
+        <div class="dropdown" data-dd="csf">
+          <button class="pill" data-dd-btn>Home size <span class="pill-val" id="pv-csf"></span> <span class="caret">▾</span></button>
+          <div class="dd-panel">
+            <label>Home size (sqft)</label>
+            <div class="range-row">
+              <input type="number" id="csf-min" placeholder="min" min="0" />
+              <span>–</span>
+              <input type="number" id="csf-max" placeholder="max" min="0" />
+            </div>
+          </div>
+        </div>
+        <button id="comps-clear" class="pill pill-ghost">Clear</button>
+      </div>
+
+      <!-- SB 1123 filters -->
+      <div class="fgroup" data-prog="sb1123">
+      <div class="seg seg-market" id="market-seg"
+           title="Switch between deals listed for sale now and lots that closed since 01/01/2024; click the lit side again to turn it off">
+        <button id="onmarket-btn" data-mkt="om">On Market</button>
+        <button id="sold-btn" data-mkt="sold">Sold</button>
+      </div>
+
       <button id="sb1123-btn" class="pill pill-primary"
               title="Vacant lots ≤1.5 ac; fire, coastal &amp; hillside excluded">
-        SB 1123
-      </button>
-
-      <button id="onmarket-btn" class="pill pill-onmarket"
-              title="Only SFR &amp; land deals currently listed for sale (team-curated)">
-        On Market
-      </button>
-
-      <button id="oz-btn" class="pill pill-oz"
-              title="Only parcels in a Recommended Opportunity Zone 2.0 census tract (2026 proposed designations)">
-        OZ 2.0
-      </button>
-
-      <button id="slo-btn" class="pill pill-slo"
-              title="Small Lot Ordinance subdivisions (2005 to date): every AA, TT and VTT case with SL in ZIMAS. Teal = built, gray = not built">
-        SLO
+        Eligible only
       </button>
 
       <div class="dropdown hidden" data-dd="ppsf" id="ppsf-dd">
@@ -146,7 +219,19 @@
         </div>
       </div>
 
+      <div class="dropdown" data-dd="overlay">
+        <button class="pill" data-dd-btn>Overlay <span class="pill-val" id="pv-ovl"></span> <span class="caret">▾</span></button>
+        <div class="dd-panel">
+          <label class="check-label"><input type="checkbox" id="oz-btn" class="ovl-cb" value="oz2" /> <span class="ovl-sw" style="background:#7c5cbf"></span> OZ 2.0 <span class="muted">(2026 recommended tracts)</span></label>
+          <label class="check-label"><input type="checkbox" class="ovl-cb" value="oz" /> <span class="ovl-sw" style="background:#b45309"></span> OZ <span class="muted">(2018 Opportunity Zones)</span></label>
+          <label class="check-label"><input type="checkbox" class="ovl-cb" value="hr" /> <span class="ovl-sw" style="background:#059669"></span> High Resource <span class="muted">(TCAC/HCD 2026, High and Highest)</span></label>
+          <label class="check-label"><input type="checkbox" class="ovl-cb" value="qct" /> <span class="ovl-sw" style="background:#dc2626"></span> QCT / DDA <span class="muted">(HUD 2026)</span></label>
+          <p class="dd-hint">Checked overlays shade the map and keep only parcels inside every checked area.</p>
+        </div>
+      </div>
+
       <button id="reset-btn" class="pill pill-ghost">Clear</button>
+      </div>
     </nav>
 
     <div id="main">
@@ -200,13 +285,18 @@
 
       <main id="map">
         <div id="legend">
-          <div class="lg-row"><span class="lg-swatch lg-sfr"></span>SFR &amp; Vacant Lots</div>
-          <div class="lg-row"><span class="lg-swatch lg-proj-appr"></span>Approved</div>
-          <div class="lg-row"><span class="lg-swatch lg-proj-pend"></span>Submitted</div>
-          <div class="lg-row"><span class="lg-swatch lg-onmarket"></span>On Market</div>
+          <div class="lg-row lg-sb-row"><span class="lg-swatch lg-sfr"></span>SFR &amp; Vacant Lots</div>
+          <div class="lg-row lg-sb-row"><span class="lg-swatch lg-proj-appr"></span>Approved</div>
+          <div class="lg-row lg-sb-row"><span class="lg-swatch lg-proj-pend"></span>Submitted</div>
+          <div class="lg-row lg-sb-row"><span class="lg-swatch lg-onmarket"></span>On Market</div>
           <div class="lg-row lg-slo-row hidden"><span class="lg-swatch lg-slo-built"></span>SLO built</div>
           <div class="lg-row lg-slo-row hidden"><span class="lg-swatch lg-slo-not"></span>SLO not built</div>
-          <div class="lg-row"><span class="lg-swatch lg-other"></span>Other Parcels</div>
+          <div class="lg-row lg-sb-row"><span class="lg-swatch lg-other"></span>Other Parcels</div>
+          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#94a3b8"></span>Under $500/sf</div>
+          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#60a5fa"></span>$500 to $750/sf</div>
+          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#2563eb"></span>$750 to $1,000/sf</div>
+          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#7c3aed"></span>$1,000 to $1,250/sf</div>
+          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#db2777"></span>$1,250/sf and up</div>
         </div>
       </main>
 

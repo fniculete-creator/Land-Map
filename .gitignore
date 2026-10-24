@@ -20,3 +20,5 @@ data/*.log
 scripts/listings/.geocache.json
 scripts/listings/dry-run-audit-*.csv
 scripts/slo/_work/
+scripts/comps/_work/
+scripts/overlays/_work/

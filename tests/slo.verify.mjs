@@ -45,8 +45,8 @@ const panel = await page.$eval("#detail-panel", (el) => (el.classList.contains("
 assert(/AA-2015-4272-PMLA-SL/.test(panel), "clicking the Manning marker opens its SLO case");
 assert(/Homes built\s*4/.test(panel), "panel shows 4 homes built");
 
-await page.click("#slo-btn");
-assert((await vis()) === "none", "SLO markers hide again");
+await page.click("#prog-sb1123");
+assert((await vis()) === "none", "SLO markers hide when the SB 1123 program is picked");
 await page.screenshot({ path: process.env.SHOT || "slo.png" });
 await browser.close();
 console.log(failures ? `${failures} failure(s)` : "all passed");

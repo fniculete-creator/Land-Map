@@ -19,6 +19,12 @@ await page.goto(BASE + "/index.html", { waitUntil: "load", timeout: 30000 });
 await page.waitForFunction(() => window.LandMap && window.LandMap.map, { timeout: 20000 });
 await page.waitForFunction(() => window.LandMap.map.isStyleLoaded(), { timeout: 20000 });
 
+// OZ 2.0 is a checkbox in the Overlay dropdown: open it, toggle, close it.
+async function toggleOz() {
+  await page.click('[data-dd="overlay"] [data-dd-btn]');
+  await page.click("#oz-btn");
+  await page.click('[data-dd="overlay"] [data-dd-btn]');
+}
 assert(await page.$eval("#oz-btn", (el) => !el.classList.contains("active")),
   "OZ pill inactive by default");
 
@@ -32,7 +38,7 @@ await page.waitForFunction(() => {
 const before = await page.evaluate(() =>
   Number(document.getElementById("result-count").textContent.replace(/,/g, "")));
 
-await page.click("#oz-btn");
+await toggleOz();
 // The pill class syncs after the tract data fetch resolves — wait on it.
 const activated = await page.waitForFunction(
   () => document.getElementById("oz-btn").classList.contains("active"),
@@ -72,7 +78,7 @@ await page.click("#sb1123-btn");
 await page.waitForTimeout(400);
 
 // Toggle off restores everything.
-await page.click("#oz-btn");
+await toggleOz();
 await page.waitForFunction(() => window.LandMap.state.oz === false, { timeout: 20000 });
 assert(await page.evaluate(() =>
   window.LandMap.map.getLayoutProperty("oz2-tint", "visibility") === "none"),
