@@ -1298,7 +1298,11 @@ function renderEd1View() {
   document.getElementById("stat-medwidth").textContent = live.length ? fmt(Math.round(units / live.length)) : "–";
   const rank = { approved: 0, pending: 1, closed: 2 };
   const iso = (d) => (d ? d.slice(6) + d.slice(0, 2) + d.slice(3, 5) : "");
-  cases.sort((a, b) => rank[ed1Group(a)] - rank[ed1Group(b)]
+  // Sale and completion views list the latest event first; otherwise approved, then pending, newest first.
+  const key = state.ed1Sold ? (c) => c.sold && c.sold.d : state.ed1Land ? (c) => c.landSold && c.landSold.d
+    : state.ed1Done ? (c) => c.cofo && c.cofo.d : null;
+  if (key) cases.sort((a, b) => iso(key(b)).localeCompare(iso(key(a))));
+  else cases.sort((a, b) => rank[ed1Group(a)] - rank[ed1Group(b)]
     || iso(b.approved || b.filed).localeCompare(iso(a.approved || a.filed)));
   lastEd1 = cases;
   const MAX = 150;
