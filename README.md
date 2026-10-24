@@ -110,7 +110,12 @@ code needed.
   LA City Planning (`data/ed1.json`: ZIMAS ED1/RED1 case numbers plus each
   case's PDIS page; units read from the project description). Red =
   approved, amber = pending, gray = withdrawn or closed; dots sized by units.
-  Filters: status and units. Rebuild with `python scripts/ed1/build_ed1.py`.
+  Filters: status, units, Completed (LADBS Certificate of Occupancy) and Sold
+  (County sale after the approval, or after the CofO). The panel adds the
+  applicant, entity, representative, site purchase, the LADBS permit and owner
+  lookup; LADBS and ZIMAS are the first links on every project panel. Rebuild:
+  `python scripts/ed1/build_ed1.py`, `python scripts/permits/build_permits.py`,
+  then `python scripts/ed1/build_ed1_status.py`.
 - **Clear** (SB 1123) lands on an empty map; parcels draw again once a filter,
   the Eligible preset, Sold or an overlay is picked.
 - **Finished Comps** — the Program filter picks the comp set: Small Lot

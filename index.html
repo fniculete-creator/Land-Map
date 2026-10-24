@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Land | LAAA Team | LA Development Site Targeting</title>
+  <title>Land | LAAA Team</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <!-- Rich link previews (iMessage / Slack / social) -->
@@ -78,7 +78,7 @@
           <button data-ed1-status="any">All Cases</button>
           <button data-ed1-status="approved">Approved</button>
           <button data-ed1-status="pending">Pending</button>
-          <button data-ed1-status="closed">Withdrawn / Closed</button>
+          <button data-ed1-status="closed">Withdrawn</button>
         </div>
         <div class="dropdown" data-dd="eunits">
           <button class="pill" data-dd-btn>Units <span class="pill-val" id="pv-eunits"></span> <span class="caret">▾</span></button>
@@ -91,6 +91,8 @@
             </div>
           </div>
         </div>
+        <button id="ed1-done-btn" class="pill pill-toggle" title="Projects with a Certificate of Occupancy from LADBS">Completed</button>
+        <button id="ed1-sold-btn" class="pill pill-toggle" title="Projects that sold after the ED 1 approval (entitled site) or after the Certificate of Occupancy (completed building)">Sold</button>
         <button id="ed1-clear" class="pill pill-ghost">Clear</button>
       </div>
 
@@ -332,7 +334,7 @@
           <div class="lg-row lg-sb-row"><span class="lg-swatch lg-other"></span>Other Parcels</div>
           <div class="lg-row lg-ed1-row hidden"><span class="lg-swatch lg-dot" style="background:#dc2626"></span>ED 1 Approved</div>
           <div class="lg-row lg-ed1-row hidden"><span class="lg-swatch lg-dot" style="background:#f59e0b"></span>ED 1 Pending</div>
-          <div class="lg-row lg-ed1-row hidden"><span class="lg-swatch lg-dot" style="background:#94a3b8"></span>Withdrawn / Closed</div>
+          <div class="lg-row lg-ed1-row hidden"><span class="lg-swatch lg-dot" style="background:#94a3b8"></span>ED 1 Withdrawn</div>
           <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#94a3b8"></span>Under $500/SF</div>
           <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#60a5fa"></span>$500 to $750/SF</div>
           <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#2563eb"></span>$750 to $1,000/SF</div>

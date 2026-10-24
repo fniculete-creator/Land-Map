@@ -591,9 +591,9 @@ function compDetailHtml(c) {
       <p class="dd-hint">County transfer-tax price for a full sale; confirm it against the MLS before relying on it.</p>
     </section>
     <div class="dp-links">
+      ${projectLinksHtml(c.ain)}
       <a href="https://www.zillow.com/homes/${encodeURIComponent(`${c.a.replace(/, Lot \w+$/, "")} Los Angeles CA ${c.z || ""}`.trim())}_rb/" target="_blank" rel="noopener">Zillow ↗</a>
       <a href="https://portal.assessor.lacounty.gov/parceldetail/${c.ain}" target="_blank" rel="noopener">Assessor ↗</a>
-      <a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>
       <a href="${CONFIG.STREETVIEW_URL(c.lat, c.lng)}" target="_blank" rel="noopener">Street View ↗</a>
     </div>`;
 }
@@ -606,6 +606,41 @@ function showCompDetail(c) {
   document.getElementById("dp-close").addEventListener("click", closeDetail);
   const link = document.getElementById("dp-comp-case");
   if (link) link.addEventListener("click", (e) => { e.preventDefault(); showSloDetail(sloCases[c.c]); });
+}
+
+// First two links on every project panel: LADBS (the project's new-building
+// permit) and ZIMAS (the parcel; ZIMAS reads ?apn= after its terms screen).
+let permitsByAin = {};
+async function loadPermits() {
+  try {
+    const resp = await fetch("data/permits.json");
+    if (resp.ok) permitsByAin = await resp.json();
+  } catch (e) { /* optional dataset */ }
+}
+function mainPermit(ain) { return (permitsByAin[String(ain || "").replace(/-/g, "")] || [])[0] || null; }
+function ladbsUrl(permitNo) {
+  const [a, b, c] = String(permitNo || "").split("-");
+  return a && b && c ? `https://www.ladbsservices2.lacity.org/OnlineServices/PermitReport/PcisPermitDetail?id1=${a}&id2=${b}&id3=${c}` : null;
+}
+function zimasUrl(ain) {
+  const a = String(ain || "").replace(/-/g, "");
+  return /^\d{10}$/.test(a) ? `https://zimas.lacity.org/?apn=${a}` : CONFIG.ZIMAS_URL;
+}
+function projectLinksHtml(ain, permitNo) {
+  const l = ladbsUrl(permitNo || (mainPermit(ain) || {}).n);
+  return (l ? `<a href="${l}" target="_blank" rel="noopener">LADBS ↗</a>` : "")
+    + `<a href="${zimasUrl(ain)}" target="_blank" rel="noopener">ZIMAS ↗</a>`;
+}
+function permitRowsHtml(ain) {
+  const p = mainPermit(ain);
+  if (!p) return "";
+  return [
+    kvRow("LADBS Permit", ladbsUrl(p.n) ? `<a href="${ladbsUrl(p.n)}" target="_blank" rel="noopener">${p.n}</a>` : p.n),
+    p.status ? kvRow("Permit Status", p.status) : "",
+    p.iss ? kvRow("Permit Issued", p.iss) : p.sub_d ? kvRow("Permit Submitted", p.sub_d) : "",
+    p.du ? kvRow("Units on Permit", fmt(p.du)) : "",
+    p.sf ? kvRow("Building SF", fmt(p.sf)) : "",
+  ].join("");
 }
 
 // ---- ED 1 program: Executive Directive 1 projects (data/ed1.json) ----
@@ -626,18 +661,21 @@ function ed1Geojson() {
     features: Object.values(ed1Cases).filter((c) => c.lng != null).map((c) => ({
       type: "Feature",
       geometry: { type: "Point", coordinates: [c.lng, c.lat] },
-      properties: { case: c.case, grp: ed1Group(c), units: c.units },
+      properties: { case: c.case, grp: ed1Group(c), units: c.units, done: c.cofo ? 1 : 0, sold: c.sold ? 1 : 0 },
     })),
   };
 }
 function ed1Passes(c) {
   const [lo, hi] = state.ed1Units;
   return (state.ed1Status === "any" || ed1Group(c) === state.ed1Status)
+    && (!state.ed1Done || !!c.cofo) && (!state.ed1Sold || !!c.sold)
     && (lo === null || (c.units != null && c.units >= lo)) && (hi === null || (c.units != null && c.units <= hi));
 }
 function ed1FilterExpr() {
   const out = ["all"];
   if (state.ed1Status !== "any") out.push(["==", ["get", "grp"], state.ed1Status]);
+  if (state.ed1Done) out.push(["==", ["get", "done"], 1]);
+  if (state.ed1Sold) out.push(["==", ["get", "sold"], 1]);
   const [lo, hi] = state.ed1Units;
   if (lo !== null) out.push([">=", ["coalesce", ["get", "units"], -1], lo]);
   if (hi !== null) out.push(["<=", ["coalesce", ["get", "units"], 1e9], hi]);
@@ -645,7 +683,12 @@ function ed1FilterExpr() {
 }
 function ed1DetailHtml(c) {
   const grp = ed1Group(c);
+  const ain = (c.apn || "").replace(/-/g, "");
   const same = (c.sameSite || []).map((k) => ed1Cases[k] ? `<a href="#" class="dp-ed1-same" data-case="${k}">${k}</a>` : k).join("<br>");
+  const who = (n, co) => [n, co].filter(Boolean).join(" · ");
+  const badges = [`<span class="badge"${grp === "approved" ? ' style="background:#dc2626"' : grp === "pending" ? ' style="background:#d97706"' : ' style="background:#64748b"'}>${c.status}</span>`];
+  if (c.cofo) badges.push('<span class="badge" style="background:#0e7490">Completed</span>');
+  if (c.sold) badges.push('<span class="badge" style="background:#b91c1c">Sold</span>');
   return `
     <div class="dp-head">
       <div>
@@ -655,25 +698,42 @@ function ed1DetailHtml(c) {
       </div>
       <button id="dp-close" title="Close">×</button>
     </div>
-    <div class="dp-badges"><span class="badge ${grp === "approved" ? "badge-ok" : "badge-vacant"}"${grp === "approved" ? ' style="background:#dc2626"' : ""}>${c.status}</span></div>
+    <div class="dp-badges">${badges.join(" ")}</div>
     ${aerialEmbedHtml(c.lat, c.lng)}
     <div class="dp-tiles">
       <div class="dp-tile"><b>${c.units != null ? fmt(c.units) : "–"}</b><span>Units</span></div>
       <div class="dp-tile dp-tile-navy"><b>${c.affordableUnits != null ? fmt(c.affordableUnits) : "–"}</b><span>Affordable Units</span></div>
     </div>
     <section class="dp-section">
-      <h4>Project</h4>
+      <h4>ED 1 Project</h4>
       ${kvRow("Case", c.case)}
       ${kvRow("Status", c.status)}
       ${kvRow("Filed", c.filed || "–")}
       ${c.approved ? kvRow("Approved", c.approved) : ""}
-      ${c.apn ? kvRow("APN", c.apn) : ""}
+      ${c.cofo ? kvRow("Completed (CofO)", c.cofo.d) : ""}
+      ${c.unitsSource ? kvRow("Units From", c.unitsSource) : ""}
+      ${c.staff ? kvRow("City Planner", c.staff) : ""}
       ${same ? kvRow("Other ED 1 Cases on the Site", same) : ""}
-      <p class="dd-hint">Units are read from the City's project description; confirm on the case file.</p>
+    </section>
+    <section class="dp-section">
+      <h4>Developer</h4>
+      ${kvRow("Applicant", c.applicant || "–")}
+      ${kvRow("Entity", c.applicantCompany || "–")}
+      ${c.rep || c.repCompany ? kvRow("Representative", who(c.rep, c.repCompany)) : ""}
+      ${c.purchased ? kvRow("Site Purchased", `${c.purchased.d}${c.purchased.p ? " · $" + fmt(c.purchased.p) : ""}${c.purchased.parcels > 1 ? ` <span class="muted">(${c.purchased.parcels} parcels)</span>` : ""}`) : ""}
+      ${(c.sales || []).map((s) => kvRow(c.sold && s.d === c.sold.d && s.p === c.sold.p ? `Sold (${c.sold.type})` : "Sale After Filing",
+        `${s.d} · $${fmt(s.p)}${s.parcels > 1 ? ` <span class="muted">(${s.parcels} parcels)</span>` : ""}`)).join("")}
+    </section>
+    ${permitRowsHtml(ain) ? `<section class="dp-section"><h4>Building Permit</h4>${permitRowsHtml(ain)}</section>` : ""}
+    <section class="dp-section">
+      <h4>Owner Information</h4>
+      <div id="dp-owner"><div class="dp-loading">Looking up owner…</div></div>
+      <p class="dd-hint">Units are read from the City's project description or the LADBS permit; sale prices are the County's transfer-tax figures. Confirm on the case file.</p>
     </section>
     <div class="dp-links">
+      ${projectLinksHtml(ain, c.cofo && c.cofo.permit)}
       <a href="${c.source || "https://planning.lacity.gov/pdiscaseinfo/search/casenumber/" + encodeURIComponent(c.case)}" target="_blank" rel="noopener">Planning Case ↗</a>
-      <a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>
+      ${ain ? `<a href="https://portal.assessor.lacounty.gov/parceldetail/${ain}" target="_blank" rel="noopener">Assessor ↗</a>` : ""}
       <a href="${CONFIG.STREETVIEW_URL(c.lat, c.lng)}" target="_blank" rel="noopener">Street View ↗</a>
     </div>`;
 }
@@ -683,6 +743,7 @@ function showEd1Detail(c) {
   panel.innerHTML = ed1DetailHtml(c);
   panel.classList.remove("hidden");
   document.getElementById("dp-close").addEventListener("click", closeDetail);
+  if (c.apn) fillOwnerInfo({ ain: c.apn.replace(/-/g, "") });
   panel.querySelectorAll(".dp-ed1-same").forEach((a) => a.addEventListener("click", (e) => {
     e.preventDefault();
     const o = ed1Cases[a.dataset.case];
@@ -1274,12 +1335,12 @@ function renderEd1View() {
     nameText.textContent = c.address || c.case;
     const badge = document.createElement("span");
     badge.className = "site-badge " + (grp === "approved" ? "badge-ed1" : grp === "pending" ? "badge-ed1-pend" : "badge-slo-nb");
-    badge.textContent = grp === "approved" ? "Approved" : grp === "pending" ? "Pending" : c.status;
+    badge.textContent = c.sold ? "Sold" : c.cofo ? "Completed" : grp === "approved" ? "Approved" : grp === "pending" ? "Pending" : c.status;
     name.append(nameText, badge);
     const meta = document.createElement("div");
     meta.className = "site-meta site-meta-1";
     meta.textContent = [(c.community || "").split(" - ")[0],
-      c.approved ? "Approved " + c.approved : c.filed ? "Filed " + c.filed : ""].filter(Boolean).join(" · ");
+      c.sold ? "Sold " + c.sold.d : c.cofo ? "Completed " + c.cofo.d : c.approved ? "Approved " + c.approved : c.filed ? "Filed " + c.filed : ""].filter(Boolean).join(" · ");
     info.append(name, meta);
     const right = document.createElement("span");
     right.className = "site-right";
@@ -1755,12 +1816,13 @@ function detailHtml(p, lngLat) {
     ${projectSectionHtml(p)}
     ${articlesSectionHtml(p)}
     <section class="dp-section">
-      <h4>Owner information</h4>
+      <h4>Owner Information</h4>
       <div id="dp-owner"><div class="dp-loading">Looking up owner…</div></div>
     </section>
     <div class="dp-links">
+      ${(!p.co || p.co === "LA") ? projectLinksHtml(p.ain) : ""}
+      ${sbProjects[p.ain] ? `<a href="https://planning.lacity.gov/pdiscaseinfo/search/casenumber/${encodeURIComponent(sbProjects[p.ain].case)}" target="_blank" rel="noopener">Planning Case ↗</a>` : ""}
       ${assessorUrl(p) ? `<a href="${assessorUrl(p)}" target="_blank" rel="noopener">Assessor ↗</a>` : ""}
-      ${(!p.co || p.co === "LA") ? `<a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>` : ""}
       ${lat ? `<a href="${CONFIG.STREETVIEW_URL(lat, lng)}" target="_blank" rel="noopener">Street View ↗</a>` : ""}
     </div>
     <button id="dp-cart-btn" class="dp-cart-btn${exportChecks.has(p.ain) ? " in-cart" : ""}">
@@ -1834,7 +1896,7 @@ function projectSectionHtml(p) {
     : "";
   return `
     <section class="dp-section">
-      <h4>SB 684 / 1123 project ${badge}</h4>
+      <h4>SB 684 / 1123 Project ${badge}</h4>
       ${closedNote}
       ${kvRow("Case", pr.case)}
       ${kvRow("Bill", pr.bill || "–")}
@@ -1844,6 +1906,7 @@ function projectSectionHtml(p) {
       ${pr.entity ? kvRow("Owner Entity", pr.entity) : ""}
       ${pr.rep ? kvRow("Representative", `${pr.rep}${pr.repCompany ? " · " + pr.repCompany : ""}`) : ""}
       ${pr.phone && pr.phone !== "n/a" ? kvRow("Contact", pr.phone) : ""}
+      ${permitRowsHtml(p.ain)}
       ${pr.desc ? `<p class="dp-note">${pr.desc}</p>` : ""}
     </section>`;
 }
@@ -2055,6 +2118,8 @@ function syncControlsFromState() {
   document.querySelectorAll("#ed1-status-seg button").forEach((b) => b.classList.toggle("on", b.dataset.ed1Status === state.ed1Status));
   setVal("eunits-min", state.ed1Units[0]); setVal("eunits-max", state.ed1Units[1]);
   setPillVal("pv-eunits", rangeSummary(state.ed1Units));
+  document.getElementById("ed1-done-btn").classList.toggle("active", !!state.ed1Done);
+  document.getElementById("ed1-sold-btn").classList.toggle("active", !!state.ed1Sold);
   for (const el of document.querySelectorAll(".lg-ed1-row")) el.classList.toggle("hidden", prog !== "ed1");
   for (const id of ["centroids", "parcels-fill", "parcels-line", "parcels-projects", "parcels-status", "parcels-selected"].flatMap(lids)) {
     vis(id, prog === "sb1123");
@@ -2226,7 +2291,11 @@ function bindControls() {
       compChanged();
     });
   }
+  document.getElementById("ed1-done-btn").addEventListener("click", () => { state.ed1Done = !state.ed1Done; compChanged(); });
+  document.getElementById("ed1-sold-btn").addEventListener("click", () => { state.ed1Sold = !state.ed1Sold; compChanged(); });
   document.getElementById("ed1-clear").addEventListener("click", () => {
+    state.ed1Done = false;
+    state.ed1Sold = false;
     state.ed1Status = "any";
     state.ed1Units = [null, null];
     compChanged();
@@ -2785,7 +2854,7 @@ function applyProjectLayers() {
 async function boot() {
   initBrandLogo();
   await loadRemoteConfig();
-  await Promise.all([loadProjects(), loadListings(), loadSlo(), loadSold(), loadEd1()]);
+  await Promise.all([loadProjects(), loadListings(), loadSlo(), loadSold(), loadEd1(), loadPermits()]);
   const synthetic = await isSynthetic();
   demoMode = synthetic;
   if (synthetic) {
