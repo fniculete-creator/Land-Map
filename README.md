@@ -88,6 +88,13 @@ code needed.
   price, $/SF, and a link to the listing. Format: see
   `data/listings.sample.json` (`price` + `lotSqft` drive the $/SF math;
   `lng`/`lat` place the marker; `url`, `listDate`, `broker`, `tier` optional).
+- **SLO** — teal toggle for every LA City Small Lot Ordinance subdivision
+  (2005 to date: ZIMAS AA, TT and VTT cases with SL), `data/slo.json` keyed by
+  case. The view steps the parcel universe aside: teal dots are built (new
+  homes on the 2026 assessor roll), gray are not built; the stat tiles and
+  side list switch to the cases in view (homes built, average home SF) and a
+  click opens the case with its PDIS link. Rebuild with
+  `python scripts/slo/build_slo.py`.
 - **Share a search** — filter state lives in the URL hash; copy the link.
 - **Satellite toggle** — top-right button.
 

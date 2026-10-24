@@ -315,6 +315,8 @@ function baseStyle() {
   // toggle. Registered at style time — a geojson source added mid-session
   // can wedge isStyleLoaded() at false, starving the count/list refresh.
   sources["oz2"] = { type: "geojson", data: { type: "FeatureCollection", features: [] } };
+  // Small Lot Ordinance cases (data/slo.json), loaded before the style is built.
+  sources["slo"] = { type: "geojson", data: sloGeojson() };
   return {
     version: 8,
     sources,
@@ -358,6 +360,17 @@ function baseStyle() {
         },
       },
       {
+        // Small Lot Ordinance cases: hidden until the SLO pill is on; every zoom.
+        id: "slo-markers", type: "circle", source: "slo",
+        layout: { visibility: "none" },
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 3, 12, 6, 15, 9],
+          "circle-color": ["match", ["get", "status"], "built", "#0e7490", "#94a3b8"],
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 1.2,
+        },
+      },
+      {
         // On-market listing markers (data/listings.json). Hidden until the
         // On Market filter is active; drawn at every zoom so deals never
         // vanish from the dot view. Orange = the For Sale accent.
@@ -396,6 +409,57 @@ function projInScope(pr) {
       : state.dealStatus === "submitted" ? pr.status !== "approved" : true;
   const tierOk = state.tiers.size === 0 || state.tiers.has(pr.tier || "");
   return statusOk && tierOk && inSelectedAreas(pr.lng, pr.lat);
+}
+
+function sloGeojson() {
+  return {
+    type: "FeatureCollection",
+    features: Object.values(sloCases)
+      .filter((c) => c.lng != null)
+      .map((c) => ({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [c.lng, c.lat] },
+        properties: { case: c.case, status: c.status },
+      })),
+  };
+}
+
+function sloDetailHtml(c) {
+  const sizes = c.avgSf
+    ? `${fmt(c.avgSf)} SF avg${c.minSf !== c.maxSf ? ` (${fmt(c.minSf)} to ${fmt(c.maxSf)})` : ""}` : "";
+  const rows = [
+    kvRow("Case", c.case),
+    kvRow("Map type", c.kind + (c.filed ? `, filed ${c.filed}` : "")),
+    kvRow("Status", c.status === "built" ? "Built" : "Not built (approved, pending or never built)"),
+    c.homes ? kvRow("Homes built", String(c.homes)) : kvRow("Lots on the case", String(c.lots)),
+    sizes ? kvRow("Home size", sizes) : "",
+    c.completed ? kvRow("Completed", c.completed) : "",
+    kvRow("Community", c.community || ""),
+  ].join("");
+  return `
+    <div class="dp-head">
+      <div>
+        <div class="dp-addr">${c.address || c.case}</div>
+        <div class="dp-city">${c.community || ""}${c.zip ? " " + c.zip : ""}</div>
+        <div class="dp-sub">Small Lot Ordinance subdivision</div>
+      </div>
+      <button id="dp-close" title="Close">×</button>
+    </div>
+    <div class="dp-badges"><span class="badge ${c.status === "built" ? "badge-ok" : "badge-vacant"}">SLO ${c.status === "built" ? "built" : "not built"}</span></div>
+    <div class="dp-slo">${rows}</div>
+    <div class="dp-slo dp-slo-links">
+      <a href="https://planning.lacity.gov/pdiscaseinfo/search/casenumber/${encodeURIComponent(c.case)}" target="_blank" rel="noopener">Planning case file (PDIS)</a>
+      &nbsp;·&nbsp;
+      <a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${c.lat},${c.lng}" target="_blank" rel="noopener">Street View</a>
+    </div>`;
+}
+
+function showSloDetail(c) {
+  selectedAin = null;
+  const panel = document.getElementById("detail-panel");
+  panel.innerHTML = sloDetailHtml(c);
+  panel.classList.remove("hidden");
+  document.getElementById("dp-close").addEventListener("click", closeDetail);
 }
 
 function listingsGeojson() {
@@ -656,6 +720,8 @@ function updateCount() {
   // A filter change briefly marks the style dirty; dropping the update here
   // would freeze the list on stale results, so re-arm instead.
   if (!map.isStyleLoaded()) { scheduleCount(); return; }
+  setSloLabels(!!state.slo);
+  if (state.slo) { renderSloView(); return; }
   const zoom = map.getZoom();
   const layers = zoom >= 14 ? lids("parcels-fill") : lids("centroids");
   const feats = map.queryRenderedFeatures({ layers });
@@ -751,6 +817,69 @@ function featureCenter(f) {
   const ring = g.type === "MultiPolygon" ? g.coordinates[0][0] : g.coordinates[0];
   const [sx, sy] = ring.reduce((a, c) => [a[0] + c[0], a[1] + c[1]], [0, 0]);
   return [sx / ring.length, sy / ring.length];
+}
+
+// SLO view: the stat tiles and the list switch to the Small Lot Ordinance
+// cases in the current view (newest completed first, then not built).
+const SLO_LABELS = ["SLO cases in view", "built", "homes built", "avg home sf"];
+let baseLabels = null;
+function setSloLabels(on) {
+  const els = [...document.querySelectorAll("#stat-tiles .stat-label")];
+  if (!baseLabels) baseLabels = els.map((e) => e.textContent);
+  els.forEach((e, i) => { e.textContent = on ? SLO_LABELS[i] : baseLabels[i]; });
+  const t = document.getElementById("list-title");
+  if (on) t.textContent = "SLO cases in view";
+  else if (t.textContent === "SLO cases in view") {
+    t.textContent = state.om ? "On-market deals" : state.sbPreset ? "Candidates in view" : "Matches in view";
+  }
+}
+
+function renderSloView() {
+  const vb = map.getBounds();
+  const cases = Object.values(sloCases).filter((c) => c.lng != null && vb.contains([c.lng, c.lat]));
+  const built = cases.filter((c) => c.status === "built");
+  const homes = built.reduce((n, c) => n + (c.homes || 0), 0);
+  const sfW = built.reduce((n, c) => n + (c.avgSf || 0) * (c.homes || 0), 0);
+  document.getElementById("result-count").textContent = fmt(cases.length);
+  document.getElementById("stat-candidates").textContent = fmt(built.length);
+  document.getElementById("stat-medlot").textContent = fmt(homes);
+  document.getElementById("stat-medwidth").textContent = homes ? fmt(Math.round(sfW / homes)) : "–";
+  cases.sort((a, b) => (b.status === "built") - (a.status === "built")
+    || String(b.completed || b.filed || "").localeCompare(String(a.completed || a.filed || "")));
+  const MAX = 150;
+  const shown = cases.slice(0, MAX);
+  document.getElementById("list-count").textContent = cases.length > MAX ? `top ${MAX} of ${fmt(cases.length)}` : "";
+  const list = document.getElementById("site-list");
+  const empty = document.getElementById("empty-sites");
+  list.innerHTML = "";
+  empty.style.display = shown.length ? "none" : "block";
+  if (!shown.length) empty.textContent = "No Small Lot Ordinance cases in view. Zoom out or pan the map.";
+  for (const c of shown) {
+    const li = document.createElement("li");
+    li.className = "site-item";
+    const dot = document.createElement("span");
+    dot.className = "site-dot";
+    dot.style.background = c.status === "built" ? "#0e7490" : "#94a3b8";
+    const info = document.createElement("div");
+    info.className = "site-info";
+    const name = document.createElement("div");
+    name.className = "site-name";
+    name.textContent = c.address || c.case;
+    const meta = document.createElement("div");
+    meta.className = "site-meta";
+    meta.textContent = [c.community, c.case,
+      c.status === "built" ? `${c.homes} homes, ${c.completed}` : "not built"].filter(Boolean).join(" · ");
+    info.append(name, meta);
+    const right = document.createElement("span");
+    right.className = "site-right";
+    right.textContent = c.avgSf ? `${fmt(c.avgSf)} sf avg` : "";
+    li.append(dot, info, right);
+    li.addEventListener("click", () => {
+      map.easeTo({ center: [c.lng, c.lat], zoom: Math.max(map.getZoom(), 16) });
+      showSloDetail(c);
+    });
+    list.appendChild(li);
+  }
 }
 
 function renderList(candidates, detailed) {
@@ -1222,6 +1351,15 @@ function syncControlsFromState() {
   document.getElementById("ppsf-dd").classList.toggle("hidden", !state.om);
 
   document.getElementById("oz-btn").classList.toggle("active", !!state.oz);
+  document.getElementById("slo-btn").classList.toggle("active", !!state.slo);
+  if (map && map.getLayer("slo-markers")) {
+    map.setLayoutProperty("slo-markers", "visibility", state.slo ? "visible" : "none");
+  }
+  // SLO is its own view: the blue SB 1123 universe steps aside while it is on.
+  for (const id of ["centroids", "parcels-fill", "parcels-line"].flatMap(lids)) {
+    if (map && map.getLayer(id)) map.setLayoutProperty(id, "visibility", state.slo ? "none" : "visible");
+  }
+  for (const el of document.querySelectorAll(".lg-slo-row")) el.classList.toggle("hidden", !state.slo);
   for (const id of ["oz2-tint", "oz2-line"]) {
     if (map.getLayer(id)) {
       map.setLayoutProperty(id, "visibility", state.oz ? "visible" : "none");
@@ -1332,6 +1470,12 @@ function bindControls() {
     if (state.oz) await ensureOzLoaded();
     syncControlsFromState();
     applyFilters();
+  });
+
+  document.getElementById("slo-btn").addEventListener("click", () => {
+    state.slo = !state.slo;
+    syncControlsFromState();
+    scheduleCount();
   });
 
   document.getElementById("onmarket-btn").addEventListener("click", () => {
@@ -1716,12 +1860,12 @@ async function fetchMergedStyle(styleUrl, fallback) {
   base.sources = { ...base.sources };
   for (const [k, v] of Object.entries(fallback.sources)) {
     if (k === "satellite" || k === "sb-projects" || k === "om-listings"
-      || k === "oz2" || k.startsWith("parcels")) {
+      || k === "oz2" || k === "slo" || k.startsWith("parcels")) {
       base.sources[k] = v;
     }
   }
   const overlayIds = new Set([
-    "basemap-satellite", "projects-markers", "om-markers", "oz2-tint", "oz2-line",
+    "basemap-satellite", "projects-markers", "om-markers", "slo-markers", "oz2-tint", "oz2-line",
     ...["centroids", "parcels-fill", "parcels-line", "parcels-projects",
       "parcels-status", "parcels-selected"].flatMap(lids),
   ]);
@@ -1797,6 +1941,17 @@ async function loadProjects() {
   } catch (e) { /* optional dataset */ }
 }
 
+// Small Lot Ordinance subdivisions, keyed by case (data/slo.json: every ZIMAS
+// AA/TT/VTT case with SL; built = new homes on the 2026 assessor roll).
+let sloCases = {};
+
+async function loadSlo() {
+  try {
+    const resp = await fetch("data/slo.json");
+    if (resp.ok) sloCases = await resp.json();
+  } catch (e) { /* optional dataset */ }
+}
+
 // On-market SFR/Land deals, keyed by AIN (data/listings.json, team-curated).
 // $/SF of land is precomputed once here; a missing lot size leaves it null.
 let omListings = {};
@@ -1829,7 +1984,7 @@ function applyProjectLayers() {
 async function boot() {
   initBrandLogo();
   await loadRemoteConfig();
-  await Promise.all([loadProjects(), loadListings()]);
+  await Promise.all([loadProjects(), loadListings(), loadSlo()]);
   const synthetic = await isSynthetic();
   demoMode = synthetic;
   if (synthetic) {
@@ -1900,6 +2055,12 @@ async function boot() {
     map.easeTo({ center: e.lngLat, zoom: 15 });
     showDetail({ ain, a: l.address || "", lsf: l.lotSqft, t: l.tier || "" }, e.lngLat);
   });
+  map.on("click", "slo-markers", (e) => {
+    const c = sloCases[e.features[0].properties.case];
+    if (c) showSloDetail(c);
+  });
+  map.on("mouseenter", "slo-markers", () => { map.getCanvas().style.cursor = "pointer"; });
+  map.on("mouseleave", "slo-markers", () => { map.getCanvas().style.cursor = ""; });
   map.on("mouseenter", "om-markers", () => { map.getCanvas().style.cursor = "pointer"; });
   map.on("mouseleave", "om-markers", () => { map.getCanvas().style.cursor = ""; });
 

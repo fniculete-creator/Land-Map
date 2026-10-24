@@ -19,3 +19,4 @@ data/*.log
 # listings importer working files
 scripts/listings/.geocache.json
 scripts/listings/dry-run-audit-*.csv
+scripts/slo/_work/

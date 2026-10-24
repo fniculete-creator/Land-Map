@@ -21,6 +21,7 @@ export function emptyState() {
     om: false,
     omRange: [null, null],
     oz: false,   // Opportunity Zone 2.0: only parcels in a Recommended tract
+    slo: false,  // Small Lot Ordinance cases overlay (data/slo.json)
     areas: [],   // selected search areas (NEIGHBORHOODS names) — chips
   };
 }
@@ -168,6 +169,7 @@ export function stateToHash(state) {
   }
   if (state.sbPreset) p.set("sb", "1");
   if (state.oz) p.set("oz", "1");
+  if (state.slo) p.set("slo", "1");
   if (state.areas && state.areas.length) p.set("a", state.areas.join("|"));
   const s = p.toString();
   return s ? "#" + s : "";
@@ -201,6 +203,7 @@ export function stateFromHash(hash) {
   }
   if (p.get("sb") === "1") state.sbPreset = true;
   if (p.get("oz") === "1") state.oz = true;
+  if (p.get("slo") === "1") state.slo = true;
   if (p.get("a")) state.areas = p.get("a").split("|").filter(Boolean);
   return state;
 }
