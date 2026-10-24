@@ -64,7 +64,7 @@ const baseline = await counts();
 assert(baseline > 500, `universe dots render at start view (${baseline})`);
 
 // SB preset narrows to candidates.
-await page.click("#sb1123-btn");
+await page.$eval("#sb1123-btn", (el) => el.click());
 await page.waitForTimeout(2000);
 const sbCount = await counts();
 assert(sbCount > 0 && sbCount < baseline, `SB preset narrows universe (${baseline} -> ${sbCount})`);

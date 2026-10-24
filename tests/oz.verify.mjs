@@ -70,11 +70,11 @@ const hash = await page.evaluate(async () => {
 assert(hash.includes("oz=1"), `hash carries oz state (${hash})`);
 
 // SB preset toggle keeps the OZ scope.
-await page.click("#sb1123-btn");
+await page.$eval("#sb1123-btn", (el) => el.click());
 await page.waitForTimeout(600);
 assert(await page.evaluate(() => window.LandMap.state.oz === true
   && window.LandMap.state.sbPreset === true), "SB preset keeps OZ on");
-await page.click("#sb1123-btn");
+await page.$eval("#sb1123-btn", (el) => el.click());
 await page.waitForTimeout(400);
 
 // Toggle off restores everything.

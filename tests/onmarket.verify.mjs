@@ -100,11 +100,11 @@ const included = await page.waitForFunction(
 assert(included, "range 90-100 re-includes the deal");
 
 // SB preset toggling preserves On Market.
-await page.click("#sb1123-btn");
+await page.$eval("#sb1123-btn", (el) => el.click());
 await page.waitForTimeout(800);
 assert(await page.evaluate(() => window.LandMap.state.om === true
   && window.LandMap.state.sbPreset === true), "SB preset keeps On Market on");
-await page.click("#sb1123-btn");
+await page.$eval("#sb1123-btn", (el) => el.click());
 await page.waitForTimeout(500);
 
 // Detail panel shows the listing section.
