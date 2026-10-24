@@ -564,6 +564,9 @@ html, body {
 .badge-sub { background: #facc15; color: #5b4a00; }
 .badge-om { background: #d97706; color: #fff; }
 .badge-sb { background: #e6f9f1; color: #047857; border: 1px solid #10b981; }
+.site-meta-1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.badge-slo { background: #e0f2f7; color: #0e7490; border: 1px solid #0e7490; }
+.badge-slo-nb { background: #f1f5f9; color: #64748b; border: 1px solid #94a3b8; }
 
 .site-meta { font-size: 0.76rem; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
 

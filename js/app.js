@@ -834,6 +834,36 @@ function setSloLabels(on) {
   }
 }
 
+const sloChecks = new Set();
+let lastSloCases = [];
+
+// SLO Excel export: the checked cases, or every case in view when none are.
+function exportSloExcel() {
+  const rows = sloChecks.size
+    ? [...sloChecks].map((k) => sloCases[k]).filter(Boolean)
+    : lastSloCases;
+  const esc = (v) => String(v ?? "").replace(/[&<>"]/g,
+    (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  const cols = [
+    ["Address", (c) => c.address], ["Community", (c) => c.community], ["ZIP", (c) => c.zip],
+    ["Case", (c) => c.case], ["Map type", (c) => c.kind], ["Filed", (c) => c.filed ?? ""],
+    ["Lots", (c) => c.lots ?? ""], ["Status", (c) => (c.status === "built" ? "Built" : "Not built")],
+    ["Homes built", (c) => c.homes ?? ""], ["Avg home SF", (c) => c.avgSf ?? ""],
+    ["Min SF", (c) => c.minSf ?? ""], ["Max SF", (c) => c.maxSf ?? ""], ["Completed", (c) => c.completed ?? ""],
+  ];
+  const th = cols.map(([h]) =>
+    `<th style="background:#1B3A5C;color:#fff;font-weight:700;padding:6px 10px;
+      border-bottom:2.5px solid #C9A45C;white-space:nowrap">${esc(h)}</th>`).join("");
+  const trs = rows.map((c) => "<tr>" + cols.map(([, get]) =>
+    `<td style="padding:4px 10px;border-bottom:1px solid #e4e8ec;white-space:nowrap">${esc(get(c))}</td>`).join("") + "</tr>").join("");
+  const html = `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head>
+    <body><table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></body></html>`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + html], { type: "application/vnd.ms-excel" }));
+  a.download = "LAAA Small Lot Ordinance Export.xls";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 function renderSloView() {
   const vb = map.getBounds();
   const cases = Object.values(sloCases).filter((c) => c.lng != null && vb.contains([c.lng, c.lat]));
@@ -848,15 +878,31 @@ function renderSloView() {
     || String(b.completed || b.filed || "").localeCompare(String(a.completed || a.filed || "")));
   const MAX = 150;
   const shown = cases.slice(0, MAX);
-  document.getElementById("list-count").textContent = cases.length > MAX ? `top ${MAX} of ${fmt(cases.length)}` : "";
   const list = document.getElementById("site-list");
   const empty = document.getElementById("empty-sites");
   list.innerHTML = "";
   empty.style.display = shown.length ? "none" : "block";
   if (!shown.length) empty.textContent = "No Small Lot Ordinance cases in view. Zoom out or pan the map.";
+  const sel = sloChecks.size;
+  document.getElementById("list-count").innerHTML = [
+    cases.length > MAX ? `top ${MAX} of ${fmt(cases.length)}` : "",
+    sel ? `<b>${sel} checked</b> <button id="clear-slo-checks" title="Uncheck all">clear</button>` : "",
+  ].filter(Boolean).join(" · ");
+  document.getElementById("export-btn").textContent = sel ? `Excel (${sel})` : "Excel";
+  lastSloCases = cases;
   for (const c of shown) {
     const li = document.createElement("li");
     li.className = "site-item";
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.className = "site-check";
+    check.title = "Check to include in the Excel export";
+    check.checked = sloChecks.has(c.case);
+    check.addEventListener("click", (e) => e.stopPropagation());
+    check.addEventListener("change", () => {
+      if (sloChecks.has(c.case)) sloChecks.delete(c.case); else sloChecks.add(c.case);
+      scheduleCount();
+    });
     const dot = document.createElement("span");
     dot.className = "site-dot";
     dot.style.background = c.status === "built" ? "#0e7490" : "#94a3b8";
@@ -864,16 +910,28 @@ function renderSloView() {
     info.className = "site-info";
     const name = document.createElement("div");
     name.className = "site-name";
-    name.textContent = c.address || c.case;
+    const nameText = document.createElement("span");
+    nameText.className = "site-name-text";
+    nameText.textContent = c.address || c.case;
+    const badge = document.createElement("span");
+    badge.className = "site-badge " + (c.status === "built" ? "badge-slo" : "badge-slo-nb");
+    badge.textContent = c.status === "built" ? "Built" : "Not built";
+    name.append(nameText, badge);
     const meta = document.createElement("div");
     meta.className = "site-meta";
-    meta.textContent = [c.community, c.case,
-      c.status === "built" ? `${c.homes} homes, ${c.completed}` : "not built"].filter(Boolean).join(" · ");
+    meta.className = "site-meta site-meta-1";
+    meta.textContent = [(c.community || "").split(" - ")[0], c.case,
+      c.status === "built" ? c.completed : (c.filed ? "filed " + c.filed : "")].filter(Boolean).join(" · ");
     info.append(name, meta);
     const right = document.createElement("span");
     right.className = "site-right";
-    right.textContent = c.avgSf ? `${fmt(c.avgSf)} sf avg` : "";
-    li.append(dot, info, right);
+    const b = document.createElement("b");
+    b.textContent = c.status === "built" ? `${c.homes} homes` : (c.lots ? `${c.lots} lots` : "");
+    right.appendChild(b);
+    const sub = document.createElement("span");
+    sub.textContent = c.status === "built" && c.avgSf ? fmt(c.avgSf) + " sf avg" : "";
+    if (sub.textContent) right.appendChild(sub);
+    li.append(check, dot, info, right);
     li.addEventListener("click", () => {
       map.easeTo({ center: [c.lng, c.lat], zoom: Math.max(map.getZoom(), 16) });
       showSloDetail(c);
@@ -1530,6 +1588,7 @@ function bindControls() {
   // "clear" link inside the list-count line (re-rendered on every count).
   document.getElementById("list-count").addEventListener("click", (e) => {
     if (e.target.id === "clear-checks") LandMap.clearChecks();
+    else if (e.target.id === "clear-slo-checks") { sloChecks.clear(); scheduleCount(); }
   });
 
   // Cart button + panel (topbar).
@@ -1723,6 +1782,7 @@ const LandMap = {
   // Client-side — a styled HTML table with an .xls name opens in Excel with
   // the LAAA navy/gold header intact; no backend or vendored library needed.
   exportExcel() {
+    if (state.slo) return exportSloExcel();
     const rows = exportChecks.size
       ? [...exportChecks.values()]
       : lastCandidates.map((f) => f.properties);

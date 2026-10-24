@@ -93,7 +93,8 @@ code needed.
   case. The view steps the parcel universe aside: teal dots are built (new
   homes on the 2026 assessor roll), gray are not built; the stat tiles and
   side list switch to the cases in view (homes built, average home SF) and a
-  click opens the case with its PDIS link. Rebuild with
+  click opens the case with its PDIS link. List rows carry checkboxes and
+  **Excel** exports the checked cases (or all in view). Rebuild with
   `python scripts/slo/build_slo.py`.
 - **Share a search** — filter state lives in the URL hash; copy the link.
 - **Satellite toggle** — top-right button.
