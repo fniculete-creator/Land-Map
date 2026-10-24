@@ -909,3 +909,13 @@ html, body {
 .prog-tab.active[data-prog="lihtc"] { background: #0891b2; }
 .prog-tab.active:hover { color: #fff; filter: brightness(0.95); }
 .soon-opt { color: #a3adb8; }
+.badge-ed1 { background: #fde8e8; color: #b91c1c; border: 1px solid #dc2626; }
+.badge-ed1-pend { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+.dp-units-wrap { overflow-x: auto; }
+.dp-units { width: 100%; border-collapse: collapse; font-size: 0.72rem; table-layout: auto; font-variant-numeric: tabular-nums; }
+.dp-units th { text-align: left; font-size: 0.66rem; letter-spacing: 0.4px; text-transform: uppercase; color: var(--muted); padding: 4px 4px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.dp-units td { padding: 4px 3px; white-space: nowrap; color: var(--text); }
+.dp-units td:first-child { white-space: normal; min-width: 70px; }
+.dp-units tr.dp-unit-first td { border-top: 1px solid #eef1f4; }
+.dp-units td:nth-child(5), .dp-units th:nth-child(5), .dp-units td:nth-child(6), .dp-units th:nth-child(6) { text-align: right; }
+.dp-units td.dp-unit-new { font-weight: 800; color: #0e7490; }

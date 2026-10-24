@@ -31,6 +31,7 @@ assert(await page.$eval("#oz-btn", (el) => !el.classList.contains("active")),
 // The app boots into Status=Approved (no universe count) — clear to the
 // plain universe view before measuring.
 await page.click("#reset-btn");
+await page.evaluate(() => window.LandMap.showUniverse());
 await page.waitForFunction(() => {
   const n = Number(document.getElementById("result-count").textContent.replace(/,/g, ""));
   return Number.isFinite(n) && n > 0;

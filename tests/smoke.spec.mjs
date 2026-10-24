@@ -49,8 +49,8 @@ await page.check('input[name="dstatus"][value="any"]');
 await page.keyboard.press("Escape");
 await page.evaluate(() => window.LandMap.map.jumpTo({ center: [-118.47, 34.09], zoom: 11 }));
 await page.waitForTimeout(3500);
-assert((await page.evaluate(() => document.getElementById("list-title").textContent)) === "Matches in view",
-  "list titled 'Matches in view' under Status=Any");
+assert((await page.evaluate(() => document.getElementById("list-title").textContent)) === "Matches in View",
+  "list titled 'Matches in View' under Status=Any");
 
 // Counts span every tile source (the county is split into chunk archives).
 const counts = () => page.evaluate(() => {
@@ -68,9 +68,12 @@ await page.$eval("#sb1123-btn", (el) => el.click());
 await page.waitForTimeout(2000);
 const sbCount = await counts();
 assert(sbCount > 0 && sbCount < baseline, `SB preset narrows universe (${baseline} -> ${sbCount})`);
-assert((await page.evaluate(() => document.getElementById("list-title").textContent)) === "Candidates in view",
-  "list titled 'Candidates in view' under SB preset");
+assert((await page.evaluate(() => document.getElementById("list-title").textContent)) === "Candidates in View",
+  "list titled 'Candidates in View' under SB preset");
 await page.click("#reset-btn");
+await page.waitForTimeout(1500);
+assert((await counts()) === 0, "Clear lands on an empty map (no parcels drawn)");
+await page.evaluate(() => window.LandMap.showUniverse());
 await page.waitForTimeout(1500);
 
 // Improvements=Vacant narrows; SFR excludes vacant.
@@ -80,6 +83,7 @@ await page.waitForTimeout(2000);
 const vacantCount = await counts();
 assert(vacantCount > 0 && vacantCount < baseline, `Vacant narrows universe (${vacantCount})`);
 await page.click("#reset-btn");
+await page.evaluate(() => window.LandMap.showUniverse());
 await page.waitForTimeout(1200);
 
 // Reference parcel: 6540 Shoup Ave must be present, filterable, clickable.
@@ -136,6 +140,7 @@ assert(excl.bad === 0, `no fire/coastal/public parcels among matches (${excl.bad
 
 // Expanded coverage: parcels must render in the non-region chunks too.
 await page.click("#reset-btn");
+await page.evaluate(() => window.LandMap.showUniverse());
 for (const [name, center] of [
   ["Silver Lake", [-118.27, 34.095]],
   ["Long Beach", [-118.19, 33.77]],

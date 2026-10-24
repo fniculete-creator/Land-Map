@@ -31,9 +31,9 @@ await page.evaluate(() => window.LandMap.map.jumpTo({ center: [-118.465, 33.99],
 await page.waitForFunction(() => document.querySelectorAll("#site-list .site-item").length > 0, { timeout: 20000 }).catch(() => {});
 const rows = await page.$$eval("#site-list .site-item", (els) => els.map((e) => e.innerText));
 assert(rows.length > 0, `Venice lists small lot sales (${rows.length})`);
-assert(rows.length && /\$[\d,]+/.test(rows[0]) && /\/sf/.test(rows[0]), "row shows price and $/SF");
+assert(rows.length && /\$[\d,]+/.test(rows[0]) && /\/sf/i.test(rows[0]), "row shows price and $/SF");
 const title = await page.$eval("#list-title", (e) => e.textContent);
-assert(title === "Small lot sales in view", `list title (${title})`);
+assert(title === "Small Lot Sales in View", `list title (${title})`);
 const n0 = rows.length;
 
 await page.click('[data-dd="csince"] [data-dd-btn]');

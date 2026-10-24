@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Land — LAAA Team | LA Development Site Targeting</title>
+  <title>Land | LAAA Team | LA Development Site Targeting</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <!-- Rich link previews (iMessage / Slack / social) -->
@@ -50,7 +50,8 @@
               title="SB 1123 / SB 684 site targeting: vacant lots and SFR homes, candidates colored">SB 1123</button>
       <button class="prog-tab" id="slo-btn" data-prog="slo"
               title="Small Lot Ordinance subdivisions (2005 to date): every AA, TT and VTT case with SL in ZIMAS">SLO</button>
-      <button class="prog-tab soon" data-prog="ed1" disabled title="Coming soon">ED 1 <span class="soon-tag">Soon</span></button>
+      <button class="prog-tab" id="ed1-btn" data-prog="ed1"
+              title="Executive Directive 1 (100% affordable housing) projects filed with LA City Planning">ED 1</button>
       <button class="prog-tab soon" data-prog="apartments" disabled title="Coming soon">Apartments <span class="soon-tag">Soon</span></button>
       <button class="prog-tab soon" data-prog="sb9" disabled title="Coming soon">SB 9 <span class="soon-tag">Soon</span></button>
       <button class="prog-tab soon" data-prog="duplex" disabled title="Coming soon">Duplex <span class="soon-tag">Soon</span></button>
@@ -65,10 +66,32 @@
       <!-- SLO filters -->
       <div class="fgroup hidden" data-prog="slo">
         <div class="seg" id="slo-status-seg">
-          <button data-slo-status="any">All cases</button>
+          <button data-slo-status="any">All Cases</button>
           <button data-slo-status="built">Built</button>
-          <button data-slo-status="not built">Not built</button>
+          <button data-slo-status="not built">Not Built</button>
         </div>
+      </div>
+
+      <!-- ED 1 filters -->
+      <div class="fgroup hidden" data-prog="ed1">
+        <div class="seg" id="ed1-status-seg">
+          <button data-ed1-status="any">All Cases</button>
+          <button data-ed1-status="approved">Approved</button>
+          <button data-ed1-status="pending">Pending</button>
+          <button data-ed1-status="closed">Withdrawn / Closed</button>
+        </div>
+        <div class="dropdown" data-dd="eunits">
+          <button class="pill" data-dd-btn>Units <span class="pill-val" id="pv-eunits"></span> <span class="caret">▾</span></button>
+          <div class="dd-panel">
+            <label>Units on the Project</label>
+            <div class="range-row">
+              <input type="number" id="eunits-min" placeholder="min" min="0" />
+              <span>–</span>
+              <input type="number" id="eunits-max" placeholder="max" min="0" />
+            </div>
+          </div>
+        </div>
+        <button id="ed1-clear" class="pill pill-ghost">Clear</button>
       </div>
 
       <!-- Comps filters -->
@@ -90,13 +113,13 @@
             <label class="check-label"><input type="radio" name="csince" value="2024" /> 01/01/2024</label>
             <label class="check-label"><input type="radio" name="csince" value="2023" /> 01/01/2023</label>
             <label class="check-label"><input type="radio" name="csince" value="2020" /> 01/01/2020</label>
-            <label class="check-label"><input type="radio" name="csince" value="0" /> Any date</label>
+            <label class="check-label"><input type="radio" name="csince" value="0" /> Any Date</label>
           </div>
         </div>
         <div class="dropdown" data-dd="cprice">
           <button class="pill" data-dd-btn>Price <span class="pill-val" id="pv-cprice"></span> <span class="caret">▾</span></button>
           <div class="dd-panel">
-            <label>Sale price ($)</label>
+            <label>Sale Price ($)</label>
             <div class="range-row">
               <input type="number" id="cprice-min" placeholder="min" min="0" />
               <span>–</span>
@@ -107,7 +130,7 @@
         <div class="dropdown" data-dd="cppsf">
           <button class="pill" data-dd-btn>$/SF <span class="pill-val" id="pv-cppsf"></span> <span class="caret">▾</span></button>
           <div class="dd-panel">
-            <label>Price per SF of home ($)</label>
+            <label>Price per SF of Home ($)</label>
             <div class="range-row">
               <input type="number" id="cppsf-min" placeholder="min" min="0" />
               <span>–</span>
@@ -118,7 +141,7 @@
         <div class="dropdown" data-dd="csf">
           <button class="pill" data-dd-btn>Home Size <span class="pill-val" id="pv-csf"></span> <span class="caret">▾</span></button>
           <div class="dd-panel">
-            <label>Home size (sqft)</label>
+            <label>Home Size (SF)</label>
             <div class="range-row">
               <input type="number" id="csf-min" placeholder="min" min="0" />
               <span>–</span>
@@ -129,7 +152,7 @@
         <div class="dropdown" data-dd="cyb">
           <button class="pill" data-dd-btn>Year Built <span class="pill-val" id="pv-cyb"></span> <span class="caret">▾</span></button>
           <div class="dd-panel">
-            <label>Year built</label>
+            <label>Year Built</label>
             <div class="range-row">
               <input type="number" id="cyb-min" placeholder="from" min="2005" />
               <span>–</span>
@@ -157,7 +180,7 @@
       <div class="dropdown hidden" data-dd="ppsf" id="ppsf-dd">
         <button class="pill" data-dd-btn>$/SF Land <span class="pill-val" id="pv-ppsf"></span> <span class="caret">▾</span></button>
         <div class="dd-panel">
-          <label>Price per SF of land ($)</label>
+          <label>Price per SF of Land ($)</label>
           <div class="range-row">
             <input type="number" id="ppsf-min" placeholder="min" min="0" />
             <span>–</span>
@@ -178,9 +201,9 @@
       </div>
 
       <div class="dropdown" data-dd="lot">
-        <button class="pill" data-dd-btn>Lot size <span class="pill-val" id="pv-lot"></span> <span class="caret">▾</span></button>
+        <button class="pill" data-dd-btn>Lot Size <span class="pill-val" id="pv-lot"></span> <span class="caret">▾</span></button>
         <div class="dd-panel">
-          <label>Lot size (sqft)</label>
+          <label>Lot Size (SF)</label>
           <div class="range-row">
             <input type="number" id="lsf-min" placeholder="min" min="0" />
             <span>–</span>
@@ -192,7 +215,7 @@
       <div class="dropdown" data-dd="width">
         <button class="pill" data-dd-btn>Width <span class="pill-val" id="pv-width"></span> <span class="caret">▾</span></button>
         <div class="dd-panel">
-          <label>Lot width (ft)</label>
+          <label>Lot Width (ft)</label>
           <div class="range-row">
             <input type="number" id="w-min" placeholder="min" min="0" />
             <span>–</span>
@@ -204,9 +227,9 @@
       <div class="dropdown hidden" data-dd="zoning">
         <button class="pill" data-dd-btn>Zoning <span class="pill-val" id="pv-zoning"></span> <span class="caret">▾</span></button>
         <div class="dd-panel">
-          <label class="check-label"><input type="checkbox" class="zone-family" value="1" /> Single-family (R1, RS, RE, RA…)</label>
+          <label class="check-label"><input type="checkbox" class="zone-family" value="1" /> Single-Family (R1, RS, RE, RA…)</label>
           <label class="check-label"><input type="checkbox" class="zone-family" value="2" /> Multifamily (R2, R3, R4, RD…)</label>
-          <label class="check-label"><input type="checkbox" class="zone-family" value="0" /> Commercial / industrial / other</label>
+          <label class="check-label"><input type="checkbox" class="zone-family" value="0" /> Commercial / Industrial / Other</label>
           <input type="text" id="zone-text" placeholder="or exact classes, e.g. R1,RD1.5" />
         </div>
       </div>
@@ -221,7 +244,7 @@
           <label class="check-label"><input type="radio" name="dstatus" value="forsale" /> For Sale</label>
           <p class="dd-hint">Submitted &amp; Approved include LA City Planning
           SB 1123 / SB 684 cases. You can also tag parcels yourself from a
-          parcel's panel — those tags are saved in this browser.</p>
+          parcel's panel; those tags are saved in this browser.</p>
         </div>
       </div>
 
@@ -237,7 +260,7 @@
       <div class="dropdown" data-dd="overlay">
         <button class="pill" data-dd-btn>Overlay <span class="pill-val" id="pv-ovl"></span> <span class="caret">▾</span></button>
         <div class="dd-panel">
-          <label class="check-label"><input type="checkbox" id="oz-btn" class="ovl-cb" value="oz2" /> <span class="ovl-sw" style="background:#7c5cbf"></span> OZ 2.0 <span class="muted">(2026 recommended tracts)</span></label>
+          <label class="check-label"><input type="checkbox" id="oz-btn" class="ovl-cb" value="oz2" /> <span class="ovl-sw" style="background:#7c5cbf"></span> OZ 2.0 <span class="muted">(2026 Recommended Tracts)</span></label>
           <label class="check-label"><input type="checkbox" class="ovl-cb" value="oz" /> <span class="ovl-sw" style="background:#b45309"></span> OZ <span class="muted">(2018 Opportunity Zones)</span></label>
           <label class="check-label"><input type="checkbox" class="ovl-cb" value="hr" /> <span class="ovl-sw" style="background:#059669"></span> High Resource <span class="muted">(TCAC/HCD 2026, High and Highest)</span></label>
           <label class="check-label"><input type="checkbox" class="ovl-cb" value="qct" /> <span class="ovl-sw" style="background:#dc2626"></span> QCT / DDA <span class="muted">(HUD 2026)</span></label>
@@ -252,40 +275,40 @@
     <div id="main">
       <aside id="sidepanel">
         <div id="demo-banner" class="hidden">
-          Demo — <strong>synthetic parcels</strong>, not real LA data.
+          Demo: <strong>synthetic parcels</strong>, not real LA data.
         </div>
 
         <div id="stat-tiles">
           <div class="stat-tile stat-active">
             <span class="stat-num" id="result-count">–</span>
-            <span class="stat-label" id="result-label">parcels in view</span>
+            <span class="stat-label" id="result-label">Parcels in View</span>
           </div>
           <div class="stat-tile">
             <span class="stat-num stat-green" id="stat-candidates">–</span>
-            <span class="stat-label">candidates</span>
+            <span class="stat-label">Candidates</span>
           </div>
           <div class="stat-tile">
             <span class="stat-num" id="stat-medlot">–</span>
-            <span class="stat-label">median lot sf</span>
+            <span class="stat-label">Median Lot SF</span>
           </div>
           <div class="stat-tile">
             <span class="stat-num" id="stat-medwidth">–</span>
-            <span class="stat-label">median width ft</span>
+            <span class="stat-label">Median Width (ft)</span>
           </div>
         </div>
 
         <div id="sb1123-explainer" class="hidden">
           <strong>SB 1123 / SB 684 screening</strong>
           <ul>
-            <li>Vacant lot (no/negligible improvements)</li>
+            <li>Vacant lot (no or negligible improvements)</li>
             <li>SF zone &amp; ≤ 1.5 ac, or MF zone &amp; ≤ 5 ac</li>
-            <li>Fire, coastal &amp; hillside excluded automatically</li>
+            <li>Fire, coastal and hillside lots excluded automatically</li>
           </ul>
-          <p>Screening only — verify in ZIMAS and with counsel.</p>
+          <p>Screening only. Verify in ZIMAS and with counsel.</p>
         </div>
 
         <div id="list-header">
-          <span id="list-title">Candidates in view</span>
+          <span id="list-title">Candidates in View</span>
           <span id="list-actions">
             <button id="copy-link-btn" title="Copy a shareable link to this exact view and filters">Link</button>
             <button id="export-btn" title="Export to Excel — the checked properties, or everything listed if none are checked">Excel</button>
@@ -294,7 +317,7 @@
         <div id="list-count"></div>
         <ul id="site-list"></ul>
         <div id="empty-sites" class="empty-state">
-          No qualifying parcels in view. Zoom or pan the map, or relax filters.
+          No qualifying parcels in view. Zoom or pan the map, or relax the filters.
         </div>
       </aside>
 
@@ -304,14 +327,17 @@
           <div class="lg-row lg-sb-row"><span class="lg-swatch lg-proj-appr"></span>Approved</div>
           <div class="lg-row lg-sb-row"><span class="lg-swatch lg-proj-pend"></span>Submitted</div>
           <div class="lg-row lg-sb-row"><span class="lg-swatch lg-onmarket"></span>On Market</div>
-          <div class="lg-row lg-slo-row hidden"><span class="lg-swatch lg-slo-built"></span>SLO built</div>
-          <div class="lg-row lg-slo-row hidden"><span class="lg-swatch lg-slo-not"></span>SLO not built</div>
+          <div class="lg-row lg-slo-row hidden"><span class="lg-swatch lg-slo-built"></span>SLO Built</div>
+          <div class="lg-row lg-slo-row hidden"><span class="lg-swatch lg-slo-not"></span>SLO Not Built</div>
           <div class="lg-row lg-sb-row"><span class="lg-swatch lg-other"></span>Other Parcels</div>
-          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#94a3b8"></span>Under $500/sf</div>
-          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#60a5fa"></span>$500 to $750/sf</div>
-          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#2563eb"></span>$750 to $1,000/sf</div>
-          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#7c3aed"></span>$1,000 to $1,250/sf</div>
-          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#db2777"></span>$1,250/sf and up</div>
+          <div class="lg-row lg-ed1-row hidden"><span class="lg-swatch lg-dot" style="background:#dc2626"></span>ED 1 Approved</div>
+          <div class="lg-row lg-ed1-row hidden"><span class="lg-swatch lg-dot" style="background:#f59e0b"></span>ED 1 Pending</div>
+          <div class="lg-row lg-ed1-row hidden"><span class="lg-swatch lg-dot" style="background:#94a3b8"></span>Withdrawn / Closed</div>
+          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#94a3b8"></span>Under $500/SF</div>
+          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#60a5fa"></span>$500 to $750/SF</div>
+          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#2563eb"></span>$750 to $1,000/SF</div>
+          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#7c3aed"></span>$1,000 to $1,250/SF</div>
+          <div class="lg-row lg-comp-row hidden"><span class="lg-swatch lg-dot" style="background:#db2777"></span>$1,250/SF and Up</div>
         </div>
       </main>
 

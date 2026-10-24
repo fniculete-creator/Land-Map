@@ -31,6 +31,13 @@ function hasUserFilters(s) {
     || s.om || (s.areas && s.areas.length > 0);
 }
 
+// Clear lands on an empty map (Filip, 10/24/2026): no parcels are drawn until
+// the user picks a filter, the Eligible preset, Sold or an overlay.
+const NEVER = ["==", ["get", "ain"], "___none___"];
+function isBlank(s) {
+  return !!s.blank && !hasUserFilters(s) && !s.sbPreset && !s.sold && !s.oz && !(s.ovl && s.ovl.size);
+}
+
 const TIER_NAMES = { A: "Westside", B: "South Valley", C: "Central/North Valley" };
 const STATUS_LABELS = {
   submitted: "Submitted", approved: "Approved",
@@ -320,6 +327,8 @@ function baseStyle() {
   sources["slo"] = { type: "geojson", data: sloGeojson() };
   // Each SLO case's whole site: its lots merged into one outline (data/slo_lots.geojson).
   sources["slo-lots"] = { type: "geojson", data: "data/slo_lots.geojson" };
+  // ED 1 projects (data/ed1.json), loaded before the style is built.
+  sources["ed1"] = { type: "geojson", data: ed1Geojson() };
   // Sale comps start empty; ensureCompsLoaded() fills them on first visit to Comps.
   sources["comps"] = { type: "geojson", data: { type: "FeatureCollection", features: [] } };
   return {
@@ -414,6 +423,20 @@ function baseStyle() {
           "circle-color": ["match", ["get", "status"], "built", "#0e7490", "#94a3b8"],
           "circle-stroke-color": "#fff",
           "circle-stroke-width": 1.2,
+        },
+      },
+      {
+        // ED 1 projects, colored by status and sized by units. Hidden until the ED 1 program is on.
+        id: "ed1-markers", type: "circle", source: "ed1",
+        layout: { visibility: "none", "circle-sort-key": ["coalesce", ["get", "units"], 0] },
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["zoom"],
+            9, ["interpolate", ["linear"], ["coalesce", ["get", "units"], 0], 0, 3, 200, 7],
+            15, ["interpolate", ["linear"], ["coalesce", ["get", "units"], 0], 0, 6, 200, 14]],
+          "circle-color": ["match", ["get", "grp"], "approved", "#dc2626", "pending", "#f59e0b", "#94a3b8"],
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 1.2,
+          "circle-opacity": 0.9,
         },
       },
       {
@@ -544,7 +567,7 @@ function compDetailHtml(c) {
       <div>
         <div class="dp-addr">${c.a}</div>
         <div class="dp-city">${[compCommunity(c), c.z].filter(Boolean).join(" ")}</div>
-        <div class="dp-sub">APN ${compApn(c)} · Small lot home</div>
+        <div class="dp-sub">APN ${compApn(c)} · Small Lot Home</div>
       </div>
       <button id="dp-close" title="Close">×</button>
     </div>
@@ -563,11 +586,12 @@ function compDetailHtml(c) {
     </section>
     <section class="dp-section">
       <h4>Sales</h4>
-      ${kvRow(fmtDate(c.d), `$${fmt(c.p)}${c.ppsf ? ` <span class="muted">($${fmt(c.ppsf)}/sf)</span>` : ""}`)}
-      ${others.map((o) => kvRow(fmtDate(o.d), `$${fmt(o.p)}${o.ppsf ? ` <span class="muted">($${fmt(o.ppsf)}/sf)</span>` : ""}`)).join("")}
+      ${kvRow(fmtDate(c.d), `$${fmt(c.p)}${c.ppsf ? ` <span class="muted">($${fmt(c.ppsf)}/SF)</span>` : ""}`)}
+      ${others.map((o) => kvRow(fmtDate(o.d), `$${fmt(o.p)}${o.ppsf ? ` <span class="muted">($${fmt(o.ppsf)}/SF)</span>` : ""}`)).join("")}
       <p class="dd-hint">County transfer-tax price for a full sale; confirm it against the MLS before relying on it.</p>
     </section>
     <div class="dp-links">
+      <a href="https://www.zillow.com/homes/${encodeURIComponent(`${c.a.replace(/, Lot \w+$/, "")} Los Angeles CA ${c.z || ""}`.trim())}_rb/" target="_blank" rel="noopener">Zillow ↗</a>
       <a href="https://portal.assessor.lacounty.gov/parceldetail/${c.ain}" target="_blank" rel="noopener">Assessor ↗</a>
       <a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>
       <a href="${CONFIG.STREETVIEW_URL(c.lat, c.lng)}" target="_blank" rel="noopener">Street View ↗</a>
@@ -582,6 +606,88 @@ function showCompDetail(c) {
   document.getElementById("dp-close").addEventListener("click", closeDetail);
   const link = document.getElementById("dp-comp-case");
   if (link) link.addEventListener("click", (e) => { e.preventDefault(); showSloDetail(sloCases[c.c]); });
+}
+
+// ---- ED 1 program: Executive Directive 1 projects (data/ed1.json) ----
+let ed1Cases = {};
+async function loadEd1() {
+  try {
+    const resp = await fetch("data/ed1.json");
+    if (resp.ok) ed1Cases = await resp.json();
+  } catch (e) { /* optional dataset */ }
+}
+const ED1_APPROVED = new Set(["Approved", "Approved With Conditions", "Authorized", "Review Completed", "Cleared"]);
+const ED1_CLOSED = new Set(["Withdrawn", "Terminated", "Administrative Closure"]);
+function ed1Group(c) { return ED1_APPROVED.has(c.status) ? "approved" : ED1_CLOSED.has(c.status) ? "closed" : "pending"; }
+const ED1_COLORS = { approved: "#dc2626", pending: "#f59e0b", closed: "#94a3b8" };
+function ed1Geojson() {
+  return {
+    type: "FeatureCollection",
+    features: Object.values(ed1Cases).filter((c) => c.lng != null).map((c) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [c.lng, c.lat] },
+      properties: { case: c.case, grp: ed1Group(c), units: c.units },
+    })),
+  };
+}
+function ed1Passes(c) {
+  const [lo, hi] = state.ed1Units;
+  return (state.ed1Status === "any" || ed1Group(c) === state.ed1Status)
+    && (lo === null || (c.units != null && c.units >= lo)) && (hi === null || (c.units != null && c.units <= hi));
+}
+function ed1FilterExpr() {
+  const out = ["all"];
+  if (state.ed1Status !== "any") out.push(["==", ["get", "grp"], state.ed1Status]);
+  const [lo, hi] = state.ed1Units;
+  if (lo !== null) out.push([">=", ["coalesce", ["get", "units"], -1], lo]);
+  if (hi !== null) out.push(["<=", ["coalesce", ["get", "units"], 1e9], hi]);
+  return out;
+}
+function ed1DetailHtml(c) {
+  const grp = ed1Group(c);
+  const same = (c.sameSite || []).map((k) => ed1Cases[k] ? `<a href="#" class="dp-ed1-same" data-case="${k}">${k}</a>` : k).join("<br>");
+  return `
+    <div class="dp-head">
+      <div>
+        <div class="dp-addr">${c.address || c.case}</div>
+        <div class="dp-city">${[c.community, c.zip].filter(Boolean).join(" ")}</div>
+        <div class="dp-sub">${c.apn ? "APN " + c.apn + " · " : ""}ED 1 Project</div>
+      </div>
+      <button id="dp-close" title="Close">×</button>
+    </div>
+    <div class="dp-badges"><span class="badge ${grp === "approved" ? "badge-ok" : "badge-vacant"}"${grp === "approved" ? ' style="background:#dc2626"' : ""}>${c.status}</span></div>
+    ${aerialEmbedHtml(c.lat, c.lng)}
+    <div class="dp-tiles">
+      <div class="dp-tile"><b>${c.units != null ? fmt(c.units) : "–"}</b><span>Units</span></div>
+      <div class="dp-tile dp-tile-navy"><b>${c.affordableUnits != null ? fmt(c.affordableUnits) : "–"}</b><span>Affordable Units</span></div>
+    </div>
+    <section class="dp-section">
+      <h4>Project</h4>
+      ${kvRow("Case", c.case)}
+      ${kvRow("Status", c.status)}
+      ${kvRow("Filed", c.filed || "–")}
+      ${c.approved ? kvRow("Approved", c.approved) : ""}
+      ${c.apn ? kvRow("APN", c.apn) : ""}
+      ${same ? kvRow("Other ED 1 Cases on the Site", same) : ""}
+      <p class="dd-hint">Units are read from the City's project description; confirm on the case file.</p>
+    </section>
+    <div class="dp-links">
+      <a href="${c.source || "https://planning.lacity.gov/pdiscaseinfo/search/casenumber/" + encodeURIComponent(c.case)}" target="_blank" rel="noopener">Planning Case ↗</a>
+      <a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>
+      <a href="${CONFIG.STREETVIEW_URL(c.lat, c.lng)}" target="_blank" rel="noopener">Street View ↗</a>
+    </div>`;
+}
+function showEd1Detail(c) {
+  selectedAin = null;
+  const panel = document.getElementById("detail-panel");
+  panel.innerHTML = ed1DetailHtml(c);
+  panel.classList.remove("hidden");
+  document.getElementById("dp-close").addEventListener("click", closeDetail);
+  panel.querySelectorAll(".dp-ed1-same").forEach((a) => a.addEventListener("click", (e) => {
+    e.preventDefault();
+    const o = ed1Cases[a.dataset.case];
+    if (o) { map.easeTo({ center: [o.lng, o.lat] }); showEd1Detail(o); }
+  }));
 }
 
 function sloGeojson() {
@@ -599,26 +705,44 @@ function sloGeojson() {
 
 function sloDetailHtml(c) {
   const sizes = c.avgSf
-    ? `${fmt(c.avgSf)} SF avg${c.minSf !== c.maxSf ? ` (${fmt(c.minSf)} to ${fmt(c.maxSf)})` : ""}` : "";
-  // Recorded sales of the project's homes (Comps data; loads on first open).
-  const sales = compSales.filter((o) => o.c === c.case).sort((a, b) => b.d.localeCompare(a.d));
-  const salesHtml = sales.length ? `
+    ? `${fmt(c.avgSf)} SF Avg${c.minSf !== c.maxSf ? ` (${fmt(c.minSf)} to ${fmt(c.maxSf)})` : ""}` : "";
+  // Every home in the project with its recorded sales (Comps data; loads on first open):
+  // one row per sale, grouped by home, builder sale marked New.
+  const sales = compSales.filter((o) => o.c === c.case);
+  const byHome = new Map();
+  for (const o of sales) {
+    if (!byHome.has(o.ain)) byHome.set(o.ain, []);
+    byHome.get(o.ain).push(o);
+  }
+  const homes = [...byHome.values()].map((list) => list.sort((a, b) => b.d.localeCompare(a.d)))
+    .sort((a, b) => a[0].a.localeCompare(b[0].a, undefined, { numeric: true }));
+  const homeName = (o) => o.a.replace(/^.*?, (Lot \w+)$/, "$1");
+  const salesHtml = homes.length ? `
     <section class="dp-section">
-      <h4>Home Sales <span class="muted">(${sales.length})</span></h4>
-      ${sales.slice(0, 12).map((o) => kvRow(`${fmtDate(o.d)} · ${o.a.replace(/^.*?, (Lot \w+)$/, "$1")}`,
-        `$${fmt(o.p)}${o.ppsf ? ` <span class="muted">($${fmt(o.ppsf)}/sf)</span>` : ""}`)).join("")}
-      ${sales.length > 12 ? `<p class="dd-hint">${sales.length - 12} more in the Comps program.</p>` : ""}
+      <h4>Homes and Sales <span class="muted">(${homes.length} ${homes.length === 1 ? "Home" : "Homes"}, ${sales.length} ${sales.length === 1 ? "Sale" : "Sales"})</span></h4>
+      <div class="dp-units-wrap"><table class="dp-units">
+        <thead><tr><th>Home</th><th>SF</th><th>Bd/Ba</th><th>Sold</th><th>Price</th><th>$/SF</th></tr></thead>
+        <tbody>${homes.map((list) => list.map((o, k) => `<tr class="${k === 0 ? "dp-unit-first" : ""}">
+          <td>${k === 0 ? homeName(o) : ""}</td>
+          <td>${k === 0 && o.sf ? fmt(o.sf) : ""}</td>
+          <td>${k === 0 && (o.bd || o.ba) ? `${o.bd ?? "?"}/${o.ba ?? "?"}` : ""}</td>
+          <td>${fmtDate(o.d).replace(/\/(\d\d)(\d\d)$/, "/$2")}</td>
+          <td class="${o.n === 1 ? "dp-unit-new" : ""}">$${fmt(o.p)}</td>
+          <td>${o.ppsf ? "$" + fmt(o.ppsf) : "–"}</td></tr>`).join("")).join("")}</tbody>
+      </table></div>
+      ${c.homes && homes.length < c.homes ? `<p class="dd-hint">${c.homes - homes.length} of ${c.homes} homes have no recorded sale yet.</p>` : ""}
+      <p class="dd-hint">Bold price = the builder's first sale. Prices are the County's transfer-tax figures; confirm on the MLS.</p>
     </section>` : "";
   return `
     <div class="dp-head">
       <div>
         <div class="dp-addr">${c.address || c.case}</div>
         <div class="dp-city">${[c.community, c.zip].filter(Boolean).join(" ")}</div>
-        <div class="dp-sub">${c.case} · Small Lot Ordinance subdivision</div>
+        <div class="dp-sub">${c.case} · Small Lot Ordinance Subdivision</div>
       </div>
       <button id="dp-close" title="Close">×</button>
     </div>
-    <div class="dp-badges"><span class="badge ${c.status === "built" ? "badge-ok" : "badge-vacant"}">SLO ${c.status === "built" ? "built" : "not built"}</span></div>
+    <div class="dp-badges"><span class="badge ${c.status === "built" ? "badge-ok" : "badge-vacant"}">SLO ${c.status === "built" ? "Built" : "Not Built"}</span></div>
     ${aerialEmbedHtml(c.lat, c.lng)}
     <div class="dp-tiles">
       <div class="dp-tile"><b>${c.homes ? fmt(c.homes) : fmt(c.lots || 0)}</b><span>${c.homes ? "Homes Built" : "Lots on the Case"}</span></div>
@@ -635,7 +759,7 @@ function sloDetailHtml(c) {
     </section>
     ${salesHtml}
     <div class="dp-links">
-      <a href="https://planning.lacity.gov/pdiscaseinfo/search/casenumber/${encodeURIComponent(c.case)}" target="_blank" rel="noopener">Planning case ↗</a>
+      <a href="https://planning.lacity.gov/pdiscaseinfo/search/casenumber/${encodeURIComponent(c.case)}" target="_blank" rel="noopener">Planning Case ↗</a>
       <a href="${CONFIG.ZIMAS_URL}" target="_blank" rel="noopener">ZIMAS ↗</a>
       <a href="${CONFIG.STREETVIEW_URL(c.lat, c.lng)}" target="_blank" rel="noopener">Street View ↗</a>
     </div>`;
@@ -856,13 +980,13 @@ function applyFilters() {
   }
   const omAins = state.om ? omAinsFor() : [];
   const soldAins = state.sold ? soldAinsFor() : [];
-  const f = buildFilter(state, CONFIG, statusAins, omAins, soldAins);
+  const f = isBlank(state) ? NEVER : buildFilter(state, CONFIG, statusAins, omAins, soldAins);
   for (const id of FILTERED_LAYERS) map.setFilter(id, f);
   const selBase = ["==", ["get", "ain"], selectedAin ?? "___none___"];
   for (const id of lids("parcels-selected")) {
     map.setFilter(id, f ? ["all", f, selBase] : selBase);
   }
-  const cf = buildCentroidFilter(state, CONFIG, statusAins, omAins, soldAins);
+  const cf = isBlank(state) ? NEVER : buildCentroidFilter(state, CONFIG, statusAins, omAins, soldAins);
   for (const id of lids("centroids")) map.setFilter(id, cf);
 
   if (map.getLayer("om-markers")) {
@@ -874,8 +998,8 @@ function applyFilters() {
   applyStatusOutlines();
   applyProjectScope();
   document.getElementById("list-title").textContent =
-    state.om ? "On-market deals" : state.sold ? "Sold Since 01/01/2024" :
-    state.sbPreset ? "Candidates in view" : "Matches in view";
+    state.om ? "On-Market Deals" : state.sold ? "Sold Since 01/01/2024" :
+    state.sbPreset ? "Candidates in View" : "Matches in View";
   scheduleCount();
 }
 
@@ -972,6 +1096,7 @@ function updateCount() {
   if (!map.isStyleLoaded()) { scheduleCount(); return; }
   setViewLabels(program());
   if (state.comps) { renderCompsView(); return; }
+  if (state.ed1) { renderEd1View(); return; }
   if (state.slo) { renderSloView(); return; }
   const zoom = map.getZoom();
   const layers = zoom >= 14 ? lids("parcels-fill") : lids("centroids");
@@ -1006,7 +1131,7 @@ function updateCount() {
 
   document.getElementById("result-count").textContent = inView.length.toLocaleString();
   document.getElementById("result-label").textContent =
-    zoom >= 14 ? "parcels in view" : "parcel dots in view";
+    zoom >= 14 ? "Parcels in View" : "Parcel Dots in View";
 
   const candidates = inView.filter((f) => f.properties.e === 1);
   document.getElementById("stat-candidates").textContent = candidates.length.toLocaleString();
@@ -1074,8 +1199,9 @@ function featureCenter(f) {
 // SLO view: the stat tiles and the list switch to the Small Lot Ordinance
 // cases in the current view (newest completed first, then not built).
 const VIEW_LABELS = {
-  slo: { tiles: ["SLO cases in view", "built", "homes built", "avg home sf"], title: "SLO cases in view" },
-  comps: { tiles: ["sales in view", "median price", "median $/sf", "median home sf"], title: "Small lot sales in view" },
+  slo: { tiles: ["SLO Cases in View", "Built", "Homes Built", "Avg Home SF"], title: "SLO Cases in View" },
+  comps: { tiles: ["Sales in View", "Median Price", "Median $/SF", "Median Home SF"], title: "Small Lot Sales in View" },
+  ed1: { tiles: ["ED 1 Cases in View", "Approved", "Units", "Avg Units"], title: "ED 1 Projects in View" },
 };
 let baseLabels = null;
 let labelsFor = "sb1123";
@@ -1087,11 +1213,110 @@ function setViewLabels(prog) {
   const t = document.getElementById("list-title");
   if (v) t.textContent = v.title;
   else if (labelsFor !== "sb1123") {
-    t.textContent = state.om ? "On-market deals" : state.sold ? "Sold Since 01/01/2024" : state.sbPreset ? "Candidates in view" : "Matches in view";
+    t.textContent = state.om ? "On-Market Deals" : state.sold ? "Sold Since 01/01/2024" : state.sbPreset ? "Candidates in View" : "Matches in View";
   }
   labelsFor = prog;
 }
-function program() { return state.comps ? "comps" : state.slo ? "slo" : "sb1123"; }
+function program() { return state.comps ? "comps" : state.ed1 ? "ed1" : state.slo ? "slo" : "sb1123"; }
+
+const ed1Checks = new Set();
+let lastEd1 = [];
+function renderEd1View() {
+  const vb = map.getBounds();
+  const cases = Object.values(ed1Cases).filter((c) => c.lng != null && vb.contains([c.lng, c.lat]) && ed1Passes(c));
+  const live = cases.filter((c) => ed1Group(c) !== "closed" && c.units != null);
+  const units = live.reduce((n, c) => n + c.units, 0);
+  document.getElementById("result-count").textContent = fmt(cases.length);
+  document.getElementById("stat-candidates").textContent = fmt(cases.filter((c) => ed1Group(c) === "approved").length);
+  document.getElementById("stat-medlot").textContent = fmt(units);
+  document.getElementById("stat-medwidth").textContent = live.length ? fmt(Math.round(units / live.length)) : "–";
+  const rank = { approved: 0, pending: 1, closed: 2 };
+  const iso = (d) => (d ? d.slice(6) + d.slice(0, 2) + d.slice(3, 5) : "");
+  cases.sort((a, b) => rank[ed1Group(a)] - rank[ed1Group(b)]
+    || iso(b.approved || b.filed).localeCompare(iso(a.approved || a.filed)));
+  lastEd1 = cases;
+  const MAX = 150;
+  const shown = cases.slice(0, MAX);
+  const sel = ed1Checks.size;
+  document.getElementById("list-count").innerHTML = [
+    cases.length > MAX ? `Top ${MAX} of ${fmt(cases.length)}` : "",
+    sel ? `<b>${sel} Checked</b> <button id="clear-ed1-checks" title="Uncheck all">Clear</button>` : "",
+  ].filter(Boolean).join(" · ");
+  document.getElementById("export-btn").textContent = sel ? `Excel (${sel})` : "Excel";
+  const list = document.getElementById("site-list");
+  const empty = document.getElementById("empty-sites");
+  list.innerHTML = "";
+  empty.style.display = shown.length ? "none" : "block";
+  if (!shown.length) empty.textContent = "No ED 1 projects in view. Zoom out, pan the map, or widen the filters.";
+  for (const c of shown) {
+    const grp = ed1Group(c);
+    const li = document.createElement("li");
+    li.className = "site-item";
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.className = "site-check";
+    check.title = "Check to include in the Excel export";
+    check.checked = ed1Checks.has(c.case);
+    check.addEventListener("click", (e) => e.stopPropagation());
+    check.addEventListener("change", () => {
+      if (ed1Checks.has(c.case)) ed1Checks.delete(c.case); else ed1Checks.add(c.case);
+      scheduleCount();
+    });
+    const dot = document.createElement("span");
+    dot.className = "site-dot";
+    dot.style.background = ED1_COLORS[grp];
+    const info = document.createElement("div");
+    info.className = "site-info";
+    const name = document.createElement("div");
+    name.className = "site-name";
+    const nameText = document.createElement("span");
+    nameText.className = "site-name-text";
+    nameText.textContent = c.address || c.case;
+    const badge = document.createElement("span");
+    badge.className = "site-badge " + (grp === "approved" ? "badge-ed1" : grp === "pending" ? "badge-ed1-pend" : "badge-slo-nb");
+    badge.textContent = grp === "approved" ? "Approved" : grp === "pending" ? "Pending" : c.status;
+    name.append(nameText, badge);
+    const meta = document.createElement("div");
+    meta.className = "site-meta site-meta-1";
+    meta.textContent = [(c.community || "").split(" - ")[0],
+      c.approved ? "Approved " + c.approved : c.filed ? "Filed " + c.filed : ""].filter(Boolean).join(" · ");
+    info.append(name, meta);
+    const right = document.createElement("span");
+    right.className = "site-right";
+    const b = document.createElement("b");
+    b.textContent = c.units != null ? `${fmt(c.units)} ${c.units === 1 ? "Unit" : "Units"}` : "";
+    right.appendChild(b);
+    li.append(check, dot, info, right);
+    li.addEventListener("click", () => {
+      map.easeTo({ center: [c.lng, c.lat], zoom: Math.max(map.getZoom(), 16) });
+      showEd1Detail(c);
+    });
+    list.appendChild(li);
+  }
+}
+
+function exportEd1Excel() {
+  const rows = ed1Checks.size ? [...ed1Checks].map((k) => ed1Cases[k]).filter(Boolean) : lastEd1;
+  const esc = (v) => String(v ?? "").replace(/[&<>"]/g,
+    (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  const cols = [
+    ["Address", (c) => c.address], ["Community", (c) => c.community], ["ZIP", (c) => c.zip], ["APN", (c) => c.apn],
+    ["Case", (c) => c.case], ["Status", (c) => c.status], ["Filed", (c) => c.filed], ["Approved", (c) => c.approved],
+    ["Units", (c) => c.units], ["Affordable Units", (c) => c.affordableUnits], ["Case File", (c) => c.source],
+  ];
+  const th = cols.map(([h]) =>
+    `<th style="background:#1B3A5C;color:#fff;font-weight:700;padding:6px 10px;
+      border-bottom:2.5px solid #C9A45C;white-space:nowrap">${esc(h)}</th>`).join("");
+  const trs = rows.map((c) => "<tr>" + cols.map(([, get]) =>
+    `<td style="padding:4px 10px;border-bottom:1px solid #e4e8ec;white-space:nowrap">${esc(get(c))}</td>`).join("") + "</tr>").join("");
+  const html = `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head>
+    <body><table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></body></html>`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff" + html], { type: "application/vnd.ms-excel" }));
+  a.download = "LAAA ED 1 Projects.xls";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 const compChecks = new Set();
 let lastComps = [];
@@ -1111,8 +1336,8 @@ function renderCompsView() {
   const shown = sales.slice(0, MAX);
   const sel = compChecks.size;
   document.getElementById("list-count").innerHTML = [
-    sales.length > MAX ? `newest ${MAX} of ${fmt(sales.length)}` : "",
-    sel ? `<b>${sel} checked</b> <button id="clear-comp-checks" title="Uncheck all">clear</button>` : "",
+    sales.length > MAX ? `Newest ${MAX} of ${fmt(sales.length)}` : "",
+    sel ? `<b>${sel} Checked</b> <button id="clear-comp-checks" title="Uncheck all">Clear</button>` : "",
   ].filter(Boolean).join(" · ");
   document.getElementById("export-btn").textContent = sel ? `Excel (${sel})` : "Excel";
   const list = document.getElementById("site-list");
@@ -1151,8 +1376,8 @@ function renderCompsView() {
     name.append(nameText, badge);
     const meta = document.createElement("div");
     meta.className = "site-meta site-meta-1";
-    meta.textContent = [compCommunity(c), "sold " + fmtDate(c.d), c.sf ? fmt(c.sf) + " sf" : "",
-      c.bd ? `${c.bd} bd` : ""].filter(Boolean).join(" · ");
+    meta.textContent = [compCommunity(c), "Sold " + fmtDate(c.d), c.sf ? fmt(c.sf) + " SF" : "",
+      c.bd ? `${c.bd} BD` : ""].filter(Boolean).join(" · ");
     info.append(name, meta);
     const right = document.createElement("span");
     right.className = "site-right";
@@ -1161,7 +1386,7 @@ function renderCompsView() {
     right.appendChild(b);
     if (c.ppsf) {
       const sub = document.createElement("span");
-      sub.textContent = "$" + fmt(c.ppsf) + "/sf";
+      sub.textContent = "$" + fmt(c.ppsf) + "/SF";
       right.appendChild(sub);
     }
     li.append(check, dot, info, right);
@@ -1179,10 +1404,10 @@ function exportCompsExcel() {
     (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   const cols = [
     ["Address", (c) => c.a], ["Community", (c) => compCommunity(c)], ["ZIP", (c) => c.z], ["APN", compApn],
-    ["Sale date", (c) => fmtDate(c.d)], ["Sale price", (c) => c.p], ["$/SF", (c) => c.ppsf ?? ""],
+    ["Sale Date", (c) => fmtDate(c.d)], ["Sale Price", (c) => c.p], ["$/SF", (c) => c.ppsf ?? ""],
     ["Home SF", (c) => c.sf ?? ""], ["Beds", (c) => c.bd ?? ""], ["Baths", (c) => c.ba ?? ""],
-    ["Year built", (c) => c.yb ?? ""], ["Sale type", (c) => (c.n === 1 ? "New construction" : "Resale")],
-    ["SLO case", (c) => c.c ?? ""],
+    ["Year Built", (c) => c.yb ?? ""], ["Sale Type", (c) => (c.n === 1 ? "New Construction" : "Resale")],
+    ["SLO Case", (c) => c.c ?? ""],
   ];
   const th = cols.map(([h]) =>
     `<th style="background:#1B3A5C;color:#fff;font-weight:700;padding:6px 10px;
@@ -1253,8 +1478,8 @@ function renderSloView() {
   if (!shown.length) empty.textContent = "No Small Lot Ordinance cases in view. Zoom out or pan the map.";
   const sel = sloChecks.size;
   document.getElementById("list-count").innerHTML = [
-    cases.length > MAX ? `top ${MAX} of ${fmt(cases.length)}` : "",
-    sel ? `<b>${sel} checked</b> <button id="clear-slo-checks" title="Uncheck all">clear</button>` : "",
+    cases.length > MAX ? `Top ${MAX} of ${fmt(cases.length)}` : "",
+    sel ? `<b>${sel} Checked</b> <button id="clear-slo-checks" title="Uncheck all">Clear</button>` : "",
   ].filter(Boolean).join(" · ");
   document.getElementById("export-btn").textContent = sel ? `Excel (${sel})` : "Excel";
   lastSloCases = cases;
@@ -1283,21 +1508,21 @@ function renderSloView() {
     nameText.textContent = c.address || c.case;
     const badge = document.createElement("span");
     badge.className = "site-badge " + (c.status === "built" ? "badge-slo" : "badge-slo-nb");
-    badge.textContent = c.status === "built" ? "Built" : "Not built";
+    badge.textContent = c.status === "built" ? "Built" : "Not Built";
     name.append(nameText, badge);
     const meta = document.createElement("div");
     meta.className = "site-meta";
     meta.className = "site-meta site-meta-1";
     meta.textContent = [(c.community || "").split(" - ")[0], c.address ? "" : c.kind,
-      c.status === "built" ? c.completed : (c.filed ? "filed " + c.filed : "")].filter(Boolean).join(" · ");
+      c.status === "built" ? c.completed : (c.filed ? "Filed " + c.filed : "")].filter(Boolean).join(" · ");
     info.append(name, meta);
     const right = document.createElement("span");
     right.className = "site-right";
     const b = document.createElement("b");
-    b.textContent = c.status === "built" ? `${c.homes} homes` : (c.lots ? `${c.lots} lot${c.lots === 1 ? "" : "s"}` : "");
+    b.textContent = c.status === "built" ? `${c.homes} ${c.homes === 1 ? "Home" : "Homes"}` : (c.lots ? `${c.lots} ${c.lots === 1 ? "Lot" : "Lots"}` : "");
     right.appendChild(b);
     const sub = document.createElement("span");
-    sub.textContent = c.status === "built" && c.avgSf ? fmt(c.avgSf) + " sf avg" : "";
+    sub.textContent = c.status === "built" && c.avgSf ? fmt(c.avgSf) + " SF Avg" : "";
     if (sub.textContent) right.appendChild(sub);
     li.append(check, dot, info, right);
     li.addEventListener("click", () => {
@@ -1336,11 +1561,11 @@ function renderList(candidates, detailed) {
   }
   const shown = candidates.slice(0, MAX);
 
-  const topline = candidates.length > MAX ? `top ${MAX} of ${fmt(candidates.length)}` : "";
+  const topline = candidates.length > MAX ? `Top ${MAX} of ${fmt(candidates.length)}` : "";
   const sel = exportChecks.size;
   document.getElementById("list-count").innerHTML = [
     topline,
-    sel ? `<b>${sel} in cart</b> <button id="clear-checks" title="Empty the cart">clear</button>` : "",
+    sel ? `<b>${sel} in Cart</b> <button id="clear-checks" title="Empty the cart">Clear</button>` : "",
   ].filter(Boolean).join(" · ");
   document.getElementById("export-btn").textContent = sel ? `Excel (${sel})` : "Excel";
   updateCartBadge();
@@ -1414,8 +1639,8 @@ function renderList(candidates, detailed) {
       p.zc,
       listing ? listing.type
         : p.v === 1 ? "Vacant Lot" : p.v === 0 ? "Single Family" : null,
-      (listing || sold) && p.lsf != null ? fmt(p.lsf) + " sf lot" : null,
-      sold ? "sold " + fmtDate(sold.d) : null,
+      (listing || sold) && p.lsf != null ? fmt(p.lsf) + " SF Lot" : null,
+      sold ? "Sold " + fmtDate(sold.d) : null,
     ].filter(Boolean);
     if (metaParts.length) {
       const meta = document.createElement("div");
@@ -1432,7 +1657,7 @@ function renderList(candidates, detailed) {
       tier.appendChild(lotB);
       if (p.lsf > 0) {
         const psf = document.createElement("span");
-        psf.textContent = "$" + fmt(Math.round(sold.p / p.lsf)) + "/sf land";
+        psf.textContent = "$" + fmt(Math.round(sold.p / p.lsf)) + "/SF Land";
         tier.appendChild(psf);
       }
     } else if (listing) {
@@ -1440,16 +1665,16 @@ function renderList(candidates, detailed) {
       tier.appendChild(lotB);
       if (listing.ppsf != null) {
         const psf = document.createElement("span");
-        psf.textContent = "$" + fmt(listing.ppsf) + "/sf land";
+        psf.textContent = "$" + fmt(listing.ppsf) + "/SF Land";
         tier.appendChild(psf);
       }
     } else {
-      lotB.textContent = p.lsf != null ? fmt(p.lsf) + " sf" : "";
+      lotB.textContent = p.lsf != null ? fmt(p.lsf) + " SF" : "";
       tier.appendChild(lotB);
     }
     if (proj && proj.units) {
       const homes = document.createElement("span");
-      homes.textContent = proj.units + " homes";
+      homes.textContent = proj.units + (proj.units === 1 ? " Home" : " Homes");
       tier.appendChild(homes);
     }
 
@@ -1487,12 +1712,12 @@ function detailHtml(p, lngLat) {
     : "";
 
   const badges = [];
-  if (p.e === 1) badges.push('<span class="badge badge-ok">SB 1123 candidate</span>');
+  if (p.e === 1) badges.push('<span class="badge badge-ok">SB 1123 Candidate</span>');
   if (p.v === 1) badges.push('<span class="badge badge-vacant">Vacant</span>');
-  if (p.f === 2) badges.push('<span class="badge badge-warn">Very High fire — excluded</span>');
-  else if (p.f === 1) badges.push('<span class="badge badge-warn">High fire — excluded</span>');
-  if (p.c === 1) badges.push('<span class="badge badge-warn">Coastal zone — excluded</span>');
-  if (p.h === 1) badges.push('<span class="badge badge-warn">Hillside — excluded</span>');
+  if (p.f === 2) badges.push('<span class="badge badge-warn">Very High Fire, Excluded</span>');
+  else if (p.f === 1) badges.push('<span class="badge badge-warn">High Fire, Excluded</span>');
+  if (p.c === 1) badges.push('<span class="badge badge-warn">Coastal Zone, Excluded</span>');
+  if (p.h === 1) badges.push('<span class="badge badge-warn">Hillside, Excluded</span>');
 
   return `
     <div class="dp-head">
@@ -1506,19 +1731,19 @@ function detailHtml(p, lngLat) {
     <div class="dp-badges">${badges.join(" ")}</div>
     ${aerialEmbed}
     <div class="dp-tiles">
-      <div class="dp-tile"><b>${p.lsf != null ? fmt(p.lsf) : "–"}</b><span>Lot sf${p.lsf != null ? " · " + acres + " ac" : ""}</span></div>
-      <div class="dp-tile dp-tile-navy"><b>${p.w != null ? "≈ " + p.w + " ft" : "–"}</b><span>Width · computed</span></div>
+      <div class="dp-tile"><b>${p.lsf != null ? fmt(p.lsf) : "–"}</b><span>Lot SF${p.lsf != null ? " · " + acres + " ac" : ""}</span></div>
+      <div class="dp-tile dp-tile-navy"><b>${p.w != null ? "≈ " + p.w + " ft" : "–"}</b><span>Width, Computed</span></div>
     </div>
     <section class="dp-section">
       <h4>Parcel</h4>
       ${kvRow("Zoning", `${p.z || "?"} <span class="muted">(${p.zc || "?"})</span>`)}
-      ${kvRow("Use code", p.uc || "–")}
+      ${kvRow("Use Code", p.uc || "–")}
       ${kvRow("Units", p.u >= 0 ? p.u : "–")}
       ${kvRow("Improvements", p.iv != null ? "$" + fmt(p.iv) : "–")}
-      ${p.ls ? kvRow("Last sale", p.ls) : ""}
+      ${p.ls ? kvRow("Last Sale", p.ls) : ""}
       ${(() => {
         const t = lngLat && ozTracts ? ozTractAt(lngLat.lng, lngLat.lat) : null;
-        return t ? kvRow("Opportunity Zone 2.0", `Recommended tract ${t.Geoid || ""}`) : "";
+        return t ? kvRow("Opportunity Zone 2.0", `Recommended Tract ${t.Geoid || ""}`) : "";
       })()}
       ${lngLat ? ["oz", "hr", "qct"].map((k) => {
         const t = overlayAt(k, lngLat.lng, lngLat.lat);
@@ -1539,7 +1764,7 @@ function detailHtml(p, lngLat) {
       ${lat ? `<a href="${CONFIG.STREETVIEW_URL(lat, lng)}" target="_blank" rel="noopener">Street View ↗</a>` : ""}
     </div>
     <button id="dp-cart-btn" class="dp-cart-btn${exportChecks.has(p.ain) ? " in-cart" : ""}">
-      ${exportChecks.has(p.ain) ? "✓ In cart — remove" : "🛒 Add to cart"}
+      ${exportChecks.has(p.ain) ? "✓ In Cart, Remove" : "🛒 Add to Cart"}
     </button>`;
 }
 
@@ -1551,10 +1776,10 @@ function soldSectionHtml(p) {
   return `
     <section class="dp-section">
       <h4>Sold <span class="badge" style="background:#b91c1c">Closed</span></h4>
-      ${kvRow("Sale price", "$" + fmt(s.p))}
-      ${kvRow("Sale date", fmtDate(s.d))}
-      ${p.lsf > 0 ? kvRow("$/SF land", "$" + fmt(Math.round(s.p / p.lsf))) : ""}
-      ${(s.prior || []).map((o) => kvRow("Earlier sale", `$${fmt(o.p)} on ${fmtDate(o.d)}`)).join("")}
+      ${kvRow("Sale Price", "$" + fmt(s.p))}
+      ${kvRow("Sale Date", fmtDate(s.d))}
+      ${p.lsf > 0 ? kvRow("$/SF Land", "$" + fmt(Math.round(s.p / p.lsf))) : ""}
+      ${(s.prior || []).map((o) => kvRow("Earlier Sale", `$${fmt(o.p)} on ${fmtDate(o.d)}`)).join("")}
       <p class="dd-hint">County transfer-tax price for a single-parcel sale; confirm against the MLS.</p>
     </section>`;
 }
@@ -1565,8 +1790,8 @@ function listingSectionHtml(p) {
   return `
     <section class="dp-section">
       <h4>On market <span class="badge badge-om">For Sale</span></h4>
-      ${kvRow("List price", "$" + fmt(l.price))}
-      ${l.ppsf != null ? kvRow("$/SF land", "$" + fmt(l.ppsf)) : ""}
+      ${kvRow("List Price", "$" + fmt(l.price))}
+      ${l.ppsf != null ? kvRow("$/SF Land", "$" + fmt(l.ppsf)) : ""}
       ${l.type ? kvRow("Type", l.type) : ""}
       ${l.mls ? kvRow("MLS", l.mls) : ""}
       ${l.listDate ? kvRow("Listed", l.listDate) : ""}
@@ -1616,7 +1841,7 @@ function projectSectionHtml(p) {
       ${kvRow("Submitted", pr.filed || "–")}
       ${pr.status === "approved" && pr.decided ? kvRow("Approved", pr.decided) : ""}
       ${kvRow("Homes", pr.units ?? "–")}
-      ${pr.entity ? kvRow("Owner entity", pr.entity) : ""}
+      ${pr.entity ? kvRow("Owner Entity", pr.entity) : ""}
       ${pr.rep ? kvRow("Representative", `${pr.rep}${pr.repCompany ? " · " + pr.repCompany : ""}`) : ""}
       ${pr.phone && pr.phone !== "n/a" ? kvRow("Contact", pr.phone) : ""}
       ${pr.desc ? `<p class="dp-note">${pr.desc}</p>` : ""}
@@ -1651,9 +1876,9 @@ async function fillOwnerInfo(p) {
   if (rec.ownerName || rec.lastSalePrice) {
     const rows = [];
     if (rec.ownerName) rows.push(kvRow("Owner (Assessor)", rec.ownerName));
-    if (rec.ownerAddress) rows.push(kvRow("Owner address", rec.ownerAddress));
+    if (rec.ownerAddress) rows.push(kvRow("Owner Address", rec.ownerAddress));
     if (rec.lastSaleDate || rec.lastSalePrice) {
-      rows.push(kvRow("Last market sale",
+      rows.push(kvRow("Last Market Sale",
         [rec.lastSaleDate, rec.lastSalePrice ? "$" + fmt(rec.lastSalePrice) : ""]
           .filter(Boolean).join(" · ")));
     }
@@ -1667,8 +1892,8 @@ async function fillOwnerInfo(p) {
     const d = await resp.json();
     if (document.getElementById("dp-owner") !== el) return; // panel changed
     const rows = [];
-    if (d.owner) rows.push(kvRow("Owner of record", d.owner));
-    if (d.mailingAddress) rows.push(kvRow("Mailing address", d.mailingAddress));
+    if (d.owner) rows.push(kvRow("Owner of Record", d.owner));
+    if (d.mailingAddress) rows.push(kvRow("Mailing Address", d.mailingAddress));
     if (d.lastSaleDate || d.lastSalePrice) {
       rows.push(kvRow(d.lastSaleDate || "Last sale",
         d.lastSalePrice ? "$" + fmt(d.lastSalePrice) : "–"));
@@ -1726,7 +1951,7 @@ function showDetail(p, lngLat) {
     cartToggle(p);
     const btn = document.getElementById("dp-cart-btn");
     const now = exportChecks.has(p.ain);
-    btn.textContent = now ? "✓ In cart — remove" : "🛒 Add to cart";
+    btn.textContent = now ? "✓ In Cart, Remove" : "🛒 Add to Cart";
     btn.classList.toggle("in-cart", now);
   });
   fillOwnerInfo(p);
@@ -1825,6 +2050,12 @@ function syncControlsFromState() {
   const vis = (id, on) => { if (map && map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none"); };
   for (const id of ["slo-markers", "slo-lots-fill", "slo-lots-line"]) vis(id, prog === "slo");
   vis("comps-markers", prog === "comps");
+  vis("ed1-markers", prog === "ed1");
+  if (map && map.getLayer("ed1-markers")) map.setFilter("ed1-markers", ed1FilterExpr());
+  document.querySelectorAll("#ed1-status-seg button").forEach((b) => b.classList.toggle("on", b.dataset.ed1Status === state.ed1Status));
+  setVal("eunits-min", state.ed1Units[0]); setVal("eunits-max", state.ed1Units[1]);
+  setPillVal("pv-eunits", rangeSummary(state.ed1Units));
+  for (const el of document.querySelectorAll(".lg-ed1-row")) el.classList.toggle("hidden", prog !== "ed1");
   for (const id of ["centroids", "parcels-fill", "parcels-line", "parcels-projects", "parcels-status", "parcels-selected"].flatMap(lids)) {
     vis(id, prog === "sb1123");
   }
@@ -1968,6 +2199,7 @@ function bindControls() {
     if (prog === program()) return;
     state.slo = prog === "slo";
     state.comps = prog === "comps";
+    state.ed1 = prog === "ed1";
     if (state.comps) ensureCompsLoaded();
     if (state.ovl.size) {
       Promise.all([...state.ovl].map(ensureOverlayLoaded)).then(() => { syncControlsFromState(); applyFilters(); });
@@ -1983,6 +2215,22 @@ function bindControls() {
     scheduleCount();
   }));
   const compChanged = () => { syncControlsFromState(); scheduleCount(); };
+  document.querySelectorAll("#ed1-status-seg button").forEach((b) => b.addEventListener("click", () => {
+    state.ed1Status = b.dataset.ed1Status;
+    compChanged();
+  }));
+  for (const end of ["min", "max"]) {
+    document.getElementById(`eunits-${end}`).addEventListener("change", () => {
+      const v = (id) => { const t = document.getElementById(id).value.trim(); return t === "" ? null : Number(t); };
+      state.ed1Units = [v("eunits-min"), v("eunits-max")];
+      compChanged();
+    });
+  }
+  document.getElementById("ed1-clear").addEventListener("click", () => {
+    state.ed1Status = "any";
+    state.ed1Units = [null, null];
+    compChanged();
+  });
   document.querySelectorAll('input[name="csince"]').forEach((rb) => rb.addEventListener("change", () => {
     if (rb.checked) state.comp.since = Number(rb.value);
     compChanged();
@@ -2037,6 +2285,7 @@ function bindControls() {
     const areas = state.areas;
     state = emptyState();
     state.areas = areas;
+    state.blank = true;
     selectedAin = null;
     syncControlsFromState();
     applyFilters();
@@ -2063,6 +2312,7 @@ function bindControls() {
     if (e.target.id === "clear-checks") LandMap.clearChecks();
     else if (e.target.id === "clear-slo-checks") { sloChecks.clear(); scheduleCount(); }
     else if (e.target.id === "clear-comp-checks") { compChecks.clear(); scheduleCount(); }
+    else if (e.target.id === "clear-ed1-checks") { ed1Checks.clear(); scheduleCount(); }
   });
 
   // Cart button + panel (topbar).
@@ -2257,6 +2507,7 @@ const LandMap = {
   // the LAAA navy/gold header intact; no backend or vendored library needed.
   exportExcel() {
     if (state.comps) return exportCompsExcel();
+    if (state.ed1) return exportEd1Excel();
     if (state.slo) return exportSloExcel();
     const rows = exportChecks.size
       ? [...exportChecks.values()]
@@ -2343,6 +2594,8 @@ const LandMap = {
   ozTractAt,
   get ozLoaded() { return ozTracts !== null; },
   updateCount,
+  // Tests: the full SFR + vacant universe that Clear no longer draws.
+  showUniverse() { state.blank = false; syncControlsFromState(); applyFilters(); },
   // Layer-instance lists across all tile sources (used by tests/tools).
   lids,
 };
@@ -2397,12 +2650,12 @@ async function fetchMergedStyle(styleUrl, fallback) {
   base.sources = { ...base.sources };
   for (const [k, v] of Object.entries(fallback.sources)) {
     if (k === "satellite" || k === "sb-projects" || k === "om-listings"
-      || k === "oz2" || k.startsWith("ovl-") || k === "slo" || k === "slo-lots" || k === "comps" || k.startsWith("parcels")) {
+      || k === "oz2" || k.startsWith("ovl-") || k === "slo" || k === "slo-lots" || k === "comps" || k === "ed1" || k.startsWith("parcels")) {
       base.sources[k] = v;
     }
   }
   const overlayIds = new Set([
-    "basemap-satellite", "projects-markers", "om-markers", "slo-lots-fill", "slo-lots-line", "slo-markers", "comps-markers", "oz2-tint", "oz2-line",
+    "basemap-satellite", "projects-markers", "om-markers", "slo-lots-fill", "slo-lots-line", "slo-markers", "ed1-markers", "comps-markers", "oz2-tint", "oz2-line",
     ...["oz", "hr", "qct"].flatMap((k) => [`ovl-${k}-tint`, `ovl-${k}-line`]),
     ...["centroids", "parcels-fill", "parcels-line", "parcels-projects",
       "parcels-status", "parcels-selected"].flatMap(lids),
@@ -2532,7 +2785,7 @@ function applyProjectLayers() {
 async function boot() {
   initBrandLogo();
   await loadRemoteConfig();
-  await Promise.all([loadProjects(), loadListings(), loadSlo(), loadSold()]);
+  await Promise.all([loadProjects(), loadListings(), loadSlo(), loadSold(), loadEd1()]);
   const synthetic = await isSynthetic();
   demoMode = synthetic;
   if (synthetic) {
@@ -2610,6 +2863,12 @@ async function boot() {
       if (c) showSloDetail(c);
     });
   }
+  map.on("click", "ed1-markers", (e) => {
+    const c = ed1Cases[e.features[0].properties.case];
+    if (c) showEd1Detail(c);
+  });
+  map.on("mouseenter", "ed1-markers", () => { map.getCanvas().style.cursor = "pointer"; });
+  map.on("mouseleave", "ed1-markers", () => { map.getCanvas().style.cursor = ""; });
   map.on("click", "comps-markers", (e) => {
     const c = compSales[e.features[0].properties.id];
     if (c) showCompDetail(c);

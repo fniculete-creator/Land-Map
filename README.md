@@ -106,6 +106,13 @@ code needed.
   stacks OZ 2.0, OZ (2018), High Resource (CTCAC/HCD 2026) and QCT/DDA
   (HUD 2026): checked overlays shade the map and keep only parcels inside
   every one. Rebuild the overlays with `python scripts/overlays/build_overlays.py`.
+- **ED 1** — every Executive Directive 1 (100% affordable) case on file with
+  LA City Planning (`data/ed1.json`: ZIMAS ED1/RED1 case numbers plus each
+  case's PDIS page; units read from the project description). Red =
+  approved, amber = pending, gray = withdrawn or closed; dots sized by units.
+  Filters: status and units. Rebuild with `python scripts/ed1/build_ed1.py`.
+- **Clear** (SB 1123) lands on an empty map; parcels draw again once a filter,
+  the Eligible preset, Sold or an overlay is picked.
 - **Finished Comps** — the Program filter picks the comp set: Small Lot
   today (SB 1123, ED 1 and SB 9 marked Soon). Small Lot = sale comps of
   finished small lot homes in the City of LA (`data/comps_small_lot.json`: 01S* small lot use codes built 2005+

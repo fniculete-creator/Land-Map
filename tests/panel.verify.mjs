@@ -28,7 +28,7 @@ const shermanRow = await page.evaluate(() => {
     .find((x) => x.textContent.includes("22112 W Sherman Way"));
   return li.textContent;
 });
-assert(shermanRow.includes("10 homes"), `Sherman Way row shows 10 homes (${shermanRow.trim().slice(0, 70)})`);
+assert(shermanRow.includes("10 Homes"), `Sherman Way row shows 10 homes (${shermanRow.trim().slice(0, 70)})`);
 
 await page.evaluate(() => {
   [...document.querySelectorAll("#site-list .site-item")]
@@ -55,8 +55,8 @@ await page.waitForFunction(
   () => document.getElementById("export-btn").textContent === "Excel (2)",
   { timeout: 10000 });
 assert(true, "export button shows Excel (2) after checking two rows");
-assert(await page.$eval("#list-count", (el) => el.textContent.includes("2 in cart")),
-  "list header shows '2 in cart'");
+assert(await page.$eval("#list-count", (el) => el.textContent.includes("2 in Cart")),
+  "list header shows '2 in Cart'");
 
 // Checked rows survive a list re-render (pan the map).
 await page.evaluate(() => window.LandMap.map.panBy([120, 0], { duration: 0 }));

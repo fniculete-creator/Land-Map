@@ -27,6 +27,9 @@ export function emptyState() {
     slo: false,  // Small Lot Ordinance cases view (data/slo.json)
     sloStatus: "any",   // "any" | "built" | "not built"
     comps: false,       // sale comps view (data/comps_small_lot.json)
+    ed1: false,         // ED 1 projects view (data/ed1.json)
+    ed1Status: "any",   // "any" | "approved" | "pending" | "closed"
+    ed1Units: [null, null],
     comp: { since: 2025, p: [null, null], ppsf: [null, null], sf: [null, null], yb: [null, null] },
     areas: [],   // selected search areas (NEIGHBORHOODS names) — chips
   };
@@ -189,6 +192,12 @@ export function stateToHash(state) {
   if (state.ovl && state.ovl.size) p.set("ov", [...state.ovl].join(","));
   if (state.slo) p.set("slo", "1");
   if (state.slo && state.sloStatus !== "any") p.set("sls", state.sloStatus);
+  if (state.ed1) {
+    p.set("ed1", "1");
+    if (state.ed1Status !== "any") p.set("es", state.ed1Status);
+    const [a, b] = state.ed1Units;
+    if (a !== null || b !== null) p.set("eu", `${a ?? ""}..${b ?? ""}`);
+  }
   if (state.comps) {
     const c = state.comp;
     p.set("comps", "1");
@@ -234,6 +243,16 @@ export function stateFromHash(hash) {
   if (p.get("ov")) state.ovl = new Set(p.get("ov").split(",").filter((k) => ["oz", "hr", "qct"].includes(k)));
   if (p.get("slo") === "1") state.slo = true;
   if (["built", "not built"].includes(p.get("sls"))) state.sloStatus = p.get("sls");
+  if (p.get("ed1") === "1") {
+    state.ed1 = true;
+    state.slo = false;
+    if (["approved", "pending", "closed"].includes(p.get("es"))) state.ed1Status = p.get("es");
+    const v = p.get("eu");
+    if (v && v.includes("..")) {
+      const [a, b] = v.split("..");
+      state.ed1Units = [a === "" ? null : +a, b === "" ? null : +b];
+    }
+  }
   if (p.get("comps") === "1") {
     state.comps = true;
     state.slo = false;
