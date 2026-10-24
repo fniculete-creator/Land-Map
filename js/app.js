@@ -661,14 +661,14 @@ function ed1Geojson() {
     features: Object.values(ed1Cases).filter((c) => c.lng != null).map((c) => ({
       type: "Feature",
       geometry: { type: "Point", coordinates: [c.lng, c.lat] },
-      properties: { case: c.case, grp: ed1Group(c), units: c.units, done: c.cofo ? 1 : 0, sold: c.sold ? 1 : 0 },
+      properties: { case: c.case, grp: ed1Group(c), units: c.units, done: c.cofo ? 1 : 0, sold: c.sold ? 1 : 0, land: c.landSold ? 1 : 0 },
     })),
   };
 }
 function ed1Passes(c) {
   const [lo, hi] = state.ed1Units;
   return (state.ed1Status === "any" || ed1Group(c) === state.ed1Status)
-    && (!state.ed1Done || !!c.cofo) && (!state.ed1Sold || !!c.sold)
+    && (!state.ed1Done || !!c.cofo) && (!state.ed1Sold || !!c.sold) && (!state.ed1Land || !!c.landSold)
     && (lo === null || (c.units != null && c.units >= lo)) && (hi === null || (c.units != null && c.units <= hi));
 }
 function ed1FilterExpr() {
@@ -676,6 +676,7 @@ function ed1FilterExpr() {
   if (state.ed1Status !== "any") out.push(["==", ["get", "grp"], state.ed1Status]);
   if (state.ed1Done) out.push(["==", ["get", "done"], 1]);
   if (state.ed1Sold) out.push(["==", ["get", "sold"], 1]);
+  if (state.ed1Land) out.push(["==", ["get", "land"], 1]);
   const [lo, hi] = state.ed1Units;
   if (lo !== null) out.push([">=", ["coalesce", ["get", "units"], -1], lo]);
   if (hi !== null) out.push(["<=", ["coalesce", ["get", "units"], 1e9], hi]);
@@ -688,7 +689,8 @@ function ed1DetailHtml(c) {
   const who = (n, co) => [n, co].filter(Boolean).join(" · ");
   const badges = [`<span class="badge"${grp === "approved" ? ' style="background:#dc2626"' : grp === "pending" ? ' style="background:#d97706"' : ' style="background:#64748b"'}>${c.status}</span>`];
   if (c.cofo) badges.push('<span class="badge" style="background:#0e7490">Completed</span>');
-  if (c.sold) badges.push('<span class="badge" style="background:#b91c1c">Sold</span>');
+  if (c.sold) badges.push('<span class="badge" style="background:#b91c1c">Completed &amp; Sold</span>');
+  else if (c.landSold) badges.push('<span class="badge" style="background:#b91c1c">Sold</span>');
   return `
     <div class="dp-head">
       <div>
@@ -721,8 +723,11 @@ function ed1DetailHtml(c) {
       ${kvRow("Entity", c.applicantCompany || "–")}
       ${c.rep || c.repCompany ? kvRow("Representative", who(c.rep, c.repCompany)) : ""}
       ${c.purchased ? kvRow("Site Purchased", `${c.purchased.d}${c.purchased.p ? " · $" + fmt(c.purchased.p) : ""}${c.purchased.parcels > 1 ? ` <span class="muted">(${c.purchased.parcels} parcels)</span>` : ""}`) : ""}
-      ${(c.sales || []).map((s) => kvRow(c.sold && s.d === c.sold.d && s.p === c.sold.p ? `Sold (${c.sold.type})` : "Sale After Filing",
+      ${(c.sales || []).map((s) => kvRow(c.sold && s.d === c.sold.d && s.p === c.sold.p ? "Sold (Completed Building)" : c.landSold && s.d === c.landSold.d && s.p === c.landSold.p ? "Sold (Entitled Site)" : "Sale After Filing",
         `${s.d} · $${fmt(s.p)}${s.parcels > 1 ? ` <span class="muted">(${s.parcels} parcels)</span>` : ""}`)).join("")}
+      ${c.sold && c.sold.source ? kvRow("Sold", `${c.sold.d || "Date not recorded"} · ${c.sold.p ? "$" + fmt(c.sold.p) : "Price not disclosed"}`) : ""}
+      ${c.sold && c.sold.buyer ? kvRow("Buyer", c.sold.buyer) : ""}
+      ${c.sold && c.sold.note ? `<p class="dd-hint">${c.sold.note}</p>` : ""}
     </section>
     ${permitRowsHtml(ain) ? `<section class="dp-section"><h4>Building Permit</h4>${permitRowsHtml(ain)}</section>` : ""}
     <section class="dp-section">
@@ -1335,12 +1340,12 @@ function renderEd1View() {
     nameText.textContent = c.address || c.case;
     const badge = document.createElement("span");
     badge.className = "site-badge " + (grp === "approved" ? "badge-ed1" : grp === "pending" ? "badge-ed1-pend" : "badge-slo-nb");
-    badge.textContent = c.sold ? "Sold" : c.cofo ? "Completed" : grp === "approved" ? "Approved" : grp === "pending" ? "Pending" : c.status;
+    badge.textContent = c.sold ? "Completed & Sold" : c.cofo ? "Completed" : c.landSold ? "Sold" : grp === "approved" ? "Approved" : grp === "pending" ? "Pending" : c.status;
     name.append(nameText, badge);
     const meta = document.createElement("div");
     meta.className = "site-meta site-meta-1";
     meta.textContent = [(c.community || "").split(" - ")[0],
-      c.sold ? "Sold " + c.sold.d : c.cofo ? "Completed " + c.cofo.d : c.approved ? "Approved " + c.approved : c.filed ? "Filed " + c.filed : ""].filter(Boolean).join(" · ");
+      c.sold ? "Sold " + (c.sold.d || "") : c.cofo ? "Completed " + c.cofo.d : c.landSold ? "Sold " + c.landSold.d : c.approved ? "Approved " + c.approved : c.filed ? "Filed " + c.filed : ""].filter(Boolean).join(" · ");
     info.append(name, meta);
     const right = document.createElement("span");
     right.className = "site-right";
@@ -2120,6 +2125,7 @@ function syncControlsFromState() {
   setPillVal("pv-eunits", rangeSummary(state.ed1Units));
   document.getElementById("ed1-done-btn").classList.toggle("active", !!state.ed1Done);
   document.getElementById("ed1-sold-btn").classList.toggle("active", !!state.ed1Sold);
+  document.getElementById("ed1-land-btn").classList.toggle("active", !!state.ed1Land);
   for (const el of document.querySelectorAll(".lg-ed1-row")) el.classList.toggle("hidden", prog !== "ed1");
   for (const id of ["centroids", "parcels-fill", "parcels-line", "parcels-projects", "parcels-status", "parcels-selected"].flatMap(lids)) {
     vis(id, prog === "sb1123");
@@ -2293,9 +2299,11 @@ function bindControls() {
   }
   document.getElementById("ed1-done-btn").addEventListener("click", () => { state.ed1Done = !state.ed1Done; compChanged(); });
   document.getElementById("ed1-sold-btn").addEventListener("click", () => { state.ed1Sold = !state.ed1Sold; compChanged(); });
+  document.getElementById("ed1-land-btn").addEventListener("click", () => { state.ed1Land = !state.ed1Land; compChanged(); });
   document.getElementById("ed1-clear").addEventListener("click", () => {
     state.ed1Done = false;
     state.ed1Sold = false;
+    state.ed1Land = false;
     state.ed1Status = "any";
     state.ed1Units = [null, null];
     compChanged();

@@ -4,7 +4,7 @@ usage: python scripts/ed1/build_ed1_status.py [--work DIR]
 Completed: LADBS Certificate of Occupancy records (data.lacity.org 3f9m-afei) for a new building (permit type Bldg-New) on the
 case's APN, issued on or after the case's filing date -> "cofo": {"d": "MM/DD/YYYY", "permit": PCIS number, "desc": work
 description}. Sold: the Assessor portal ownership history for the APN (public) -> sales for consideration recorded after the
-case was filed: "sales": [{"d", "p", "parcels"}], and "sold": the latest sale after the CofO (type "Completed building"), else after the approval (type "Entitled site").
+case was filed: "sales": [{"d", "p", "parcels"}], and "sold": the latest sale after the CofO (a completed ED 1 building that sold; Filip, 10/24/2026).
 A multi-parcel deed carries the combined price for the whole site. Also adds applicant / applicantCompany / rep / repCompany / staff from the City case pages that build_ed1.py caches,
 "purchased" (the latest sale for consideration on or before filing), and units from data/permits.json when the case text had none
 (run scripts/permits/build_permits.py first). Built 10/24/2026."""
@@ -55,6 +55,24 @@ for i in range(0, len(apns), 40):
         cofos.setdefault(a, []).append(r)
 print(len(cofos), "APNs with a new-building CofO")
 
+# Finished ED 1 buildings often sit on a new parcel (lots tied after approval), so also look the CofO up by street address and
+# keep the parcel it was issued on; that parcel's sales count too.
+import re
+ADDR_RE = re.compile(r"(\d+)(?:-\d+)?\s+(?:[NSEW]\s+)?(.+?)\s+(?:St|Ave|Blvd|Dr|Pl|Way|Rd|Ter|Ct|Ln|Pkwy|Cir)\b")
+cofo_by_case = {}
+for k, c in ed1.items():
+    a = c.get("apn")
+    if a and cofos.get(a): continue
+    m = ADDR_RE.match(c.get("address") or "")
+    if not m: continue
+    num, street = m.group(1), m.group(2).upper().replace("'", "")
+    q = {"$where": f"permit_type='Bldg-New' AND address_start='{num}' AND upper(street_name) like '%{street.split()[-1]}%'",
+         "$limit": 50, "$select": "assessor_book,assessor_page,assessor_parcel,cofo_issue_date,pcis_permit,work_description,street_name"}
+    rs = [r for r in get(COFO + "?" + urllib.parse.urlencode(q)) if r.get("cofo_issue_date")]
+    if rs: cofo_by_case[k] = rs
+print(len(cofo_by_case), "more cases with a new-building CofO found by address")
+extra_apns = sorted({f"{r['assessor_book']}-{r['assessor_page']}-{r['assessor_parcel']}" for rs in list(cofo_by_case.values()) + list(cofos.values()) for r in rs} - set(apns))
+
 # ---- sale history per APN (cached) ----
 CACHE = os.path.join(A.work, "ed1_history.json")
 hist = json.load(open(CACHE)) if os.path.exists(CACHE) else {}
@@ -71,22 +89,27 @@ def one(a):
 
 
 with cf.ThreadPoolExecutor(6) as ex:
-    list(ex.map(one, [a for a in apns if a not in hist]))
+    list(ex.map(one, [a for a in apns + extra_apns if a not in hist]))
 json.dump(hist, open(CACHE, "w"))
 
 n_c = n_s = 0
-for c in ed1.values():
-    c.pop("cofo", None); c.pop("sales", None); c.pop("sold", None)
+for k, c in ed1.items():
+    c.pop("cofo", None); c.pop("sales", None); c.pop("sold", None); c.pop("landSold", None)
     a, filed = c.get("apn"), mdy(c.get("filed"))
-    if not a: continue
-    rs = [r for r in cofos.get(a, []) if not filed or r["cofo_issue_date"][:10] >= filed.isoformat()]
+    rs = [r for r in cofos.get(a, []) + cofo_by_case.get(k, []) if not filed or r["cofo_issue_date"][:10] >= filed.isoformat()]
+    if not a and not rs: continue
     if rs:
         r = max(rs, key=lambda r: r["cofo_issue_date"])
         d = datetime.date.fromisoformat(r["cofo_issue_date"][:10])
-        c["cofo"] = {"d": d.strftime("%m/%d/%Y"), "permit": r.get("pcis_permit"), "desc": (r.get("work_description") or "").strip()}
+        c["cofo"] = {"d": d.strftime("%m/%d/%Y"), "permit": r.get("pcis_permit"), "desc": (r.get("work_description") or "").strip(),
+                     "apn": f"{r['assessor_book']}-{r['assessor_page']}-{r['assessor_parcel']}"}
         n_c += 1
     sales = []
-    for s in hist.get(a, []):
+    seen_sale = set()
+    for s in hist.get(a, []) + (hist.get(c["cofo"]["apn"], []) if c.get("cofo") and c["cofo"].get("apn") != a else []):
+        key = (s.get("RecordingDate"), s.get("DocumentNumber"))
+        if key in seen_sale: continue
+        seen_sale.add(key)
         if not (s.get("DocumentTypeDesc") or "").startswith("Sale for Consideration"): continue
         try:
             p = int(float(s.get("DTTSalePrice") or 0)); d = datetime.datetime.strptime(s["RecordingDate"], "%m/%d/%Y").date()
@@ -102,10 +125,12 @@ for c in ed1.values():
             after = [s for s in sales if mdy(s["d"]) >= mdy(c["cofo"]["d"])]
             if after:
                 c["sold"] = {**after[0], "type": "Completed building"}; n_s += 1
-        if not c.get("sold") and c.get("approved"):
-            after = [s for s in sales if mdy(s["d"]) >= mdy(c["approved"])]
-            if after:
-                c["sold"] = {**after[0], "type": "Entitled site"}
+        # landSold: an ED 1 land deal, the latest sale after the approval and before any CofO (an entitled site)
+        if c.get("approved"):
+            land = [s for s in sales if mdy(s["d"]) >= mdy(c["approved"]) and (not c.get("cofo") or mdy(s["d"]) < mdy(c["cofo"]["d"]))]
+            if land:
+                c["landSold"] = land[0]
+
 # ---- people, purchase, permit units (City case pages cached by build_ed1.py; data/permits.json) ----
 import re
 pdis = json.load(open(os.path.join(A.work, "pdis.json"), encoding="utf-8")) if os.path.exists(os.path.join(A.work, "pdis.json")) else {}
@@ -203,6 +228,14 @@ for k, c in ed1.items():
         c["units"] = c["affordableUnits"] = found[0]; c["unitsSource"] = f"LADBS Permit {found[1]}"
     elif c.get("address") and re.search(r"\s1-(\d+)$", c["address"]):            # "3340 S Shelby Dr 1-86": the unit range
         c["units"] = c["affordableUnits"] = int(re.search(r"\s1-(\d+)$", c["address"]).group(1)); c["unitsSource"] = "Address Unit Range"
+# Team-reported sales of completed ED 1 buildings the County has not recorded yet (data/ed1_sold_manual.json, keyed by case);
+# a County sale after the CofO, once it records, wins.
+MANUAL = os.path.join(REPO, "data", "ed1_sold_manual.json")
+for k, m in (json.load(open(MANUAL, encoding="utf-8")) if os.path.exists(MANUAL) else {}).items():
+    if k in ed1 and not ed1[k].get("sold"):
+        ed1[k]["sold"] = {"d": m.get("d"), "p": m.get("p"), "parcels": 1, "type": "Completed building",
+                          "source": m.get("source", "LAAA team"), "note": m.get("note"), "buyer": m.get("buyer"),
+                          "seller": m.get("seller"), "doc": m.get("doc")}
 print(sum(1 for c in ed1.values() if c.get("units") is None), "cases still without units")
 json.dump(ed1, open(OUT, "w", encoding="utf-8"), indent=1, ensure_ascii=True)
 print(sum(1 for c in ed1.values() if c.get("cofo")), "cases completed (CofO);", sum(1 for c in ed1.values() if c.get("sales")), "cases with a sale after filing;", n_s, "sold after the CofO")

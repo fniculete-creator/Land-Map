@@ -931,11 +931,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "10/11/2023",
    "p": 1310013,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Whitney Del Real",
   "applicantCompany": "EZ Home Permits",
@@ -1029,11 +1028,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "03/15/2024",
    "p": 2350000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "David Mousiki",
   "applicantCompany": "BD 25 Street LLC",
@@ -1102,11 +1100,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "09/25/2023",
    "p": 3910039,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Manish Drona",
   "applicantCompany": "Drona Investments LLC",
@@ -1175,11 +1172,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "09/23/2026",
    "p": 1800000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "MANISH DRONA",
   "applicantCompany": "DRONA INVESTMENTS LLC",
@@ -1406,6 +1402,12 @@
   "sameSite": null,
   "unitsCase": 23,
   "affordableCase": 23,
+  "cofo": {
+   "d": "08/01/2025",
+   "permit": "22010-10000-05849",
+   "desc": "NEW 3 STORY WITH ROOF DECK TYPE VA 23 UNITS (100% AFFORDABLE HOUSING)",
+   "apn": "5001-004-015"
+  },
   "sales": [
    {
     "d": "09/30/2025",
@@ -1417,7 +1419,7 @@
    "d": "09/30/2025",
    "p": 4000000,
    "parcels": 1,
-   "type": "Entitled site"
+   "type": "Completed building"
   },
   "applicant": null,
   "applicantCompany": null,
@@ -1475,6 +1477,12 @@
   "sameSite": null,
   "unitsCase": 69,
   "affordableCase": 68,
+  "cofo": {
+   "d": "09/24/2025",
+   "permit": "22010-10000-05321",
+   "desc": "NEW 5 STORY WITH ROOF DECK 69 UNITS (100% AFFORDABLE HOUSING) APARTMEN",
+   "apn": "6063-029-021"
+  },
   "sales": [
    {
     "d": "12/04/2025",
@@ -1486,7 +1494,7 @@
    "d": "12/04/2025",
    "p": 15190000,
    "parcels": 1,
-   "type": "Entitled site"
+   "type": "Completed building"
   },
   "applicant": "EKTA NAIK",
   "applicantCompany": "BIF NON OZ 10705 AVALON BLVD, LLC",
@@ -1813,11 +1821,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "08/08/2025",
    "p": 1200000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": null,
   "applicantCompany": "PYRAMID INVESTMENTS INC",
@@ -1908,6 +1915,12 @@
   "sameSite": null,
   "unitsCase": 90,
   "affordableCase": 89,
+  "cofo": {
+   "d": "05/19/2026",
+   "permit": "22010-10000-06311",
+   "desc": "New  4-story Type, V-A residential buildng with 100% affordable housin",
+   "apn": "6032-014-013"
+  },
   "applicant": "Cassandra Menendez",
   "applicantCompany": "Three6ixty",
   "rep": null,
@@ -2030,11 +2043,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "10/07/2024",
    "p": 1200000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Atabak Youssefzadeh",
   "applicantCompany": "Metropolis Architecture Inc",
@@ -2354,6 +2366,12 @@
   "sameSite": null,
   "unitsCase": 64,
   "affordableCase": 64,
+  "cofo": {
+   "d": "09/16/2026",
+   "permit": "23010-10000-02123",
+   "desc": "NEW 4 STORY TYPE VA 64 UNITS (100% AFFORDABLE 1 MANAGER UNIT, 53 LI, 5",
+   "apn": "5534-006-007"
+  },
   "applicant": null,
   "applicantCompany": "Taylor Equities 15 LLC",
   "rep": "Jason Grant",
@@ -2462,7 +2480,8 @@
   "cofo": {
    "d": "09/10/2025",
    "permit": "23010-10000-02649",
-   "desc": "NEW 4 STORY 34 UNITS (100% AFFORDABLE HOUSING) APARTMENT, USING 12.22."
+   "desc": "NEW 4 STORY 34 UNITS (100% AFFORDABLE HOUSING) APARTMENT, USING 12.22.",
+   "apn": "5049-032-051"
   },
   "sales": [
    {
@@ -2471,11 +2490,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "12/21/2023",
    "p": 1125011,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Thomas Beadel",
   "applicantCompany": "Oxford Rentals LLC",
@@ -2608,11 +2626,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "10/07/2024",
    "p": 1200000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Yousef Memarzadh",
   "applicantCompany": "Hillgard LLC",
@@ -2705,6 +2722,12 @@
   ],
   "unitsCase": 42,
   "affordableCase": 42,
+  "cofo": {
+   "d": "06/15/2026",
+   "permit": "19010-10000-05418",
+   "desc": "NEW MIXED USE 315-UNIT (66 VLI UNITS) TYPE V-A APARTMENT AND RETAIL OV",
+   "apn": "5205-004-011"
+  },
   "applicant": "Shlomi Suliman",
   "applicantCompany": "Ave 50 Development LLC",
   "rep": "Jordan Beroukhim",
@@ -2910,11 +2933,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "11/03/2025",
    "p": 675000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "George Yousefzadeh",
   "applicantCompany": null,
@@ -2983,11 +3005,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "12/12/2025",
    "p": 8000000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": null,
   "applicantCompany": "LINC HOUSING CORPORATION",
@@ -3074,7 +3095,8 @@
   "cofo": {
    "d": "04/01/2026",
    "permit": "23010-10000-02699",
-   "desc": "ePLAN. NEW 3 STORY TYPE VA 14 UNITS +1 ADU (100% AFFORDABLE HOUSING; 1"
+   "desc": "ePLAN. NEW 3 STORY TYPE VA 14 UNITS +1 ADU (100% AFFORDABLE HOUSING; 1",
+   "apn": "6019-011-002"
   },
   "sales": [
    {
@@ -3138,11 +3160,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "06/16/2026",
    "p": 1600000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Farnoush Yousefzadeh",
   "applicantCompany": null,
@@ -3264,11 +3285,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "07/31/2024",
    "p": 1415000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Alan Dabach",
   "applicantCompany": "Tru Residential LLC ",
@@ -3299,6 +3319,12 @@
   "sameSite": null,
   "unitsCase": 44,
   "affordableCase": 43,
+  "cofo": {
+   "d": "09/11/2025",
+   "permit": "23010-10000-02368",
+   "desc": "NEW 4 STORY TYPE VA 44 UNITS (100% AFFORDABLE HOUSING 2 VLI, 34 LI, 7",
+   "apn": "4261-028-003"
+  },
   "applicant": "Steven Schiebe",
   "applicantCompany": "LA Affordable Communities LLC",
   "rep": "Jeff Zbikowski",
@@ -3309,7 +3335,18 @@
    "p": 2230022,
    "parcels": 2
   },
-  "unitsSource": "Planning Case"
+  "unitsSource": "Planning Case",
+  "sold": {
+   "d": "05/26/2026",
+   "p": 16650000,
+   "parcels": 1,
+   "type": "Completed building",
+   "source": "LAAA team price, recorded deed",
+   "note": "Price from the LAAA team (Filip, 10/24/2026); grant deed 26-0380634 recorded 05/26/2026 with no transfer-tax value, so the County shows no price",
+   "buyer": "Los Angeles LoMod South Inc",
+   "seller": "LA Affordable Communities LLC",
+   "doc": "26-0380634"
+  }
  },
  "ADM-2023-4706-DB-HCA-ED1": {
   "case": "ADM-2023-4706-DB-HCA-ED1",
@@ -3441,11 +3478,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "09/04/2026",
    "p": 700000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Charles Zohoury",
   "applicantCompany": null,
@@ -3488,11 +3524,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "04/12/2024",
    "p": 27300000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Blake Peeper",
   "applicantCompany": "Los Angeles CA Senior Property, LLC",
@@ -3530,11 +3565,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "08/06/2024",
    "p": 2400000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Alan Dabach",
   "applicantCompany": "Tru Residential LLC",
@@ -3563,7 +3597,8 @@
   "cofo": {
    "d": "09/02/2026",
    "permit": "20010-20000-00264",
-   "desc": "NEW 106'6\"X36'0\" 17-UNIT 3-STORY APARTMENT TOC. 100% AFFORDABLE HOUSIN"
+   "desc": "NEW 106'6\"X36'0\" 17-UNIT 3-STORY APARTMENT TOC. 100% AFFORDABLE HOUSIN",
+   "apn": "6031-007-024"
   },
   "sales": [
    {
@@ -3572,11 +3607,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "12/28/2023",
    "p": 875008,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Whitney Del Real",
   "applicantCompany": "W Baker Consulting",
@@ -3614,11 +3648,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "01/19/2024",
    "p": 49500000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": null,
   "applicantCompany": null,
@@ -3649,7 +3682,8 @@
   "cofo": {
    "d": "09/11/2026",
    "permit": "23010-10000-02892",
-   "desc": "NEW 5 STORY WITH ROOF DECK 66 UNITS TYPE IIB (51 LI , 14 MI, 1 MANAGER"
+   "desc": "NEW 5 STORY WITH ROOF DECK 66 UNITS TYPE IIB (51 LI , 14 MI, 1 MANAGER",
+   "apn": "6005-021-032"
   },
   "applicant": "ETKA NAIK",
   "applicantCompany": "BIF NON OC 6200 BROADWAY BLK, LLC",
@@ -3776,11 +3810,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "04/22/2025",
    "p": 1690000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "ALAN DABACH",
   "applicantCompany": "TRU RESIDENTIAL LLC",
@@ -3816,7 +3849,8 @@
   "cofo": {
    "d": "04/01/2026",
    "permit": "23010-10000-02699",
-   "desc": "ePLAN. NEW 3 STORY TYPE VA 14 UNITS +1 ADU (100% AFFORDABLE HOUSING; 1"
+   "desc": "ePLAN. NEW 3 STORY TYPE VA 14 UNITS +1 ADU (100% AFFORDABLE HOUSING; 1",
+   "apn": "6019-011-002"
   },
   "applicant": null,
   "applicantCompany": null,
@@ -3947,11 +3981,10 @@
     "parcels": 4
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "05/01/2023",
    "p": 2120021,
-   "parcels": 4,
-   "type": "Entitled site"
+   "parcels": 4
   },
   "applicant": "GEORGE ASHDOWN",
   "applicantCompany": "BIZ OZ 5860 LOS ANGELES ST, LLC",
@@ -4075,11 +4108,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "05/08/2026",
    "p": 3000000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "David Parvizyar",
   "applicantCompany": null,
@@ -4115,7 +4147,8 @@
   "cofo": {
    "d": "09/12/2025",
    "permit": "23010-10000-00937",
-   "desc": "NEW 3 STORY 17 UNITS (100% AFFORDABLE HOUSING) TYPE VA APARTMENT, USIN"
+   "desc": "NEW 3 STORY 17 UNITS (100% AFFORDABLE HOUSING) TYPE VA APARTMENT, USIN",
+   "apn": "2320-025-021"
   },
   "applicant": "KAMRAN RAVANDI",
   "applicantCompany": "QUEST CONSULTING GROUP, LLC",
@@ -4208,11 +4241,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "05/30/2025",
    "p": 1750000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "James A. Bogner",
   "applicantCompany": "William J. Martin and Robert J. Sandoval",
@@ -4357,6 +4389,12 @@
   "sameSite": null,
   "unitsCase": 79,
   "affordableCase": 78,
+  "cofo": {
+   "d": "09/24/2025",
+   "permit": "22010-10000-05647",
+   "desc": "New 5 story, Type IIIA, 79 unit apartment building-  100% affordable (",
+   "apn": "6020-022-023"
+  },
   "sales": [
    {
     "d": "01/26/2026",
@@ -4368,7 +4406,7 @@
    "d": "01/26/2026",
    "p": 26500000,
    "parcels": 1,
-   "type": "Entitled site"
+   "type": "Completed building"
   },
   "applicant": "GEORGE ASHDOWN",
   "applicantCompany": "BIF NON OZ 7518 S HOOVER STREET, LLC",
@@ -4490,11 +4528,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "06/24/2024",
    "p": 1365000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Whitney Del Real",
   "applicantCompany": "W Baker Consulting",
@@ -4563,11 +4600,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "03/28/2025",
    "p": 1300000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "TOMMY BEADEL",
   "applicantCompany": "121 MATHEWS LLC",
@@ -4607,11 +4643,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "07/30/2024",
    "p": 1650000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Shawn Naim",
   "applicantCompany": "Frontier Acquisitions LLC",
@@ -4645,7 +4680,8 @@
   "cofo": {
    "d": "02/24/2026",
    "permit": "23010-10000-03435",
-   "desc": "NEW 5 STORY TYPE IIIA 23 UNITS (1EL/1VL/16L/4Moderate) 100% AFFORDABLE"
+   "desc": "NEW 5 STORY TYPE IIIA 23 UNITS (1EL/1VL/16L/4Moderate) 100% AFFORDABLE",
+   "apn": "2249-005-017"
   },
   "applicant": "Jack Oganyan",
   "applicantCompany": "The Oganyan Developers LLC.",
@@ -4801,11 +4837,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "08/08/2025",
    "p": 1200000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "James Ruiz",
   "applicantCompany": "PYRAMID INVESTMENTS INC",
@@ -4955,11 +4990,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "03/28/2025",
    "p": 1490000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "TOMMY BEADEL",
   "applicantCompany": "6018 BRYNHURST LLC",
@@ -5130,11 +5164,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "07/18/2025",
    "p": 1250000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "JOSEPH GOLSHAN",
   "applicantCompany": "WEST TOWER LLC",
@@ -5454,7 +5487,8 @@
   "cofo": {
    "d": "06/25/2026",
    "permit": "23010-10000-02596",
-   "desc": "ED-1 - New 4-story, Type VA, residential building with 100% affordable"
+   "desc": "ED-1 - New 4-story, Type VA, residential building with 100% affordable",
+   "apn": "6032-014-015"
   },
   "applicant": "Mia Rondone",
   "applicantCompany": "Three6ixty",
@@ -5661,7 +5695,8 @@
   "cofo": {
    "d": "09/02/2026",
    "permit": "25010-10000-03520",
-   "desc": "ePlan: PROPOSED 2-STORY TYPE V-B 6 UNIT APARTMENT BUILDING, ALL UNITS"
+   "desc": "ePlan: PROPOSED 2-STORY TYPE V-B 6 UNIT APARTMENT BUILDING, ALL UNITS",
+   "apn": "5124-004-009"
   },
   "applicant": null,
   "applicantCompany": "OMG 1021 21st LLC",
@@ -5695,7 +5730,8 @@
   "cofo": {
    "d": "08/14/2026",
    "permit": "23010-10000-04454",
-   "desc": "ePLAN. NEW 4 STORY TYPE VA 38 UNITS (80% LI = 30 || 20% MI = 7) AFFORD"
+   "desc": "ePLAN. NEW 4 STORY TYPE VA 38 UNITS (80% LI = 30 || 20% MI = 7) AFFORD",
+   "apn": "4259-030-017"
   },
   "sales": [
    {
@@ -5742,11 +5778,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "03/15/2024",
    "p": 2350000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Jeff Zbikowski",
   "applicantCompany": "JZA",
@@ -6006,7 +6041,8 @@
   "cofo": {
    "d": "11/04/2025",
    "permit": "23010-10000-04533",
-   "desc": "ePlan - NEW 3 STORY 14 UNITS + 1 ADU 100% AFFORDABLE HOUSING APARTMENT"
+   "desc": "ePlan - NEW 3 STORY 14 UNITS + 1 ADU 100% AFFORDABLE HOUSING APARTMENT",
+   "apn": "2669-006-004"
   },
   "applicant": "Gary Benjamin",
   "applicantCompany": "16136 Devonshire, LLC",
@@ -6101,11 +6137,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "08/14/2026",
    "p": 7750000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "CHRIS AIELLO",
   "applicantCompany": "HC 2859 FRANCIS, LLC",
@@ -6337,7 +6372,8 @@
   "cofo": {
    "d": "09/20/2026",
    "permit": "25010-20000-01408",
-   "desc": "PROPOSED NEW DETACHED ACCESSORY DWELLING UNIT PER LAMC 12.22A.33(b)(1)"
+   "desc": "PROPOSED NEW DETACHED ACCESSORY DWELLING UNIT PER LAMC 12.22A.33(b)(1)",
+   "apn": "5589-033-009"
   },
   "sales": [
    {
@@ -6346,11 +6382,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "12/24/2024",
    "p": 1000000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "JOEL SPOLIN",
   "applicantCompany": "1726 N. ALEANDRIA PARTNERS LLC. ",
@@ -6626,11 +6661,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "09/23/2026",
    "p": 1800000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Manish Drona",
   "applicantCompany": "Drona Investments LLC",
@@ -7020,11 +7054,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "11/24/2025",
    "p": 4650000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Paul Schon",
   "applicantCompany": "5822 Lexington, LLC",
@@ -7863,11 +7896,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "12/08/2025",
    "p": 798000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Isaac Davdi",
   "applicantCompany": "The Point View Company LLC",
@@ -8281,11 +8313,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "12/15/2025",
    "p": 36600000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Samir Srivastava",
   "applicantCompany": "ABS Properties INC",
@@ -8323,11 +8354,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "06/04/2026",
    "p": 1320000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Antonio Hidalgo",
   "applicantCompany": "1156 Kingsley, LLC",
@@ -8981,11 +9011,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "06/18/2025",
    "p": 4200000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "GUY LIPA",
   "applicantCompany": "PARALLEL LOUISE HOLDINGS LLC",
@@ -9144,11 +9173,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "12/15/2025",
    "p": 1800000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Masoud Manesh",
   "applicantCompany": "8861 Saturn Investment LLC",
@@ -9246,11 +9274,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "12/16/2024",
    "p": 1980000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Yu Kon Kim",
   "applicantCompany": "20 Ave Holding LLC",
@@ -9426,7 +9453,8 @@
   "cofo": {
    "d": "09/11/2026",
    "permit": "23010-10000-02892",
-   "desc": "NEW 5 STORY WITH ROOF DECK 66 UNITS TYPE IIB (51 LI , 14 MI, 1 MANAGER"
+   "desc": "NEW 5 STORY WITH ROOF DECK 66 UNITS TYPE IIB (51 LI , 14 MI, 1 MANAGER",
+   "apn": "6005-021-032"
   },
   "applicant": null,
   "applicantCompany": null,
@@ -9517,6 +9545,12 @@
   "sameSite": null,
   "unitsCase": null,
   "affordableCase": null,
+  "cofo": {
+   "d": "08/07/2025",
+   "permit": "23010-10000-02798",
+   "desc": "NEW BATHROOM SERVING EMERGENCY HOMELESS SHELTER",
+   "apn": "5147-009-010"
+  },
   "applicant": null,
   "applicantCompany": null,
   "rep": "Jiho Yoo",
@@ -10391,7 +10425,8 @@
   "cofo": {
    "d": "08/20/2026",
    "permit": "23010-10000-04771",
-   "desc": "NEW 7 STORY 80 UNIT AFFORDABLE HOUSING APARTMENT BUILDING (100% AFFORD"
+   "desc": "NEW 7 STORY 80 UNIT AFFORDABLE HOUSING APARTMENT BUILDING (100% AFFORD",
+   "apn": "5503-028-022"
   },
   "applicant": "Kira Miller",
   "applicantCompany": "Bruce A Miller & Associates Inc",
@@ -11541,11 +11576,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "02/11/2025",
    "p": 1100000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Simon Aftalion",
   "applicantCompany": "Vineland, LLC",
@@ -12635,11 +12669,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "11/06/2024",
    "p": 980000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "AMIR DERIS",
   "applicantCompany": null,
@@ -12816,11 +12849,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "08/14/2026",
    "p": 7750000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "CHRIS AIELLO",
   "applicantCompany": "HC 2859 FRANCIS, LLC",
@@ -12966,11 +12998,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "06/20/2025",
    "p": 1826500,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "ANDREW SLOCUM",
   "applicantCompany": "URBAN DEVELOPMENT COMPANY C/O NISHIMO INTERNATIONAL INC.",
@@ -13010,11 +13041,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "03/11/2026",
    "p": 850000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": null,
   "applicantCompany": "ADM Development LLC",
@@ -13302,7 +13332,8 @@
   "cofo": {
    "d": "09/12/2025",
    "permit": "23010-10000-00937",
-   "desc": "NEW 3 STORY 17 UNITS (100% AFFORDABLE HOUSING) TYPE VA APARTMENT, USIN"
+   "desc": "NEW 3 STORY 17 UNITS (100% AFFORDABLE HOUSING) TYPE VA APARTMENT, USIN",
+   "apn": "2320-025-021"
   },
   "applicant": "KAMRAN RAVANDI",
   "applicantCompany": "QUEST CONSULTING GROUP, LLC",
@@ -13342,11 +13373,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "03/11/2026",
    "p": 850000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": null,
   "applicantCompany": "AMG Developments, LLC",
@@ -13377,6 +13407,12 @@
   "sameSite": null,
   "unitsCase": 19,
   "affordableCase": 18,
+  "cofo": {
+   "d": "06/24/2026",
+   "permit": "24010-10000-00506",
+   "desc": "NEW 4 STORY WITH ROOF DECK TYPE VA, 19 UNITS (16 LI + 2 ELI) AFFORDABL",
+   "apn": "6003-021-024"
+  },
   "applicant": "Whitey Del Real",
   "applicantCompany": "W Baker Consulting",
   "rep": null,
@@ -13387,7 +13423,18 @@
    "p": 425000,
    "parcels": 1
   },
-  "unitsSource": "Planning Case"
+  "unitsSource": "Planning Case",
+  "sold": {
+   "d": "09/14/2026",
+   "p": null,
+   "parcels": 1,
+   "type": "Completed building",
+   "source": "Recorded deed, price not disclosed",
+   "note": "Grant deed 26-0683226 recorded 09/14/2026, transfer tax marked exempt, so no price on record; new $3.5M Hanmi Bank loan the same day",
+   "buyer": "500 ODT LLC",
+   "seller": "5 Star Discount Homes LLC",
+   "doc": "26-0683226"
+  }
  },
  "ADM-2024-5876-DB-SPPC-VHCA-ED1": {
   "case": "ADM-2024-5876-DB-SPPC-VHCA-ED1",
@@ -13603,7 +13650,8 @@
   "cofo": {
    "d": "01/30/2026",
    "permit": "23010-10000-04759",
-   "desc": "ePlan - NEW 3 STORY 17 UNITS 100% AFFORDABLE HOUSING APARTMENT (2 ELI"
+   "desc": "ePlan - NEW 3 STORY 17 UNITS 100% AFFORDABLE HOUSING APARTMENT (2 ELI",
+   "apn": "6031-004-019"
   },
   "applicant": "Whitney Del Real",
   "applicantCompany": "W Baker Consulting",
@@ -14106,11 +14154,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "11/21/2024",
    "p": 6930000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Jenny Castro",
   "applicantCompany": "Bridge New Hampshire, LP",
@@ -14567,11 +14614,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "04/01/2025",
    "p": 2000000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "ARDESHIR ISHAL",
   "applicantCompany": "MEFI LLC",
@@ -14609,11 +14655,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "06/08/2026",
    "p": 2350000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "TOMMY BEADEL",
   "applicantCompany": "HVN HOLDINGS LLC",
@@ -14809,6 +14854,12 @@
   "sameSite": null,
   "unitsCase": 60,
   "affordableCase": 59,
+  "cofo": {
+   "d": "07/06/2026",
+   "permit": "21010-10000-03332",
+   "desc": "NEW 4 STORY 60 UNITS (100% AFFORDABLE, 59 AFFORDABLE + 1 MANAGER'S UNI",
+   "apn": "5005-031-020"
+  },
   "applicant": null,
   "applicantCompany": null,
   "rep": "Taylor Miller",
@@ -14980,11 +15031,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "08/25/2026",
    "p": 1850000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Tommy Beadel",
   "applicantCompany": "12442 Pacific LLC",
@@ -15354,11 +15404,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "05/21/2026",
    "p": 1500000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "TOMMY BEADEL",
   "applicantCompany": "HVN HOLDINGS LLC",
@@ -16096,11 +16145,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "05/28/2025",
    "p": 1800000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Kyle Jenkins",
   "applicantCompany": "Seachange Partners REG, LLC",
@@ -16136,7 +16184,8 @@
   "cofo": {
    "d": "08/20/2026",
    "permit": "23010-10000-04771",
-   "desc": "NEW 7 STORY 80 UNIT AFFORDABLE HOUSING APARTMENT BUILDING (100% AFFORD"
+   "desc": "NEW 7 STORY 80 UNIT AFFORDABLE HOUSING APARTMENT BUILDING (100% AFFORD",
+   "apn": "5503-028-022"
   },
   "applicant": "Leo Lee",
   "applicantCompany": "3800 West Sixth Street, LLC",
@@ -17674,11 +17723,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "11/03/2025",
    "p": 675000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": null,
   "applicantCompany": null,
@@ -17941,11 +17989,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "12/12/2025",
    "p": 3600000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Tommy Beadel",
   "applicantCompany": "HVN Holdings LLC",
@@ -19976,11 +20023,10 @@
     "parcels": 1
    }
   ],
-  "sold": {
+  "landSold": {
    "d": "06/26/2026",
    "p": 14000000,
-   "parcels": 1,
-   "type": "Entitled site"
+   "parcels": 1
   },
   "applicant": "Greg Comanor",
   "applicantCompany": "Elysian Housing",

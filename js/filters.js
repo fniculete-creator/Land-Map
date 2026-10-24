@@ -31,7 +31,8 @@ export function emptyState() {
     ed1Status: "any",   // "any" | "approved" | "pending" | "closed"
     ed1Units: [null, null],
     ed1Done: false,     // only projects with a Certificate of Occupancy
-    ed1Sold: false,     // only projects that sold after the CofO
+    ed1Sold: false,     // Completed & Sold: finished buildings that sold after the CofO
+    ed1Land: false,     // Sold: ED 1 land deals, approved sites that sold before a CofO
     comp: { since: 2025, p: [null, null], ppsf: [null, null], sf: [null, null], yb: [null, null] },
     areas: [],   // selected search areas (NEIGHBORHOODS names) — chips
   };
@@ -199,6 +200,7 @@ export function stateToHash(state) {
     if (state.ed1Status !== "any") p.set("es", state.ed1Status);
     if (state.ed1Done) p.set("ec", "1");
     if (state.ed1Sold) p.set("esd", "1");
+    if (state.ed1Land) p.set("el", "1");
     const [a, b] = state.ed1Units;
     if (a !== null || b !== null) p.set("eu", `${a ?? ""}..${b ?? ""}`);
   }
@@ -253,6 +255,7 @@ export function stateFromHash(hash) {
     if (["approved", "pending", "closed"].includes(p.get("es"))) state.ed1Status = p.get("es");
     state.ed1Done = p.get("ec") === "1";
     state.ed1Sold = p.get("esd") === "1";
+    state.ed1Land = p.get("el") === "1";
     const v = p.get("eu");
     if (v && v.includes("..")) {
       const [a, b] = v.split("..");
