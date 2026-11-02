@@ -160,7 +160,7 @@
   "vacant": 0
  },
  "2565016028": {
-  "case": "VTT-84535-SH-SL-VHCA",
+  "case": "VTT-84535-SH-VHCA",
   "status": "submitted",
   "rawStatus": "Pending",
   "bill": "SB 684",
@@ -581,11 +581,11 @@
  },
  "2103011002": {
   "case": "VTT-85140-SH-VHCA",
-  "status": "submitted",
-  "rawStatus": "Pending",
+  "status": "approved",
+  "rawStatus": "Approved with Conditions",
   "bill": "SB 684 + SB 1123",
   "filed": "2026-04-01",
-  "decided": null,
+  "decided": "2026-11-02",
   "address": "18838 W Lanark St",
   "zoning": "RA-1",
   "units": 10,
@@ -594,7 +594,7 @@
   "rep": "Olivia Joncich",
   "repCompany": "Rand Paster & Nelson, LLP",
   "phone": "(213) 557-2703",
-  "desc": "VTT map to subdivide the lot into ground lots with primary dwelling units, each with an attached ADU (Govt Code 66499.41, LAMC 13B.7.3). One of two 10-home starter-home projects on the paired Lanark St lots. Companion case VTT-85141-SH-VHCA covers the adjacent 19,148 SF parcel (filed 2026-04-02, 10 more homes; 20 total across the pair - shown here as one map entry). Placed on hold at the city 09/18/2026; hold released by 10/21/2026.",
+  "desc": "VTT map to subdivide the lot into ground lots with primary dwelling units, each with an attached ADU (Govt Code 66499.41, LAMC 13B.7.3). One of two 10-home starter-home projects on the paired Lanark St lots. Companion case VTT-85141-SH-VHCA covers the adjacent 19,148 SF parcel (filed 2026-04-02, 10 more homes; 20 total across the pair - shown here as one map entry). Placed on hold at the city 09/18/2026; hold released by 10/21/2026. Approved with conditions 11/02/2026 (the approval text describes 9 ground lots and 9 homes; the project description still says 10).",
   "lng": -118.543824,
   "lat": 34.217097,
   "lotSqft": 27386,
@@ -783,7 +783,7 @@
   ]
  },
  "5685012008": {
-  "case": "VTT-85203-SH-SL",
+  "case": "VTT-85203-SL",
   "status": "submitted",
   "rawStatus": "Pending (On Hold)",
   "bill": "SB 684",
@@ -797,7 +797,7 @@
   "rep": "n/a",
   "repCompany": "n/a",
   "phone": "(818) 634-3281",
-  "desc": "VTT map per SB 684: subdivide one lot into 7 with existing residential structure; ministerial, no zoning deviations. Companion environmental case CPC-2026-3239-EAF filed 06/24/2026. Placed on hold at the city as of 09/18/2026.",
+  "desc": "VTT map per SB 684: subdivide one lot into 7 with existing residential structure; ministerial, no zoning deviations. Companion environmental case CPC-2026-3239-EAF filed 06/24/2026. Placed on hold at the city as of 09/18/2026. The city now lists this as a Small Lot Subdivision case (VTT-85203-SL) with no SB 684/1123 suffix.",
   "lng": -118.216467,
   "lat": 34.133836,
   "lotSqft": 13207,
@@ -1005,7 +1005,7 @@
   "lotSqft": 7664
  },
  "2364011022": {
-  "case": "VTT-85335-SH",
+  "case": "VTT-85335-SH-HCA",
   "status": "submitted",
   "rawStatus": "Pending (On Hold)",
   "bill": "SB 684/1123",
