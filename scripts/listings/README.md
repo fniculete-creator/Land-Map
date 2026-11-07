@@ -30,6 +30,11 @@ git add data/listings.json && git commit -m "listings: import" && git push
    - the genuinely nearest parcel centroid within 120 m, recorded in the audit
      as `nearest-NNm` so it can be spot-checked. Vacant land often carries no
      situs address at all, which is why this tier exists.
+   When the export has `APN` / `Lat` / `Lng` columns, the LA assessor record for
+   that APN comes first if it sits within 500 m of the MLS pin (`mls-apn`). An
+   address match more than 500 m from the pin is thrown out for the parcel under
+   the pin (`mls-pin`). Same street names elsewhere made the address route land
+   114 of 2,262 deals on the wrong parcel on 11/06/2026.
 5. **Screen** it (below).
 6. **Merge**. Additive only: an existing record is never overwritten or removed,
    so listings that go off market stay until pulled by hand.

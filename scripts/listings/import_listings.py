@@ -114,6 +114,7 @@ MF_MAX_LOT_SQFT = 65340
 SHARED_PARCEL_MULTIPLE = 3.0       # parcel this much larger than the MLS lot = condo trap
 SUSPECT_SFR_PPSF = 20              # SFR under $20/SF of land = likely mobile home
 NEAREST_SEARCH_M = 120             # candidate radius, only to name the nearest parcel
+MLS_PIN_MAX_M = 500                # an address or APN match farther than this from the MLS pin is wrong
 ENVELOPE_PAD_DEG = 0.012           # ~1.3 km box around the geocode for situs lookups
 UNIT_NUMBER_RE = re.compile(r"(^|\s)(#|apt\.?|unit|ste\.?|suite)\s*[\w-]*", re.I)
 DIRECTIONALS = {"N", "S", "E", "W", "NE", "NW", "SE", "SW",
@@ -191,8 +192,18 @@ def parse_csv(path, today):
                 "mlsZoning": clean_address(r.get("Zoning")),
                 "dom": dom,
                 "listDate": list_date,
+                "apn": re.sub(r"\D", "", r.get("APN") or ""),
+                "mlsLat": coordinate(r.get("Lat")),
+                "mlsLng": coordinate(r.get("Lng")),
             })
     return rows
+
+
+def coordinate(v):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
 
 
 def normalize_date(v):
@@ -444,6 +455,33 @@ def situs_lookup_nogeocode(address, city):
     return None, None, None, ambiguous or "address did not geocode and no assessor situs match"
 
 
+def mls_apn_parcel(row):
+    """The LA assessor record for the export's own APN, trusted only when it sits
+    near the MLS pin, so a mistyped APN cannot move a listing across town."""
+    cfg = PARCEL_LAYERS["LA"]
+    if len(row.get("apn") or "") != 10 or not row.get("mlsLat"):
+        return None
+    feats = arcgis_query(cfg["url"], {
+        "where": f"AIN='{row['apn']}'", "outFields": cfg["fields"],
+        "returnGeometry": "false", "returnCentroid": "true", "outSR": 4326, "f": "json"})
+    if feats and (feats[0].get("centroid") or {}).get("x") is not None:
+        parcel = with_centroid(feats[0])
+        if metres_between(row["mlsLng"], row["mlsLat"], parcel["_cx"], parcel["_cy"]) <= MLS_PIN_MAX_M:
+            return parcel
+    return None
+
+
+def mls_pin_parcel(row):
+    """The LA parcel under the MLS map pin."""
+    cfg = PARCEL_LAYERS["LA"]
+    if not row.get("mlsLat"):
+        return None
+    feats = point_query(cfg["url"], row["mlsLng"], row["mlsLat"], cfg["fields"], centroid=True)
+    if feats and (feats[0].get("centroid") or {}).get("x") is not None:
+        return with_centroid(feats[0])
+    return None
+
+
 def la_use_code(ain):
     feats = arcgis_query(USECODE_LAYER, {
         "where": f"AIN='{ain}'", "outFields": "AIN,UseCode",
@@ -567,16 +605,10 @@ def tier_for(tiers, lng, lat):
 
 # ------------------------------------------------------------------ the run
 
-def process(row, tiers):
-    """Screen one CSV row. Returns an audit dict; 'record' is set when it keeps."""
-    out = dict(row, ain="", result="", detail="", record=None)
-    if not row["price"]:
-        out.update(result="REJECT", detail="no list price")
-        return out
-
+def locate_by_address(row):
+    """Geocode, then the assessor situs index, then a parcel match across counties.
+    Returns (parcel, county, how, lng, lat, why)."""
     pt = geocode(row["address"], row["city"])
-    parcel = how = None
-    county = None
     if not pt:
         # The Census geocoder misses a large share of Valley addresses that the
         # MLS labels "Los Angeles" with no ZIP (9/18 export: 251 of 1,114 rows).
@@ -584,29 +616,50 @@ def process(row, tiers):
         # county for the exact house number + street before giving up.
         parcel, county, how, why = situs_lookup_nogeocode(row["address"], row["city"])
         if not parcel:
-            out.update(result="NOT LOCATED",
-                       detail=why or "address did not geocode (no house number or outside coverage)")
-            return out
+            return None, None, None, None, None, why or "address did not geocode (no house number or outside coverage)"
         lng, lat = parcel["_cx"], parcel["_cy"]
         with _lock:
             _geocache[f"{row['address']}|{row['city']}".upper()] = (round(lng, 6), round(lat, 6))
-    else:
-        lng, lat = pt
-
+        return parcel, county, how, lng, lat, ""
+    lng, lat = pt
     # County bboxes overlap along the LA/Ventura line (West Hills is LA City but
     # sits inside the Ventura box), so a miss falls through to the neighbours
     # rather than being reported as unlocatable.
+    county = county_for(row["city"], lng, lat)
+    why = ""
+    for cand in [county] + [c for c in ("LA", "VC", "SB") if c != county]:
+        parcel, how, why = match_parcel(cand, lng, lat, row["address"])
+        if parcel:
+            return parcel, cand, how, lng, lat, ""
+    return None, None, None, lng, lat, why or f"no parcel at {lat:.5f},{lng:.5f}"
+
+
+def process(row, tiers):
+    """Screen one CSV row. Returns an audit dict; 'record' is set when it keeps."""
+    out = dict(row, ain="", result="", detail="", record=None)
+    if not row["price"]:
+        out.update(result="REJECT", detail="no list price")
+        return out
+
+    # An export with APN / Lat / Lng columns names its own parcel. That beats the
+    # address route: the 11/06 run placed 114 kept deals on a parcel other than
+    # the listing's APN, some in another county (same street name elsewhere).
+    parcel = mls_apn_parcel(row)
+    if parcel:
+        lng, lat, county, how = parcel["_cx"], parcel["_cy"], "LA", "mls-apn"
+    else:
+        parcel, county, how, lng, lat, why = locate_by_address(row)
+        pin_ok = parcel and (not row.get("mlsLat") or metres_between(
+            row["mlsLng"], row["mlsLat"], parcel.get("_cx") or lng, parcel.get("_cy") or lat) <= MLS_PIN_MAX_M)
+        if not pin_ok:
+            pinned = mls_pin_parcel(row)
+            if pinned:
+                parcel, county, how = pinned, "LA", "mls-pin"
+                lng, lat = parcel["_cx"], parcel["_cy"]
+            elif parcel:
+                parcel, why = None, "address matched a parcel far from the MLS pin"
     if not parcel:
-        county = county_for(row["city"], lng, lat)
-        order = [county] + [c for c in ("LA", "VC", "SB") if c != county]
-        for cand in order:
-            parcel, how, why = match_parcel(cand, lng, lat, row["address"])
-            if parcel:
-                county = cand
-                break
-    if not parcel:
-        out.update(result="NOT LOCATED",
-                   detail=why or f"no parcel at {lat:.5f},{lng:.5f}")
+        out.update(result="NOT LOCATED", detail=why or "no parcel found")
         return out
 
     cfg = PARCEL_LAYERS[county]
