@@ -14,6 +14,18 @@ Then review the audit CSV it writes next to the exports, and push:
 git add data/listings.json && git commit -m "listings: import" && git push
 ```
 
+## City of LA refresh from TheMLS
+
+No hand exports needed (proven 11/06/2026, about 40 minutes end to end):
+
+1. In signed-in Chrome, run `themls_pull.js`. It downloads every Active SFR and
+   Land row in the City's ZIPs, with APN and map pin.
+2. `python scripts/listings/city_of_la_csvs.py --raw <download> --out "<Database\SB1123\month folder>" --clear`
+   writes the CSVs and takes the old City records out. Records outside the City stay.
+3. Run the importer on that folder, then compare totals before pushing: outside
+   records + KEEP rows should equal the new total, and audit rows should nearly
+   equal CSV rows. If not, the clear step did not run.
+
 ## What it does per row
 
 1. **Parse** every `.csv` under `--source` (its own audit files are skipped).
