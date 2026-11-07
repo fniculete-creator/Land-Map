@@ -88,7 +88,7 @@ const emptied = await page.waitForFunction(
   { timeout: 20000 }).then(() => true).catch(() => false);
 assert(emptied, "max $19/sf empties the deal sheet");
 const emptyMsg = await page.$eval("#empty-sites", (el) => el.textContent);
-assert(/\$\/SF range/.test(emptyMsg), "empty state explains the $/SF range");
+assert(/these filters/.test(emptyMsg), "empty state says the filters emptied it");
 
 await page.fill("#ppsf-min", "90");
 await page.fill("#ppsf-max", "100");

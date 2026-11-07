@@ -982,17 +982,25 @@ function ozTractAt(lng, lat) {
   return null;
 }
 
-// Listings whose land $/SF passes the current range AND sit inside the
-// selected search areas. A listing without a computable ppsf (no lot sf)
-// passes only an unbounded range — it can't be price-screened, but
+// Listings that pass the $/SF range, Lot Size, Improvements and tier AND sit
+// inside the selected search areas. The markers and the deal sheet read this
+// list, so a filter missing here looks ignored. A listing without a value
+// (no lot sf) passes only an unbounded range: it can't be screened, but
 // shouldn't disappear from a plain On Market view.
 function omAinsFor() {
   const [min, max] = state.omRange;
+  const [lotMin, lotMax] = state.ranges.lsf;
   return Object.keys(omListings).filter((ain) => {
     const l = omListings[ain];
     const okPrice = l.ppsf == null
       ? min === null && max === null
       : (min === null || l.ppsf >= min) && (max === null || l.ppsf <= max);
+    const okLot = l.lotSqft == null
+      ? lotMin === null && lotMax === null
+      : (lotMin === null || l.lotSqft >= lotMin) && (lotMax === null || l.lotSqft <= lotMax);
+    const okImp = state.imp === "vacant" ? l.type === "Land"
+      : state.imp === "sfr" ? l.type === "SFR" : true;
+    if (!okLot || !okImp) return false;
     const okTier = state.tiers.size === 0 || state.tiers.has(l.tier || "");
     // Checked overlays scope the deals too: a listing must sit inside every one.
     const okOvl = activeOverlays(state).every((k) => !ovlParts[k] || (l.lng != null && overlayAt(k, l.lng, l.lat) !== null));
@@ -1649,7 +1657,7 @@ function renderList(candidates, detailed) {
       ? `No on-market deals loaded yet. Deals live in
          <code>data/listings.json</code> — add them and reload.`
       : state.om
-        ? "No on-market deals match the $/SF range. Widen or clear it."
+        ? "No on-market deals match these filters in view. Widen or clear them."
         : demoMode
           ? `Demo mode: the synthetic dataset covers only a small Venice-area test
              grid (all Tier A) — real LA parcels aren't loaded yet.
@@ -2191,8 +2199,15 @@ function bindControls() {
     syncControlsFromState();
     applyFilters();
   };
+  // Results follow as you type; Enter or leaving the box applies at once.
+  let rangeTimer = null;
   for (const id of ["w-min", "w-max", "lsf-min", "lsf-max"]) {
-    document.getElementById(id).addEventListener("change", onRangeChange);
+    const el = document.getElementById(id);
+    el.addEventListener("change", () => { clearTimeout(rangeTimer); onRangeChange(); });
+    el.addEventListener("input", () => {
+      clearTimeout(rangeTimer);
+      rangeTimer = setTimeout(onRangeChange, 400);
+    });
   }
 
   document.querySelectorAll(".zone-family").forEach((cb) => {
