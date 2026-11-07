@@ -2920,11 +2920,13 @@ async function loadSold() {
     if (resp.ok) soldLand = await resp.json();
   } catch (e) { /* optional dataset */ }
 }
-// Sold lots passing Lot Size, Width, Improvements, tier, overlays and areas. Same
-// job as omAinsFor: the markers and the list read this, not the drawn parcels.
+// Sold lots in the working universe (`ok`: the 1.5 ac cap and the fire, coastal and
+// public exclusions) passing Lot Size, Width, Improvements, tier, overlays and areas.
+// Same job as omAinsFor: the markers and the list read this, not the drawn parcels.
 function soldAinsFor() {
   return Object.keys(soldLand).filter((ain) => {
     const l = soldLand[ain];
+    if (!l.ok) return false;
     const okImp = state.imp === "vacant" ? l.v !== 0 : state.imp === "sfr" ? l.v === 0 : true;
     const okTier = state.tiers.size === 0 || state.tiers.has(l.t || "");
     const okOvl = activeOverlays(state).every((k) => !ovlParts[k] || (l.lng != null && overlayAt(k, l.lng, l.lat) !== null));

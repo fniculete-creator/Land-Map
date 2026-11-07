@@ -7,6 +7,9 @@ tiles thin parcels out below zoom 13: citywide, the list showed 5 of 1,150 lots)
 
 Run after build_land_sales.py. Adds lng/lat and address from the 2026 assessor roll; lot SF,
 width, vacant flag and tier from the map tiles (tier by area when the tiles have no record).
+`ok` marks a lot inside the map's working universe, the same test as UNIVERSE_CLAUSE in
+js/filters.js: vacant or a true SFR, 1.5 ac or less, no fire zone, coastal zone or public owner.
+A lot with no tile record has no `ok`, as it never drew on the map.
 """
 import json
 import os
@@ -21,6 +24,13 @@ from add_widths import tile_lookup  # noqa: E402
 
 ROLL = ("https://services.arcgis.com/RmCCgQtiZLDCtblq/ArcGIS/rest/services/"
         "Assessor%20Parcel%20Data%20Roll%202026/FeatureServer/0/query")
+
+
+def in_universe(p):
+    uc = str(p.get("uc") or "")
+    sfr = p.get("v") == 0 and uc[:3] == "010" and uc[3:4] not in tuple("CDEFGHIJ")
+    return ((p.get("v") == 1 or sfr) and (p.get("lsf") or 0) <= 65340
+            and p.get("f") not in (1, 2) and p.get("c") != 1 and p.get("pb") != 1)
 
 
 def main():
@@ -63,6 +73,9 @@ def main():
                     rec[key] = p[key]
             if p.get("a"):
                 rec["a"] = p["a"]
+            rec.pop("ok", None)
+            if in_universe(p):
+                rec["ok"] = 1
         if not rec.get("t"):
             for name in ("A", "B", "C"):
                 if any(w <= rec["lng"] <= e and s <= rec["lat"] <= n for w, s, e, n in tiers.get(name, [])):

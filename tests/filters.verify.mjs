@@ -144,9 +144,11 @@ check((await markers("om-markers")).length === 0, "Clear empties the markers");
 
 // ---- SB 1123: Sold ---------------------------------------------------------
 console.log("\n# Sold");
-const soldData = Object.values(await load("sold_land.json"));
+const soldRaw = Object.values(await load("sold_land.json"));
+const soldData = soldRaw.filter((l) => l.ok);
 const located = soldData.filter((l) => l.lng != null);
-check(located.length / soldData.length > 0.95, `sold lots located (${located.length} of ${soldData.length})`);
+check(soldData.length > 0 && located.length === soldData.length, `screened sold lots all located (${located.length} of ${soldRaw.length} on file)`);
+check(soldData.every((l) => l.lsf <= 65340), "no sold lot over the 1.5 ac cap");
 await click("sold-btn");
 const soldCheck = async (label, fn) => {
   await jump();
@@ -160,7 +162,7 @@ const soldCheck = async (label, fn) => {
   return got;
 };
 const soldAll = await soldCheck("no filter", () => true);
-check(soldAll > 500, `citywide Sold lists the lots, not just what the map draws (${soldAll})`);
+check(soldAll > 200, `citywide Sold lists the lots, not just what the map draws (${soldAll})`);
 await setRange("lsf", 10000, 20000);
 await soldCheck("Lot 10,000 to 20,000", (l) => l.lsf >= 10000 && l.lsf <= 20000);
 await setRange("lsf", "", "");
