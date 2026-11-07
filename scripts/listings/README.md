@@ -25,6 +25,9 @@ No hand exports needed (proven 11/06/2026, about 40 minutes end to end):
 3. Run the importer on that folder, then compare totals before pushing: outside
    records + KEEP rows should equal the new total, and audit rows should nearly
    equal CSV rows. If not, the clear step did not run.
+4. `python scripts/listings/add_widths.py` so the Width filter can read the new deals.
+5. `node tests/filters.verify.mjs http://localhost:8123` runs every filter on every
+   tab against the data.
 
 ## What it does per row
 

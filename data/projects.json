@@ -32,7 +32,8 @@
     "url": "https://layimby.com/2024/07/townhomes-may-come-to-627-north-juanita-avenue-east-hollywood-los-angeles.html",
     "date": "2024-07"
    }
-  ]
+  ],
+  "w": 50
  },
  "5442011034": {
   "case": "AA-2024-8125-PM-SH-HCA",
@@ -54,7 +55,8 @@
   "lat": 34.098296,
   "lotSqft": 10892,
   "tier": "",
-  "vacant": 0
+  "vacant": 0,
+  "w": 80
  },
  "5538008024": {
   "case": "TT-84798-CN-SH-HCA",
@@ -76,7 +78,8 @@
   "lat": 34.08406,
   "lotSqft": 5593,
   "tier": "",
-  "vacant": 0
+  "vacant": 0,
+  "w": 57
  },
  "4267029024": {
   "case": "VTT-84786-SH-HCA",
@@ -105,7 +108,8 @@
     "title": "Seven houses planned at 1515 S. Carmelina Ave. in Sawtelle",
     "url": "https://la.urbanize.city/post/seven-houses-planned-1515-s-carmelina-ave-sawtelle"
    }
-  ]
+  ],
+  "w": 50
  },
  "2024012007": {
   "case": "VTT-84880-SH-SL-HCA",
@@ -135,7 +139,8 @@
     "url": "https://la.urbanize.city/post/10-small-lot-houses-planned-22112-sherman-way-canoga-park",
     "date": "2025-08-03"
    }
-  ]
+  ],
+  "w": 75
  },
  "5211010016": {
   "case": "AA-2025-3784-PM-SH-HCA",
@@ -157,7 +162,8 @@
   "lat": 34.069477,
   "lotSqft": 7512,
   "tier": "",
-  "vacant": 0
+  "vacant": 0,
+  "w": 50
  },
  "2565016028": {
   "case": "VTT-84535-SH-VHCA",
@@ -192,7 +198,8 @@
     "url": "https://layimby.com/2025/08/a-quarter-acre-site-at-10240-north-pinewood-avenue-is-planned-for-eight-small-lot-homes.html",
     "date": "2025-08"
    }
-  ]
+  ],
+  "w": 56
  },
  "4244026003": {
   "case": "AA-2025-5122-VPM-SH-HCA",
@@ -227,7 +234,8 @@
     "url": "https://layimby.com/2025/09/samara-plans-modular-four-home-infill-development-at-1209-east-preston-way-in-venice.html",
     "date": "2025-09"
    }
-  ]
+  ],
+  "w": 63
  },
  "2733006018": {
   "case": "VTT-85028-SH-HCA",
@@ -262,7 +270,8 @@
     "url": "https://layimby.com/2025/10/state-housing-reform-spurs-new-small-lot-residences-at-17719-west-kingsbury-street-in-granada-hills.html",
     "date": "2025-10"
    }
-  ]
+  ],
+  "w": 50
  },
  "5427014007": {
   "case": "AA-2025-6006-VPM-SH-SL-HCA",
@@ -291,7 +300,8 @@
     "title": "Four small lot houses proposed at 1046 Hyperion Ave. in Silver Lake",
     "url": "https://la.urbanize.city/post/four-small-lot-houses-proposed-1046-hyperion-ave-silver-lake"
    }
-  ]
+  ],
+  "w": 50
  },
  "4250010009": {
   "case": "VTT-84972-SH-SL-CN-VHCA",
@@ -320,7 +330,8 @@
     "title": "Five houses proposed at 3252 S. Barrington Ave. in Mar Vista",
     "url": "https://la.urbanize.city/post/five-houses-proposed-3252-s-barrington-ave-mar-vista"
    }
-  ]
+  ],
+  "w": 70
  },
  "5589038012": {
   "case": "AA-2025-6487-VPM-SL-SH-VHCA",
@@ -342,7 +353,8 @@
   "lat": 34.10308,
   "lotSqft": 7153,
   "tier": "",
-  "vacant": 0
+  "vacant": 0,
+  "w": 52
  },
  "5529003001": {
   "case": "VTT-85033-SH-VHCA",
@@ -377,7 +389,8 @@
     "url": "https://therealdeal.com/la/2025/12/29/hollywood-parcel-poised-for-small-lot-homes-adus/",
     "date": "2025-12-29"
    }
-  ]
+  ],
+  "w": 71
  },
  "2266007031": {
   "case": "VTT-84941-SL-SH-HCA",
@@ -412,7 +425,8 @@
     "url": "https://layimby.com/2026/01/former-preschool-site-slated-for-eight-small-lot-homes-at-4276-van-nuys-boulevard-in-sherman-oaks.html",
     "date": "2026-01"
    }
-  ]
+  ],
+  "w": 97
  },
  "4248028001": {
   "case": "VTT-85133-SH-HCA",
@@ -441,7 +455,8 @@
     "title": "Seven houses planned at 3671 Inglewood Blvd. in Mar Vista",
     "url": "https://la.urbanize.city/post/seven-houses-planned-3671-inglewood-blvd-mar-vista"
    }
-  ]
+  ],
+  "w": 116
  },
  "2266006031": {
   "case": "VTT-84942-SL-SH-HCA",
@@ -463,7 +478,8 @@
   "lat": 34.149229,
   "lotSqft": 11927,
   "tier": "B",
-  "vacant": 0
+  "vacant": 0,
+  "w": 91
  },
  "5067020018": {
   "case": "TT-85108-SH-SL-HCA",
@@ -498,7 +514,8 @@
     "url": "https://therealdeal.com/la/2026/03/23/developer-seeks-to-build-nine-homes-on-single-family-lot/",
     "date": "2026-03-23"
    }
-  ]
+  ],
+  "w": 113
  },
  "7347008004": {
   "case": "AA-2026-812-SH",
@@ -520,7 +537,8 @@
   "lat": 33.823002,
   "lotSqft": 7548,
   "tier": "",
-  "vacant": 0
+  "vacant": 0,
+  "w": 40
  },
  "2139012035": {
   "case": "VTT-85151-SH-VHCA",
@@ -555,7 +573,8 @@
     "title": "Urbanize project page: 6540 Shoup Avenue",
     "url": "https://la.urbanize.city/project/6540-shoup-avenue"
    }
-  ]
+  ],
+  "w": 85
  },
  "4312022004": {
   "case": "AA-2026-1452-PM-SH-HCA",
@@ -577,7 +596,8 @@
   "lat": 34.032145,
   "lotSqft": 5081,
   "tier": "A",
-  "vacant": 0
+  "vacant": 0,
+  "w": 50
  },
  "2103011002": {
   "case": "VTT-85140-SH-VHCA",
@@ -612,7 +632,8 @@
     "url": "https://therealdeal.com/la/2026/06/23/leo-polosadjian-plans-20-residences-on-reseda-vacant-lot/",
     "date": "2026-06-23"
    }
-  ]
+  ],
+  "w": 137
  },
  "2768014013": {
   "case": "VTT-85031-SH-HCA",
@@ -653,7 +674,8 @@
     "url": "https://therealdeal.com/la/2026/05/19/single-family-home-lot-in-northridge-proposed-for-townhomes/",
     "date": "2026-05-19"
    }
-  ]
+  ],
+  "w": 305
  },
  "5405009027": {
   "case": "VTT-84909-SH-HCA",
@@ -694,7 +716,8 @@
     "url": "https://therealdeal.com/la/2026/05/12/streetlamp-partners-propose-townhomes-in-echo-park/",
     "date": "2026-05-12"
    }
-  ]
+  ],
+  "w": 50
  },
  "6120021900": {
   "case": "VTT-84320-SH-HCA",
@@ -729,7 +752,8 @@
     "url": "https://therealdeal.com/la/2026/05/26/luigi-schiappa-pitches-townhomes-in-harbor-gateway/",
     "date": "2026-05-26"
    }
-  ]
+  ],
+  "w": 59
  },
  "5068006014": {
   "case": "AA-2026-2856-PM-SH-VHCA",
@@ -751,7 +775,8 @@
   "lat": 34.049149,
   "lotSqft": 6000,
   "tier": "A",
-  "vacant": 0
+  "vacant": 0,
+  "w": 50
  },
  "2116015025": {
   "case": "VTT-85305-SH-HCA",
@@ -780,7 +805,8 @@
     "title": "Small lot homes + ADUs slated for 19448 Saticoy St. in Reseda",
     "url": "https://la.urbanize.city/post/small-lot-homes-adus-slated-19448-saticoy-st-reseda"
    }
-  ]
+  ],
+  "w": 100
  },
  "5685012008": {
   "case": "VTT-85203-SL",
@@ -809,7 +835,8 @@
     "title": "Six small lot houses proposed at 2217 W. Laverna Ave. in Eagle Rock",
     "url": "https://la.urbanize.city/post/six-small-lot-houses-proposed-2217-w-laverna-ave-eagle-rock"
    }
-  ]
+  ],
+  "w": 110
  },
  "2235001004": {
   "case": "VTT-85188-SH-HCA",
@@ -838,7 +865,8 @@
     "title": "Small lot houses pitched for 6443 N. Columbus Ave. in Van Nuys",
     "url": "https://la.urbanize.city/post/small-lot-houses-pitched-6443-n-columbus-ave-van-nuys"
    }
-  ]
+  ],
+  "w": 75
  },
  "5071021039": {
   "case": "TT-85342-SH-HCA",
@@ -860,7 +888,8 @@
   "lat": 34.041237,
   "lotSqft": 7000,
   "tier": "A",
-  "vacant": 0
+  "vacant": 0,
+  "w": 50
  },
  "2764017025": {
   "case": "VTT-85221-SH-HCA",
@@ -895,7 +924,8 @@
     "url": "https://therealdeal.com/la/2026/08/03/northridge-lot-poised-for-small-lot-homes-adus/",
     "date": "2026-08-03"
    }
-  ]
+  ],
+  "w": 83
  },
  "2734031028": {
   "case": "VTT-85021-SH",
@@ -917,7 +947,8 @@
   "lat": 34.251029,
   "lotSqft": 12853,
   "tier": "C",
-  "vacant": 1
+  "vacant": 1,
+  "w": 101
  },
  "2734031027": {
   "case": "VTT-85020-SH",
@@ -939,7 +970,8 @@
   "lat": 34.25096,
   "lotSqft": 12851,
   "tier": "C",
-  "vacant": 1
+  "vacant": 1,
+  "w": 101
  },
  "2157002126": {
   "case": "VTT-85344-SH-HCA",
@@ -961,7 +993,8 @@
   "lat": 34.178141,
   "lotSqft": 21820,
   "tier": "B",
-  "vacant": 1
+  "vacant": 1,
+  "w": 50
  },
  "2505024010": {
   "case": "VTT-85315-SH-HCA",
@@ -982,7 +1015,8 @@
   "lng": -118.449814,
   "lat": 34.309482,
   "lotSqft": 54647,
-  "vacant": 1
+  "vacant": 1,
+  "w": 173
  },
  "4311022012": {
   "case": "VTT-85175-SH-VHCA",
@@ -1002,7 +1036,8 @@
   "desc": "SB 1123 subdivision of one R1V2 lot into 5 small lots for 5 small-lot SFDs (Govt Code 65852.28, 65913.4.5, 66499.41). South Robertson, CD 5. Filed 07/28/2026, not on hold.",
   "lng": -118.393817,
   "lat": 34.034267,
-  "lotSqft": 7664
+  "lotSqft": 7664,
+  "w": 50
  },
  "2364011022": {
   "case": "VTT-85335-SH-HCA",
@@ -1022,7 +1057,8 @@
   "desc": "SB 684/1123 filing, scope not yet stated in PDIS. Valley Village/Studio City, CD 2. Filed 08/07/2026, on hold.",
   "lng": -118.391356,
   "lat": 34.150674,
-  "lotSqft": 18841
+  "lotSqft": 18841,
+  "w": 135
  },
  "5068013011": {
   "case": "TT-85393-SH-HCA",
@@ -1043,7 +1079,8 @@
   "lng": -118.37126,
   "lat": 34.049039,
   "lotSqft": 8439,
-  "vacant": 0
+  "vacant": 0,
+  "w": 50
  },
  "5689013008": {
   "case": "VTT-85234-SH-VHCA",
@@ -1064,7 +1101,8 @@
   "lng": -118.202252,
   "lat": 34.135787,
   "lotSqft": 11589,
-  "vacant": 0
+  "vacant": 0,
+  "w": 121
  },
  "5043016020": {
   "case": "AA-2026-4732-VPM-SH-HCA",
@@ -1085,7 +1123,8 @@
   "lng": -118.360863,
   "lat": 34.028049,
   "lotSqft": 4962,
-  "vacant": 0
+  "vacant": 0,
+  "w": 41
  },
  "5532008026": {
   "case": "VTT-85426-SH-HCA",
@@ -1106,7 +1145,8 @@
   "lng": -118.341217,
   "lat": 34.094144,
   "lotSqft": 11546,
-  "vacant": 0
+  "vacant": 0,
+  "w": 78
  },
  "2137007008": {
   "case": "VTT-85207-SH-HCA",
@@ -1127,7 +1167,8 @@
   "lng": -118.581958,
   "lat": 34.198103,
   "lotSqft": 7603,
-  "vacant": 0
+  "vacant": 0,
+  "w": 63
  },
  "4242021020": {
   "case": "AA-2026-4895-PM-SH-HCA",
@@ -1149,7 +1190,8 @@
   "lat": 33.998509,
   "lotSqft": 5528,
   "tier": "A",
-  "vacant": 0
+  "vacant": 0,
+  "w": 44
  },
  "2503004006": {
   "case": "VTT-85444-SH-HCA",
@@ -1171,7 +1213,8 @@
   "lat": 34.322109,
   "lotSqft": 54233,
   "tier": "C",
-  "vacant": 0
+  "vacant": 0,
+  "w": 173
  },
  "2787004014": {
   "case": "VTT-85309-SH-HCA",
@@ -1193,7 +1236,8 @@
   "lat": 34.224915,
   "lotSqft": 19073,
   "tier": "C",
-  "vacant": 0
+  "vacant": 0,
+  "w": 117
  },
  "5540025013": {
   "case": "AA-2026-5172-VPM-SH-HCA",
@@ -1215,7 +1259,8 @@
   "lat": 34.092431,
   "lotSqft": 6750,
   "tier": "",
-  "vacant": 0
+  "vacant": 0,
+  "w": 50
  },
  "2650002019": {
   "case": "VTT-85308-SH-HCA",
@@ -1237,7 +1282,8 @@
   "lat": 34.243827,
   "lotSqft": 31960,
   "tier": "C",
-  "vacant": 0
+  "vacant": 0,
+  "w": 107
  },
  "5540025015": {
   "case": "AA-2026-5174-VPM-SH-HCA",
@@ -1259,7 +1305,8 @@
   "lat": 34.092706,
   "lotSqft": 6750,
   "tier": "",
-  "vacant": 0
+  "vacant": 0,
+  "w": 50
  },
  "4254022022": {
   "case": "VTT-85121-SH-VHCA",
@@ -1281,7 +1328,8 @@
   "lat": 34.024274,
   "lotSqft": 7705,
   "tier": "A",
-  "vacant": 0
+  "vacant": 0,
+  "w": 50
  },
  "5518027003": {
   "case": "VTT-93247-SH-HCA",
@@ -1303,7 +1351,8 @@
   "lat": 34.074106,
   "lotSqft": 7500,
   "tier": "",
-  "vacant": 0
+  "vacant": 0,
+  "w": 50
  },
  "4244028005": {
   "case": "VTT-85418-SH-HCA",
@@ -1325,7 +1374,8 @@
   "lat": 34.002557,
   "lotSqft": 10895,
   "tier": "A",
-  "vacant": 0
+  "vacant": 0,
+  "w": 63
  },
  "4259021016": {
   "case": "AA-2026-5410-PM-SH-HCA",
@@ -1347,7 +1397,8 @@
   "lat": 34.035411,
   "lotSqft": 7376,
   "tier": "A",
-  "vacant": 0
+  "vacant": 0,
+  "w": 50
  },
  "5526037001": {
   "case": "VTT-85390-SH-VHCA",
@@ -1370,7 +1421,8 @@
   "lotSqft": 9851,
   "tier": "A",
   "vacant": 0,
-  "articles": []
+  "articles": [],
+  "w": 60
  },
  "4248029026": {
   "case": "VTT-85421-SH-VHCA",
@@ -1393,6 +1445,7 @@
   "lotSqft": 15104,
   "tier": "A",
   "vacant": 0,
-  "articles": []
+  "articles": [],
+  "w": 96
  }
 }

@@ -629,6 +629,7 @@ html, body {
 .lg-proj-appr { background: rgba(16, 185, 129, 0.75); border: 1px solid #047857; }
 .lg-proj-pend { background: rgba(250, 204, 21, 0.8); border: 1px solid #ca8a04; }
 .lg-onmarket { background: rgba(217, 119, 6, 0.8); border: 1px solid #b45309; border-radius: 50%; width: 10px; }
+.lg-sold { background: #1B3A5C; border: 1px solid #fff; border-radius: 50%; width: 10px; }
 .lg-other { background: #e4e8ec; border: 1px solid #c3cbd3; }
 .lg-slo-built { background: #0e7490; border: 1px solid #fff; border-radius: 50%; width: 10px; }
 .lg-slo-not { background: #94a3b8; border: 1px solid #fff; border-radius: 50%; width: 10px; }

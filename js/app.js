@@ -318,6 +318,7 @@ function baseStyle() {
   // budget, so specific project parcels would vanish from the dot view.
   sources["sb-projects"] = { type: "geojson", data: projectsGeojson() };
   sources["om-listings"] = { type: "geojson", data: listingsGeojson() };
+  sources["sold-lots"] = { type: "geojson", data: soldGeojson() };
   // OZ 2.0 tracts start empty; ensureOzLoaded() fills the source on first
   // toggle. Registered at style time — a geojson source added mid-session
   // can wedge isStyleLoaded() at false, starving the count/list refresh.
@@ -454,6 +455,16 @@ function baseStyle() {
         // On-market listing markers (data/listings.json). Hidden until the
         // On Market filter is active; drawn at every zoom so deals never
         // vanish from the dot view. Orange = the For Sale accent.
+        id: "sold-markers", type: "circle", source: "sold-lots",
+        filter: ["==", ["get", "ain"], "___none___"],
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 4, 13, 7],
+          "circle-color": "#1B3A5C",
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 1,
+        },
+      },
+      {
         id: "om-markers", type: "circle", source: "om-listings",
         filter: ["==", ["get", "ain"], "___none___"],
         paint: {
@@ -488,7 +499,11 @@ function projInScope(pr) {
     state.dealStatus === "approved" ? pr.status === "approved"
       : state.dealStatus === "submitted" ? pr.status !== "approved" : true;
   const tierOk = state.tiers.size === 0 || state.tiers.has(pr.tier || "");
-  return statusOk && tierOk && inSelectedAreas(pr.lng, pr.lat);
+  const impOk = state.imp === "vacant" ? !!pr.vacant : state.imp === "sfr" ? !pr.vacant : true;
+  const ovlOk = activeOverlays(state).every((k) => !ovlParts[k] || overlayAt(k, pr.lng, pr.lat) !== null);
+  return statusOk && tierOk && impOk && ovlOk
+    && inRange(pr.lotSqft, state.ranges.lsf) && inRange(pr.w, state.ranges.w)
+    && inSelectedAreas(pr.lng, pr.lat);
 }
 
 // ---- Comps program: sale comps of finished homes (data/comps_small_lot.json) ----
@@ -847,6 +862,19 @@ function showSloDetail(c) {
   }
 }
 
+function soldGeojson() {
+  return {
+    type: "FeatureCollection",
+    features: Object.entries(soldLand)
+      .filter(([, l]) => l.lng != null)
+      .map(([ain, l]) => ({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [l.lng, l.lat] },
+        properties: { ain },
+      })),
+  };
+}
+
 function listingsGeojson() {
   return {
     type: "FeatureCollection",
@@ -982,11 +1010,15 @@ function ozTractAt(lng, lat) {
   return null;
 }
 
-// Listings that pass the $/SF range, Lot Size, Improvements and tier AND sit
+// Listings that pass the $/SF range, Lot Size, Width, Improvements and tier AND sit
 // inside the selected search areas. The markers and the deal sheet read this
 // list, so a filter missing here looks ignored. A listing without a value
 // (no lot sf) passes only an unbounded range: it can't be screened, but
 // shouldn't disappear from a plain On Market view.
+function inRange(v, [lo, hi]) {
+  if (lo === null && hi === null) return true;
+  return v != null && (lo === null || v >= lo) && (hi === null || v <= hi);
+}
 function omAinsFor() {
   const [min, max] = state.omRange;
   const [lotMin, lotMax] = state.ranges.lsf;
@@ -1000,7 +1032,7 @@ function omAinsFor() {
       : (lotMin === null || l.lotSqft >= lotMin) && (lotMax === null || l.lotSqft <= lotMax);
     const okImp = state.imp === "vacant" ? l.type === "Land"
       : state.imp === "sfr" ? l.type === "SFR" : true;
-    if (!okLot || !okImp) return false;
+    if (!okLot || !okImp || !inRange(l.w, state.ranges.w)) return false;
     const okTier = state.tiers.size === 0 || state.tiers.has(l.tier || "");
     // Checked overlays scope the deals too: a listing must sit inside every one.
     const okOvl = activeOverlays(state).every((k) => !ovlParts[k] || (l.lng != null && overlayAt(k, l.lng, l.lat) !== null));
@@ -1068,6 +1100,12 @@ function applyFilters() {
   if (map.getLayer("om-markers")) {
     map.setFilter("om-markers", state.om
       ? ["in", ["get", "ain"], ["literal", omAins]]
+      : ["==", ["get", "ain"], "___none___"]);
+  }
+
+  if (map.getLayer("sold-markers")) {
+    map.setFilter("sold-markers", state.sold
+      ? ["in", ["get", "ain"], ["literal", soldAins]]
       : ["==", ["get", "ain"], "___none___"]);
   }
 
@@ -1154,6 +1192,7 @@ function cartToggle(p) {
   renderCartPanel();
   scheduleCount();
 }
+let countWaits = 0;
 function scheduleCount() {
   clearTimeout(countTimer);
   countTimer = setTimeout(updateCount, 250);
@@ -1169,7 +1208,15 @@ function updateCount() {
   if (!map) return;
   // A filter change briefly marks the style dirty; dropping the update here
   // would freeze the list on stale results, so re-arm instead.
-  if (!map.isStyleLoaded()) { scheduleCount(); return; }
+  // Tiles still loading also read as "not loaded", for 10 seconds or more on a
+  // big view, so stop waiting after 1 second once the layers exist.
+  const layersReady = !!map.getLayer(lids("centroids")[0]);
+  if (!layersReady || (!map.isStyleLoaded() && countWaits < 4)) {
+    countWaits++;
+    scheduleCount();
+    return;
+  }
+  countWaits = 0;
   setViewLabels(program());
   if (state.comps) { renderCompsView(); return; }
   if (state.ed1) { renderEd1View(); return; }
@@ -1228,14 +1275,38 @@ function updateCount() {
       })
       .map((ain) => {
         const l = omListings[ain];
-        return byAin.get(ain) || {
-          properties: { ain, a: l.address || "", lsf: l.lotSqft ?? null,
-            w: null, t: l.tier || "", e: 0, v: null },
+        // The listing's own lot and width, the figures the filters test.
+        const tileFeat = byAin.get(ain);
+        return {
+          properties: { ...(tileFeat ? tileFeat.properties : { ain, a: l.address || "", t: l.tier || "", e: 0, v: null }),
+            lsf: l.lotSqft ?? null, w: l.w ?? null },
           geometry: { type: "Point", coordinates: [l.lng, l.lat] },
         };
       });
     if (boxes.length) omFeats = omFeats.filter(inBoxes);
     listSource = omFeats;
+    // The tiles thin parcels out when zoomed out, so count the deals themselves.
+    document.getElementById("result-count").textContent = omFeats.length.toLocaleString();
+    document.getElementById("result-label").textContent = "Deals in View";
+    document.getElementById("stat-candidates").textContent = "–";
+  }
+  if (state.sold) {
+    const vb = map.getBounds();
+    const soldFeats = soldAinsFor()
+      .filter((ain) => soldLand[ain].lng != null && vb.contains([soldLand[ain].lng, soldLand[ain].lat]))
+      .map((ain) => {
+        const l = soldLand[ain];
+        const tileFeat = byAin.get(ain);
+        return {
+          properties: { ...(tileFeat ? tileFeat.properties : { ain, a: l.a || "", t: l.t || "", e: 0, v: l.v ?? null }),
+            lsf: l.lsf ?? null, w: l.w ?? null },
+          geometry: { type: "Point", coordinates: [l.lng, l.lat] },
+        };
+      });
+    listSource = soldFeats;
+    document.getElementById("result-count").textContent = soldFeats.length.toLocaleString();
+    document.getElementById("result-label").textContent = "Sold Lots in View";
+    document.getElementById("stat-candidates").textContent = "–";
   }
   // A planning-status search lists ALL matching cases citywide, not just the
   // viewport — the projects are scattered and the panel would look empty.
@@ -2144,7 +2215,8 @@ function syncControlsFromState() {
   for (const id of ["centroids", "parcels-fill", "parcels-line", "parcels-projects", "parcels-status", "parcels-selected"].flatMap(lids)) {
     vis(id, prog === "sb1123");
   }
-  for (const id of ["projects-markers", "om-markers"]) vis(id, prog === "sb1123");
+  for (const id of ["projects-markers", "om-markers", "sold-markers"]) vis(id, prog === "sb1123");
+  for (const el of document.querySelectorAll(".lg-sold-row")) el.classList.toggle("hidden", prog !== "sb1123" || !state.sold);
   for (const id of ["oz2-tint", "oz2-line"]) vis(id, prog === "sb1123" && state.oz);
   for (const k of ["oz", "hr", "qct"]) {
     for (const id of [`ovl-${k}-tint`, `ovl-${k}-line`]) vis(id, prog === "sb1123" && state.ovl.has(k));
@@ -2200,15 +2272,16 @@ function bindControls() {
     applyFilters();
   };
   // Results follow as you type; Enter or leaving the box applies at once.
-  let rangeTimer = null;
-  for (const id of ["w-min", "w-max", "lsf-min", "lsf-max"]) {
+  const liveBox = (id, apply) => {
     const el = document.getElementById(id);
-    el.addEventListener("change", () => { clearTimeout(rangeTimer); onRangeChange(); });
+    let timer = null;
+    el.addEventListener("change", () => { clearTimeout(timer); apply(); });
     el.addEventListener("input", () => {
-      clearTimeout(rangeTimer);
-      rangeTimer = setTimeout(onRangeChange, 400);
+      clearTimeout(timer);
+      timer = setTimeout(apply, 400);
     });
-  }
+  };
+  for (const id of ["w-min", "w-max", "lsf-min", "lsf-max"]) liveBox(id, onRangeChange);
 
   document.querySelectorAll(".zone-family").forEach((cb) => {
     cb.addEventListener("change", () => {
@@ -2312,7 +2385,7 @@ function bindControls() {
     compChanged();
   }));
   for (const end of ["min", "max"]) {
-    document.getElementById(`eunits-${end}`).addEventListener("change", () => {
+    liveBox(`eunits-${end}`, () => {
       const v = (id) => { const t = document.getElementById(id).value.trim(); return t === "" ? null : Number(t); };
       state.ed1Units = [v("eunits-min"), v("eunits-max")];
       compChanged();
@@ -2335,7 +2408,7 @@ function bindControls() {
   }));
   for (const k of ["price", "ppsf", "sf", "yb"]) {
     for (const end of ["min", "max"]) {
-      document.getElementById(`c${k}-${end}`).addEventListener("change", () => {
+      liveBox(`c${k}-${end}`, () => {
         const v = (id) => { const t = document.getElementById(id).value.trim(); return t === "" ? null : Number(t); };
         state.comp[k === "price" ? "p" : k] = [v(`c${k}-min`), v(`c${k}-max`)];
         compChanged();
@@ -2374,9 +2447,7 @@ function bindControls() {
     syncControlsFromState();
     applyFilters();
   };
-  for (const id of ["ppsf-min", "ppsf-max"]) {
-    document.getElementById(id).addEventListener("change", onPpsfChange);
-  }
+  for (const id of ["ppsf-min", "ppsf-max"]) liveBox(id, onPpsfChange);
 
   document.getElementById("reset-btn").addEventListener("click", () => {
     // Clear resets filters; selected search areas keep their own × chips.
@@ -2747,13 +2818,13 @@ async function fetchMergedStyle(styleUrl, fallback) {
   const base = await resp.json();
   base.sources = { ...base.sources };
   for (const [k, v] of Object.entries(fallback.sources)) {
-    if (k === "satellite" || k === "sb-projects" || k === "om-listings"
+    if (k === "satellite" || k === "sb-projects" || k === "om-listings" || k === "sold-lots"
       || k === "oz2" || k.startsWith("ovl-") || k === "slo" || k === "slo-lots" || k === "comps" || k === "ed1" || k.startsWith("parcels")) {
       base.sources[k] = v;
     }
   }
   const overlayIds = new Set([
-    "basemap-satellite", "projects-markers", "om-markers", "slo-lots-fill", "slo-lots-line", "slo-markers", "ed1-markers", "comps-markers", "oz2-tint", "oz2-line",
+    "basemap-satellite", "projects-markers", "sold-markers", "om-markers", "slo-lots-fill", "slo-lots-line", "slo-markers", "ed1-markers", "comps-markers", "oz2-tint", "oz2-line",
     ...["oz", "hr", "qct"].flatMap((k) => [`ovl-${k}-tint`, `ovl-${k}-line`]),
     ...["centroids", "parcels-fill", "parcels-line", "parcels-projects",
       "parcels-status", "parcels-selected"].flatMap(lids),
@@ -2849,7 +2920,18 @@ async function loadSold() {
     if (resp.ok) soldLand = await resp.json();
   } catch (e) { /* optional dataset */ }
 }
-function soldAinsFor() { return Object.keys(soldLand); }
+// Sold lots passing Lot Size, Width, Improvements, tier, overlays and areas. Same
+// job as omAinsFor: the markers and the list read this, not the drawn parcels.
+function soldAinsFor() {
+  return Object.keys(soldLand).filter((ain) => {
+    const l = soldLand[ain];
+    const okImp = state.imp === "vacant" ? l.v !== 0 : state.imp === "sfr" ? l.v === 0 : true;
+    const okTier = state.tiers.size === 0 || state.tiers.has(l.t || "");
+    const okOvl = activeOverlays(state).every((k) => !ovlParts[k] || (l.lng != null && overlayAt(k, l.lng, l.lat) !== null));
+    return okImp && okTier && okOvl && inRange(l.lsf, state.ranges.lsf) && inRange(l.w, state.ranges.w)
+      && inSelectedAreas(l.lng, l.lat);
+  });
+}
 
 // On-market SFR/Land deals, keyed by AIN (data/listings.json, team-curated).
 // $/SF of land is precomputed once here; a missing lot size leaves it null.
@@ -2955,6 +3037,14 @@ async function boot() {
     map.easeTo({ center: e.lngLat, zoom: 15 });
     showDetail({ ain, a: l.address || "", lsf: l.lotSqft, t: l.tier || "" }, e.lngLat);
   });
+  map.on("click", "sold-markers", (e) => {
+    const ain = e.features[0].properties.ain;
+    const l = soldLand[ain] || {};
+    map.easeTo({ center: e.lngLat, zoom: 15 });
+    showDetail({ ain, a: l.a || "", lsf: l.lsf, t: l.t || "" }, e.lngLat);
+  });
+  map.on("mouseenter", "sold-markers", () => { map.getCanvas().style.cursor = "pointer"; });
+  map.on("mouseleave", "sold-markers", () => { map.getCanvas().style.cursor = ""; });
   for (const id of ["slo-markers", "slo-lots-fill"]) {
     map.on("click", id, (e) => {
       const c = sloCases[e.features[0].properties.case];

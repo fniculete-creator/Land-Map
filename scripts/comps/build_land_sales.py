@@ -4,7 +4,8 @@ usage: python scripts/comps/build_land_sales.py [--work DIR] [--since 2024-01-01
 Parcels: 2026 LA County assessor roll, City of LA, residential vacant use codes (0xxV) with a recording since --since.
 Sales: the Assessor portal ownership history per AIN (public), kept when it is a "Sale for Consideration" of one parcel
 (multi-parcel assemblage deeds carry a combined price and are dropped) at $50,000 or more, recorded on or after --since.
-Keyed by AIN: latest sale {d, p} plus earlier kept sales. Land $/SF is computed in the app from the tile lot size.
+Keyed by AIN: latest sale {d, p} plus earlier kept sales. Land $/SF is computed in the app from the lot size.
+Then run scripts/comps/add_sold_locations.py: the Sold view needs the location and parcel facts it adds.
 Built 10/24/2026."""
 import argparse, concurrent.futures as cf, datetime, json, os, threading, time, urllib.parse, urllib.request
 
